@@ -14,11 +14,11 @@ object GalaxyVoiceHistory {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val old = prefs.getString(KEY_ENTRIES, "").orEmpty()
         val stamp = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault()).format(Date())
-        val safeCommand = command.replace("\\n", " ").replace("|", " ").take(100)
-        val safeResult = result.replace("\\n", " ").replace("|", " ").take(60)
+        val safeCommand = command.replace("\n", " ").replace("|", " ").take(100)
+        val safeResult = result.replace("\n", " ").replace("|", " ").take(60)
         val entry = "$stamp  |  $safeCommand  |  $safeResult"
         val updated = (listOf(entry) + old.lines().filter { it.isNotBlank() }).take(MAX_ENTRIES)
-        prefs.edit().putString(KEY_ENTRIES, updated.joinToString("\\n")).apply()
+        prefs.edit().putString(KEY_ENTRIES, updated.joinToString("\n")).apply()
     }
 
     fun getEntries(context: Context): List<String> =
