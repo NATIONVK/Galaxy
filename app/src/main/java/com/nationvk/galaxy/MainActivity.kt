@@ -80,6 +80,7 @@ fun GalaxyApp() {
             Box(Modifier.fillMaxSize()) {
                 StarBackdrop(Modifier.fillMaxSize())
                 Column(Modifier.fillMaxSize().imePadding()) {
+                    OfflineStatusBanner()
                     if (selected != GalaxyTab.BLACKHOLE) GalaxyTopBar()
                     Box(Modifier.weight(1f)) {
                         when (selected) {
