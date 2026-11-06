@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -16,6 +18,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import java.util.Locale
 
 class GalaxyVoiceWakeService : Service() {
@@ -70,6 +73,12 @@ class GalaxyVoiceWakeService : Service() {
             updateNotification("Memory deletion cancelled")
             tts?.speak("মেমোরি মুছে ফেলা বাতিল করা হয়েছে।", TextToSpeech.QUEUE_FLUSH, null, "memory-delete-cancelled")
             return START_STICKY
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            updateNotification("Microphone permission required • open Galaxy to grant access")
+            getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", false).apply()
+            stopSelf(startId)
+            return START_NOT_STICKY
         }
         stopped = false
         getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", true).apply()
@@ -485,12 +494,7 @@ class GalaxyVoiceWakeService : Service() {
         getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", false).apply()
         handler.removeCallbacksAndMessages(null)
         isListening = false
-        try { recognizer?.cancel() } catch (_: Exception) { }
-        recognizer?.destroy()
-        recognizer = null
-        tts?.stop()
-        tts?.shutdown()
-        tts = null
+        releaseSpeechResources()
         wakeArmed = false
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -500,12 +504,17 @@ class GalaxyVoiceWakeService : Service() {
         stopped = true
         getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", false).apply()
         handler.removeCallbacksAndMessages(null)
-        recognizer?.destroy()
-        recognizer = null
-        tts?.stop()
-        tts?.shutdown()
-        tts = null
+        releaseSpeechResources()
         super.onDestroy()
+    }
+
+    private fun releaseSpeechResources() {
+        try { recognizer?.cancel() } catch (_: Exception) { }
+        try { recognizer?.destroy() } catch (_: Exception) { }
+        recognizer = null
+        try { tts?.stop() } catch (_: Exception) { }
+        try { tts?.shutdown() } catch (_: Exception) { }
+        tts = null
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
