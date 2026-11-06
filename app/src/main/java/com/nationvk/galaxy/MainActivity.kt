@@ -14,7 +14,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -366,33 +368,86 @@ private fun ProfileScreen(onSettings: () -> Unit) {
 
 @Composable
 private fun SettingsScreen() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
+    var visualEffects by remember { mutableStateOf(prefs.getBoolean("visual_effects", true)) }
+    var webPreference by remember { mutableStateOf(prefs.getBoolean("web_preference", false)) }
+    var language by remember { mutableStateOf(prefs.getString("language", "বাংলা + English") ?: "বাংলা + English") }
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
         Text("CONTROL CENTER", color = Cyan, fontSize = 10.sp, letterSpacing = 2.5.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         Text("Settings", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Text("Shape your Galaxy experience.", color = Muted, fontSize = 12.sp)
         Spacer(Modifier.height(22.dp))
-        SettingsGroup("APPEARANCE", listOf("Cosmic dark theme" to "Enabled", "Visual effects" to "High quality", "Language" to "বাংলা + English"))
-        SettingsGroup("PRIVACY & SECURITY", listOf("App permissions" to "Review permissions", "Memory controls" to "Not configured", "Data & privacy" to "View information"))
-        SettingsGroup("AI PREFERENCES", listOf("Preferred model" to "Not selected", "Voice preferences" to "Not configured", "Web access" to "Not connected"))
-        SettingsGroup("ABOUT", listOf("App version" to "0.1.0", "Developer" to "NATIONVK", "Project" to "Galaxy AI"))
+
+        SettingsSectionTitle("APPEARANCE")
+        SettingsToggleRow("Visual effects", "Enable enhanced visual effects", visualEffects) {
+            visualEffects = it
+            prefs.edit().putBoolean("visual_effects", it).apply()
+        }
+        SettingsInfoRow("Theme", "Cosmic dark • fixed for this build")
+        SettingsSectionTitle("LANGUAGE")
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+            Text("App language preference", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(10.dp))
+            listOf("বাংলা + English", "বাংলা", "English").forEach { option ->
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable {
+                    language = option
+                    prefs.edit().putString("language", option).apply()
+                }.padding(horizontal = 10.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(option, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text(if (language == option) "● SELECTED" else "○", color = if (language == option) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Text("Preference saved on this device. Full interface localization will be applied in a later pass.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+        }
+
+        Spacer(Modifier.height(18.dp))
+        SettingsSectionTitle("PRIVACY & SECURITY")
+        SettingsInfoRow("App permissions", "No permissions requested by this screen")
+        SettingsInfoRow("Memory controls", "Memory service not connected")
+        SettingsInfoRow("Data & privacy", "Local preferences stay on this device")
+        Spacer(Modifier.height(18.dp))
+        SettingsSectionTitle("AI PREFERENCES")
+        SettingsToggleRow("Web access preference", "Saved preference only; web tools are not connected", webPreference) {
+            webPreference = it
+            prefs.edit().putBoolean("web_preference", it).apply()
+        }
+        SettingsInfoRow("Preferred model", "Choose from AI Models • demo only")
+        SettingsInfoRow("Voice preferences", "Voice service not connected")
+        Spacer(Modifier.height(18.dp))
+        SettingsSectionTitle("ABOUT")
+        SettingsInfoRow("App version", "0.1.0")
+        SettingsInfoRow("Developer", "NATIONVK")
+        SettingsInfoRow("Project", "Galaxy AI")
+        Spacer(Modifier.height(12.dp))
+        Text("Settings marked as preferences do not activate unavailable services.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
 @Composable
-private fun SettingsGroup(title: String, items: List<Pair<String, String>>) {
-    Column(Modifier.fillMaxWidth().padding(bottom = 17.dp)) {
-        Text(title, color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        Column(Modifier.clip(RoundedCornerShape(18.dp)).background(Panel).padding(horizontal = 15.dp)) {
-            items.forEachIndexed { index, item ->
-                Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(item.first, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    Text(item.second, color = Muted, fontSize = 10.sp)
-                }
-                if (index != items.lastIndex) Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF252A43)))
-            }
+private fun SettingsSectionTitle(title: String) {
+    Text(title, color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+}
+
+@Composable
+private fun SettingsInfoRow(title: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(12.dp))
+        Text(value, color = Muted, fontSize = 10.sp)
+    }
+}
+
+@Composable
+private fun SettingsToggleRow(title: String, description: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).padding(horizontal = 15.dp, vertical = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(description, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
         }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
