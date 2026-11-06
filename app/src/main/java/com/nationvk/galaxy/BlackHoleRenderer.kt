@@ -131,39 +131,63 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
 
             void main() {
                 vec2 uv = (vUv - 0.5) * vec2(uResolution.x/uResolution.y, 1.0);
-                float t = uTime * 0.22;
+                float t = uTime * 0.30;
                 float r = length(uv);
                 float a = atan(uv.y, uv.x);
 
-                // Approximate gravitational lensing: bend background rays around the photon ring.
-                float bend = 0.055 / max(r, 0.055);
-                vec2 warped = vec2(cos(a + bend), sin(a + bend)) * (r + bend*0.20);
-                float stars = step(0.9975, hash(floor((warped + 0.5)*uResolution*0.55)));
-                vec3 col = vec3(0.006, 0.008, 0.025) + stars*vec3(0.48,0.62,1.0);
+                // Deep-space star field with subtle twinkle.
+                vec2 starCell = floor((uv + 1.5) * uResolution * 0.42);
+                float starSeed = hash(starCell);
+                float stars = step(0.9965, starSeed);
+                float twinkle = 0.55 + 0.45*sin(uTime*2.2 + starSeed*90.0);
+                vec3 col = vec3(0.004, 0.006, 0.022);
+                col += stars * twinkle * vec3(0.45,0.66,1.0);
 
-                // Thin, tilted accretion disk with turbulent luminous filaments.
-                float diskY = uv.y + 0.045*sin(uv.x*3.0 + t);
-                float diskR = length(vec2(uv.x, diskY*2.5));
-                float angle = atan(diskY*2.5, uv.x);
-                float turbulence = noise(vec2(angle*5.0 - t*2.0, diskR*34.0 + t*1.7));
-                float ring = exp(-pow((diskR-0.285)*24.0, 2.0));
-                float inner = smoothstep(0.145, 0.205, diskR);
-                float outer = 1.0-smoothstep(0.39, 0.49, diskR);
-                float brightness = ring * inner * outer * (0.42 + 0.85*turbulence);
-                vec3 hot = mix(vec3(0.28,0.10,0.95), vec3(0.10,0.78,1.0), 0.5+0.5*sin(angle-t));
-                hot = mix(hot, vec3(1.0,0.76,0.48), pow(max(0.0,cos(angle-t)), 5.0)*0.65);
-                col += hot * brightness * 2.2;
+                // Gravitationally warped background and a soft outer corona.
+                float bend = 0.075 / max(r, 0.06);
+                float warpedAngle = a + bend;
+                float warpedR = r + bend*0.17;
+                float lensWave = sin(warpedAngle*9.0 + t*0.7);
+                float corona = exp(-pow((r-0.34)*8.0,2.0));
+                col += vec3(0.13,0.20,0.72)*corona*(0.22+0.12*lensWave);
 
-                // Photon ring and event horizon.
-                float photon = exp(-pow((r-0.158)*190.0, 2.0));
-                col += vec3(0.30,0.68,1.0)*photon*0.8;
-                float horizon = smoothstep(0.151, 0.165, r);
+                // Wide, tilted accretion disk with moving turbulent bands.
+                float diskY = uv.y + 0.075*sin(uv.x*2.4 + t*0.8);
+                float diskR = length(vec2(uv.x, diskY*2.0));
+                float angle = atan(diskY*2.0, uv.x);
+                float turbulence = noise(vec2(angle*6.0 - t*2.8, diskR*27.0 + t*2.1));
+                float spiral = 0.5 + 0.5*sin(angle*5.0 - t*2.0 + diskR*24.0);
+                float ring = exp(-pow((diskR-0.39)*15.0, 2.0));
+                float inner = smoothstep(0.145, 0.215, diskR);
+                float outer = 1.0-smoothstep(0.49, 0.62, diskR);
+                float brightness = ring * inner * outer * (0.34 + 0.72*turbulence + 0.22*spiral);
+                vec3 hot = mix(vec3(0.30,0.08,0.92), vec3(0.08,0.72,1.0), 0.5+0.5*sin(angle-t));
+                hot = mix(hot, vec3(1.0,0.67,0.35), pow(max(0.0,cos(angle-t*0.9)), 5.0)*0.72);
+                col += hot * brightness * 2.45;
+
+                // Orbiting luminous knots and animated particle streaks.
+                for (int i=0; i<7; i++) {
+                    float fi = float(i);
+                    float orbitA = t*(0.35+fi*0.025) + fi*0.897;
+                    float orbitR = 0.27 + 0.018*sin(t*1.4+fi*2.0);
+                    vec2 particle = vec2(cos(orbitA), sin(orbitA)*0.48)*orbitR;
+                    float glow = exp(-length(uv-particle)*65.0);
+                    col += mix(vec3(0.12,0.55,1.0),vec3(1.0,0.42,0.18),fi/7.0)*glow*0.75;
+                }
+
+                // Bright photon ring, pulsing halo and deep event horizon.
+                float pulse = 0.82 + 0.18*sin(uTime*2.0);
+                float photon = exp(-pow((r-0.165)*150.0, 2.0));
+                col += vec3(0.42,0.76,1.0)*photon*pulse*1.15;
+                float horizon = smoothstep(0.153, 0.177, r);
                 col *= horizon;
-                float halo = exp(-pow((r-0.19)*15.0,2.0));
-                col += vec3(0.23,0.12,0.65)*halo*0.18;
+                float halo = exp(-pow((r-0.205)*11.0,2.0));
+                col += vec3(0.28,0.13,0.78)*halo*(0.20+0.08*sin(uTime*1.5));
 
-                // Soft vignette.
-                col *= 1.0 - smoothstep(0.35, 0.85, length(uv))*0.75;
+                // Subtle radial energy rays.
+                float rays = pow(max(0.0, sin(a*18.0+t*0.35)), 18.0);
+                col += vec3(0.10,0.24,0.72)*rays*corona*0.18;
+                col *= 1.0 - smoothstep(0.58, 1.05, length(uv))*0.62;
                 gl_FragColor = vec4(col, 1.0);
             }
         """
