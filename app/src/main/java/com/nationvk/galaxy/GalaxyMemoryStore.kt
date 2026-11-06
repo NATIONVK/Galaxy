@@ -14,7 +14,9 @@ data class GalaxyMemoryEntry(
 object GalaxyMemoryStore {
     private const val PREFS = "galaxy_long_term_memory"
     private const val KEY_ENTRIES = "entries"
+    private const val KEY_CORRUPT_BACKUP = "corrupt_entries_backup"
     private const val MAX_ENTRIES = 1000
+    private val ALLOWED_CATEGORIES = setOf("PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
 
     fun getAll(context: Context): List<GalaxyMemoryEntry> {
         val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_ENTRIES, "[]") ?: "[]"
@@ -22,24 +24,32 @@ object GalaxyMemoryStore {
             val array = JSONArray(raw)
             (0 until array.length()).mapNotNull { index ->
                 val item = array.optJSONObject(index) ?: return@mapNotNull null
+                val content = item.optString("content", "").trim()
+                val category = item.optString("category", "NOTES").uppercase().take(24)
+                if (content.isEmpty() || content.length > 10000 || category !in ALLOWED_CATEGORIES) return@mapNotNull null
                 GalaxyMemoryEntry(
-                    id = item.optLong("id"),
-                    category = item.optString("category", "NOTES"),
-                    content = item.optString("content"),
-                    createdAt = item.optLong("createdAt")
+                    id = item.optLong("id", 0L).coerceAtLeast(0L),
+                    category = category,
+                    content = content,
+                    createdAt = item.optLong("createdAt", 0L).coerceIn(0L, System.currentTimeMillis() + 86_400_000L)
                 )
-            }.sortedByDescending { it.createdAt }
+            }.distinctBy { it.id }.sortedByDescending { it.createdAt }.take(MAX_ENTRIES)
         } catch (_: Exception) {
+            // Preserve the original bytes before returning an empty view; never overwrite
+            // a damaged vault silently when the user next saves a memory.
+            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_CORRUPT_BACKUP, raw).commit()
             emptyList()
         }
     }
 
     fun add(context: Context, category: String, content: String): Boolean {
         val clean = content.trim().take(10000)
-        if (clean.isEmpty()) return false
+        val cleanCategory = category.trim().uppercase().take(24)
+        if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES) return false
         val entries = getAll(context).toMutableList()
         val nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
-        entries.add(0, GalaxyMemoryEntry(nextId, category.take(24), clean, System.currentTimeMillis()))
+        entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis()))
         return save(context, entries.take(MAX_ENTRIES))
     }
 
@@ -63,8 +73,16 @@ object GalaxyMemoryStore {
         save(context, getAll(context).filterNot { it.id == id })
 
     fun clear(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_ENTRIES).apply()
+        // A deliberate user clear removes both the active vault and any recovery copy.
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .remove(KEY_ENTRIES).remove(KEY_CORRUPT_BACKUP).apply()
     }
+
+    fun hasRecoveryBackup(context: Context): Boolean =
+        !context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_CORRUPT_BACKUP, null).isNullOrBlank()
+
+    fun exportRecoveryBackup(context: Context): String? =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_CORRUPT_BACKUP, null)
 
     fun exportJson(context: Context): String {
         val root = JSONObject()
@@ -99,7 +117,7 @@ object GalaxyMemoryStore {
         var duplicates = 0
         var rejected = 0
         var nextId = (existing.maxOfOrNull { it.id } ?: 0L) + 1L
-        val allowed = setOf("PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
+        val allowed = ALLOWED_CATEGORIES
         for (index in 0 until array.length()) {
             val item = array.optJSONObject(index)
             if (item == null) { rejected++; continue }
