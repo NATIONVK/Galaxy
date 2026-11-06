@@ -67,7 +67,7 @@ fun GalaxyApp() {
                             GalaxyTab.BLACKHOLE -> BlackHoleExperience(onBack = { selected = GalaxyTab.HOME })
                             GalaxyTab.HOME -> HomeScreen(onOpen = { selected = it })
                             GalaxyTab.CHAT -> ChatScreen()
-                            GalaxyTab.LAB -> FeatureScreen("CYBER LAB", "নিরাপদে শেখো, পরীক্ষা করো", "Your personal learning & security workspace.", "Practice area, learning paths and local sandbox tools will be built here.", "Explore learning paths", "Lab tools are not connected yet")
+                            GalaxyTab.LAB -> CyberLabScreen()
                             GalaxyTab.MEMORY -> MemoryVaultScreen()
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
                             GalaxyTab.VOICE -> VoiceStudioScreen()
@@ -661,6 +661,174 @@ private fun MemoryVaultScreen() {
             Text("Demo vault: temporary screen state only. Persistent storage, synced memory and AI recall are not connected.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun CyberLabScreen() {
+    var activeSection by remember { mutableStateOf("OVERVIEW") }
+    var selectedPath by remember { mutableStateOf("Cybersecurity Foundations") }
+    var completed by remember { mutableStateOf(setOf<String>()) }
+    var sandboxTarget by remember { mutableStateOf("Local practice environment") }
+    var sandboxStatus by remember { mutableStateOf("IDLE") }
+    val paths = listOf(
+        "Cybersecurity Foundations" to "Core concepts, ethics and safe security habits",
+        "Networking Basics" to "IP, DNS, ports and network fundamentals",
+        "Linux & Termux" to "Command line, files and system basics",
+        "Web Security Basics" to "HTTP, sessions and common web risks",
+        "Python for Security" to "Automation and defensive scripting"
+    )
+    val tools = listOf(
+        "Network Concepts" to "Learn IP addresses, ports and protocols",
+        "Password Safety" to "Understand passphrases and account protection",
+        "Log Explorer" to "Practice reading sample security logs",
+        "Hash Learning" to "Explore hashes with safe sample strings",
+        "HTTP Inspector" to "Understand requests and response headers",
+        "Linux Command Guide" to "Browse beginner command examples"
+    )
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("DEFENSIVE SECURITY WORKSPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.Bold)
+                Text("Cyber Lab", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                Text("শেখো, অনুশীলন করো, নিরাপদ থাকো।", color = Muted, fontSize = 11.sp)
+            }
+            Box(Modifier.size(45.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
+                Text("⌘", color = Cyan, fontSize = 24.sp)
+            }
+        }
+        Spacer(Modifier.height(15.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Brush.linearGradient(listOf(Color(0xFF1C3450), Panel))).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("LEARNING PROGRESS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("${completed.size} / ${paths.size} paths completed", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                Text("Progress is stored only while this screen remains active.", color = Muted, fontSize = 9.sp)
+            }
+            Box(Modifier.size(58.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
+                Text("${(completed.size * 100 / paths.size)}%", color = Cyan, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(Modifier.height(13.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Panel).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf("OVERVIEW", "PATHS", "SANDBOX", "TOOLS").forEach { section ->
+                val active = activeSection == section
+                Text(section, color = if (active) Color.White else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (active) Color(0xFF302A5B) else Color.Transparent).clickable { activeSection = section }.padding(vertical = 11.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        Spacer(Modifier.height(15.dp))
+        when (activeSection) {
+            "OVERVIEW" -> {
+                Text("WELCOME TO THE LAB", color = Cyan, fontSize = 9.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(9.dp))
+                Text("Build skills the safe way.", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("A guided workspace for defensive security, digital safety and practical fundamentals.", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
+                Spacer(Modifier.height(14.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                    listOf("LEARNING PATHS" to "5 guided tracks", "SAFE SANDBOX" to "Local demo only").forEach { item ->
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(Panel).padding(13.dp)) {
+                            Text("✧", color = Violet, fontSize = 20.sp)
+                            Spacer(Modifier.height(7.dp))
+                            Text(item.first, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                            Text(item.second, color = Muted, fontSize = 9.sp)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Text("CONTINUE LEARNING", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                paths.take(3).forEach { path ->
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).clickable { selectedPath = path.first; activeSection = "PATHS" }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(path.first, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                            Text(path.second, color = Muted, fontSize = 9.sp)
+                        }
+                        Text(if (completed.contains(path.first)) "DONE" else "OPEN  ›", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            "PATHS" -> {
+                Text("GUIDED LEARNING PATHS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(5.dp))
+                Text("Choose a track and mark it complete when you finish.", color = Muted, fontSize = 10.sp)
+                paths.forEach { path ->
+                    val done = completed.contains(path.first)
+                    Column(Modifier.fillMaxWidth().padding(top = 9.dp).clip(RoundedCornerShape(16.dp)).background(if (selectedPath == path.first) Color(0xFF222448) else Panel).clickable { selectedPath = path.first }.padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (done) "✓" else "◈", color = if (done) Cyan else Violet, fontSize = 19.sp)
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(path.first, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(path.second, color = Muted, fontSize = 9.sp)
+                            }
+                            Text(if (done) "DONE" else if (selectedPath == path.first) "SELECTED" else "OPEN", color = if (done) Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        }
+                        if (selectedPath == path.first) {
+                            Spacer(Modifier.height(10.dp))
+                            Text("Suggested lessons: Introduction • Key terms • Safe practice • Knowledge check", color = Color(0xFFD1D8EF), fontSize = 9.sp, lineHeight = 15.sp)
+                            Spacer(Modifier.height(8.dp))
+                            Text(if (done) "MARKED COMPLETE" else "MARK PATH COMPLETE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { completed = if (done) completed - path.first else completed + path.first }.padding(vertical = 6.dp))
+                        }
+                    }
+                }
+            }
+            "SANDBOX" -> {
+                Text("SAFE SANDBOX", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                Text("Practice without touching real systems.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("This is a visual simulator only. It does not run commands, scan networks or connect to external targets.", color = Muted, fontSize = 10.sp, lineHeight = 16.sp)
+                Spacer(Modifier.height(13.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Color(0xFF080D18)).padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("LOCAL LAB CONSOLE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text("● ${sandboxStatus}", color = if (sandboxStatus == "IDLE") Muted else Cyan, fontSize = 8.sp)
+                    }
+                    Spacer(Modifier.height(13.dp))
+                    Text("SELECT PRACTICE MODULE", color = Muted, fontSize = 8.sp)
+                    listOf("Local practice environment", "Sample log analysis", "HTTP request walkthrough").forEach { target ->
+                        Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(10.dp)).background(if (sandboxTarget == target) Color(0xFF20294A) else Panel).clickable { sandboxTarget = target; sandboxStatus = "IDLE" }.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(target, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                            Text(if (sandboxTarget == target) "●" else "○", color = Cyan, fontSize = 10.sp)
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text("> galaxy-lab --preview", color = Color(0xFF91A6C7), fontSize = 10.sp)
+                    Text("> module: ${sandboxTarget}", color = Color(0xFF91A6C7), fontSize = 10.sp)
+                    Text("> environment: isolated demo", color = Color(0xFF91A6C7), fontSize = 10.sp)
+                    Text("> status: ${sandboxStatus.lowercase()}", color = Cyan, fontSize = 10.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("RUN PREVIEW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Violet).clickable { sandboxStatus = "PREVIEW" }.padding(horizontal = 13.dp, vertical = 10.dp))
+                        Text("RESET", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Panel2).clickable { sandboxStatus = "IDLE" }.padding(horizontal = 13.dp, vertical = 10.dp))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("Safety boundary: no exploit payloads, credential attacks, unauthorized scanning or real target execution.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+            }
+            "TOOLS" -> {
+                Text("DEFENSIVE TOOLS DIRECTORY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(5.dp))
+                Text("Learning aids and safe sample-data utilities.", color = Muted, fontSize = 10.sp)
+                tools.forEach { tool ->
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.size(35.dp).clip(RoundedCornerShape(11.dp)).background(Panel2), contentAlignment = Alignment.Center) { Text("⌘", color = Cyan, fontSize = 17.sp) }
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(tool.first, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+                            Text(tool.second, color = Muted, fontSize = 8.sp)
+                        }
+                        Text("GUIDE", color = Violet, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("●", color = Cyan, fontSize = 9.sp)
+            Spacer(Modifier.width(8.dp))
+            Text("UI preview only • no live cyber operations or external connections.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+        }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
