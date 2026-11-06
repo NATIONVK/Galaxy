@@ -68,7 +68,7 @@ fun GalaxyApp() {
                             GalaxyTab.HOME -> HomeScreen(onOpen = { selected = it })
                             GalaxyTab.CHAT -> ChatScreen()
                             GalaxyTab.LAB -> FeatureScreen("CYBER LAB", "নিরাপদে শেখো, পরীক্ষা করো", "Your personal learning & security workspace.", "Practice area, learning paths and local sandbox tools will be built here.", "Explore learning paths", "Lab tools are not connected yet")
-                            GalaxyTab.MEMORY -> FeatureScreen("MEMORY VAULT", "তোমার জ্ঞান, এক জায়গায়", "A private space for saved context and notes.", "Memory controls, searchable notes and personal preferences will be added in a later phase.", "Open memory vault", "Memory storage is not active yet")
+                            GalaxyTab.MEMORY -> MemoryVaultScreen()
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
                             GalaxyTab.VOICE -> VoiceStudioScreen()
                             GalaxyTab.RESEARCH -> FeatureScreen("RESEARCH HUB", "Research & Data Analysis", "Turn questions into structured insights.", "Workspace layout for research projects, datasets, analysis tools, charts and saved reports. Data processing engine will be added later.", "Create research workspace", "Analysis engine not connected")
@@ -524,6 +524,143 @@ private fun VoiceStudioScreen() {
             Text("Speed preference: ${String.format("%.1f", speed)}× • demo only", color = Muted, fontSize = 9.sp)
         }
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable
+private fun MemoryVaultScreen() {
+    var selectedCategory by remember { mutableStateOf("ALL") }
+    var search by remember { mutableStateOf("") }
+    var noteDraft by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var showEditor by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf("") }
+    val categories = listOf("ALL", "NOTES", "IDEAS", "RESEARCH", "LEARNING")
+    val filtered = notes.filter { (category, content) ->
+        (selectedCategory == "ALL" || selectedCategory == category) && content.contains(search, ignoreCase = true)
+    }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("YOUR PERSONAL KNOWLEDGE SPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+                Text("Memory Vault", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Text("Notes, ideas and saved context — organized.", color = Muted, fontSize = 10.sp)
+            }
+            Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
+                Text("◈", color = Violet, fontSize = 23.sp)
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("⌕", color = Cyan, fontSize = 20.sp)
+            Spacer(Modifier.width(8.dp))
+            androidx.compose.foundation.text.BasicTextField(
+                value = search,
+                onValueChange = { search = it },
+                modifier = Modifier.weight(1f),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                decorationBox = { inner ->
+                    Box {
+                        if (search.isEmpty()) Text("Search your vault...", color = Muted, fontSize = 11.sp)
+                        inner()
+                    }
+                }
+            )
+            if (search.isNotEmpty()) Text("×", color = Muted, fontSize = 18.sp, modifier = Modifier.clickable { search = "" })
+        }
+        Spacer(Modifier.height(13.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            categories.forEach { category ->
+                val active = selectedCategory == category
+                Text(category, color = if (active) Color.White else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (active) Color(0xFF302A5B) else Panel).clickable { selectedCategory = category }.padding(horizontal = 10.dp, vertical = 9.dp))
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("YOUR COLLECTION", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+                Text("${filtered.size} local item(s)", color = Muted, fontSize = 9.sp)
+            }
+            Text("+ NEW NOTE", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Violet).clickable { showEditor = !showEditor }.padding(horizontal = 12.dp, vertical = 10.dp))
+        }
+        if (showEditor) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel2).padding(13.dp)) {
+                Text("CREATE LOCAL NOTE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("NOTES", "IDEAS", "RESEARCH", "LEARNING").forEach { category ->
+                        Text(category, color = if (selectedCategory == category) Cyan else Muted, fontSize = 7.sp,
+                            modifier = Modifier.clickable { selectedCategory = category }.padding(vertical = 4.dp))
+                    }
+                }
+                androidx.compose.foundation.text.BasicTextField(
+                    value = noteDraft,
+                    onValueChange = { noteDraft = it },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 65.dp).padding(vertical = 8.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp, lineHeight = 17.sp),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                    decorationBox = { inner ->
+                        Box {
+                            if (noteDraft.isEmpty()) Text("Write a thought, idea or learning note...", color = Muted, fontSize = 10.sp)
+                            inner()
+                        }
+                    }
+                )
+                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                    Text("CANCEL", color = Muted, fontSize = 9.sp, modifier = Modifier.clickable { showEditor = false; noteDraft = "" }.padding(8.dp))
+                    Text("SAVE NOTE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
+                        val body = noteDraft.trim()
+                        if (body.isNotEmpty()) {
+                            val category = if (selectedCategory in categories.drop(1)) selectedCategory else "NOTES"
+                            notes = listOf(category to body) + notes
+                            noteDraft = ""
+                            showEditor = false
+                            selectedCategory = "ALL"
+                            notice = "Note saved in this screen's temporary state."
+                        }
+                    }.padding(8.dp))
+                }
+            }
+        }
+        if (notice.isNotBlank()) {
+            Text(notice, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 7.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        if (filtered.isEmpty()) {
+            Column(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Brush.radialGradient(listOf(Color(0xFF25234D), Panel, Space))).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Text("◈", color = Violet, fontSize = 58.sp)
+                Spacer(Modifier.height(12.dp))
+                Text(if (search.isEmpty()) "Your vault is waiting" else "No matching memories", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(6.dp))
+                Text(if (search.isEmpty()) "Create a note to start collecting your knowledge. Your notes are currently temporary and will reset when this screen is recreated." else "Try another keyword or category.", color = Muted, fontSize = 10.sp, lineHeight = 16.sp)
+            }
+        } else {
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                filtered.forEach { item ->
+                    Column(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(item.first, color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+                            Text("LOCAL", color = Muted, fontSize = 7.sp)
+                            Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.clickable { notes = notes - item }.padding(start = 8.dp))
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(item.second, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("●", color = Cyan, fontSize = 9.sp)
+            Spacer(Modifier.width(8.dp))
+            Text("Demo vault: temporary screen state only. Persistent storage, synced memory and AI recall are not connected.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+        }
+        Spacer(Modifier.height(4.dp))
     }
 }
 
