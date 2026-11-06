@@ -53,6 +53,7 @@ class GalaxyVoiceWakeService : Service() {
             return START_STICKY
         }
         stopped = false
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", true).apply()
         startForeground(NOTIFICATION_ID, buildNotification("Galaxy is active • say Hey Galaxy"))
         startRecognition()
         return START_STICKY
@@ -182,6 +183,18 @@ class GalaxyVoiceWakeService : Service() {
 
         wakeArmed = false
         handler.removeCallbacks(wakeTimeout)
+        val shutdownText = command.lowercase(Locale.ROOT).trim()
+        val shutdownPhrases = listOf(
+            "shutdown your system", "shut down your system",
+            "shutdown galaxy", "shut down galaxy",
+            "shutdown", "shut down",
+            "বন্ধ কর", "বন্ধ হয়ে যাও", "বন্ধ হয়ে যাও", "সব বন্ধ"
+        )
+        if (shutdownPhrases.any { shutdownText.contains(it) }) {
+            updateNotification("Galaxy is shutting down…")
+            stopAssistant()
+            return
+        }
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
                 requestSettingsConfirmation("Wi-Fi", Intent("android.settings.panel.action.WIFI"))
@@ -276,6 +289,7 @@ class GalaxyVoiceWakeService : Service() {
 
     private fun stopAssistant() {
         stopped = true
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", false).apply()
         handler.removeCallbacksAndMessages(null)
         isListening = false
         try { recognizer?.cancel() } catch (_: Exception) { }
@@ -291,6 +305,7 @@ class GalaxyVoiceWakeService : Service() {
 
     override fun onDestroy() {
         stopped = true
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", false).apply()
         handler.removeCallbacksAndMessages(null)
         recognizer?.destroy()
         recognizer = null
