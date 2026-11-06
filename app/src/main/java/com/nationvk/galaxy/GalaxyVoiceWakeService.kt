@@ -246,8 +246,9 @@ class GalaxyVoiceWakeService : Service() {
                 requestSettingsConfirmation("Open YouTube", launch)
             }
             else -> {
-                updateNotification("Command received: $command • more actions coming soon")
-                tts?.speak("এই কাজটি এখনো শেখানো হয়নি।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-unsupported")
+                GalaxyVoiceHistory.add(this, command, "Unsupported command")
+                updateNotification("Command not supported yet • $command".take(180))
+                tts?.speak("এই কমান্ডটি এখনো সমর্থিত নয়। Voice Studio-তে supported command দেখে আবার বলো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-unsupported")
             }
         }
     }
@@ -313,7 +314,41 @@ class GalaxyVoiceWakeService : Service() {
             GalaxyVoiceHistory.add(this, command, "Recalled local memories")
             return true
         }
-        val searchPrefix = listOf("find memory ", "search memory ", "find my ", "খুঁজে দে ", "খুঁজে দাও ", "আগের ")
+        val categoryRequests = listOf(
+            Triple("show project memories", "PROJECT", "প্রজেক্ট"),
+            Triple("show my projects", "PROJECT", "প্রজেক্ট"),
+            Triple("show tasks", "TASK", "টাস্ক"),
+            Triple("show my tasks", "TASK", "টাস্ক"),
+            Triple("show research notes", "RESEARCH", "রিসার্চ"),
+            Triple("show personal memories", "PERSONAL", "ব্যক্তিগত"),
+            Triple("প্রজেক্টগুলো দেখাও", "PROJECT", "প্রজেক্ট"),
+            Triple("আমার প্রজেক্ট দেখাও", "PROJECT", "প্রজেক্ট"),
+            Triple("আমার কাজগুলো দেখাও", "TASK", "টাস্ক"),
+            Triple("টাস্ক দেখাও", "TASK", "টাস্ক"),
+            Triple("রিসার্চ নোট দেখাও", "RESEARCH", "রিসার্চ"),
+            Triple("ব্যক্তিগত তথ্য দেখাও", "PERSONAL", "ব্যক্তিগত")
+        )
+        val categoryRequest = categoryRequests.firstOrNull { lower == it.first }
+        if (categoryRequest != null) {
+            val entries = GalaxyMemoryStore.search(this, "", categoryRequest.second, 6)
+            val response = if (entries.isEmpty()) "এখনো কোনো " + categoryRequest.third + " memory save করা নেই।"
+                else entries.joinToString(". ") { it.content }
+            speakMemory(response, if (entries.isEmpty()) "No " + categoryRequest.second.lowercase() + " memories" else entries.size.toString() + " " + categoryRequest.second.lowercase() + " memories")
+            GalaxyVoiceHistory.add(this, command, "Category recall: " + categoryRequest.second + " (" + entries.size + ")")
+            return true
+        }
+        if (lower == "show recent memories" || lower == "recent memories" ||
+            lower == "সাম্প্রতিক মেমোরি দেখাও" || lower == "সাম্প্রতিক তথ্য দেখাও") {
+            val entries = GalaxyMemoryStore.recent(this, 6)
+            val response = if (entries.isEmpty()) "এখনো কোনো memory save করা নেই।"
+                else entries.joinToString(". ") { it.content }
+            speakMemory(response, "Recent memories: " + entries.size)
+            GalaxyVoiceHistory.add(this, command, "Recent memory recall (" + entries.size + ")")
+            return true
+        }
+
+        val searchPrefix = listOf("find memory ", "search memory ", "search my memory for ", "find my ", "look up ",
+            "খুঁজে দে ", "খুঁজে দাও ", "মেমোরিতে খোঁজ ", "মেমোরি খুঁজে দাও ", "আগের ")
             .firstOrNull { lower.startsWith(it) }
         if (searchPrefix != null) {
             val matches = GalaxyMemoryStore.search(this, command.drop(searchPrefix.length).trim(), limit = 5)
