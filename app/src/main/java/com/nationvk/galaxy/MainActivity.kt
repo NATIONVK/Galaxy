@@ -688,9 +688,9 @@ private fun MemoryVaultScreen() {
                     ?: throw IllegalStateException("ফাইলটি পড়া যায়নি।")
                 val result = GalaxyMemoryStore.importJson(context, json)
                 notes = GalaxyMemoryStore.getAll(context)
-                notice = "Import complete: \${result.imported} added, \${result.skippedDuplicates} duplicates skipped, \${result.rejected} invalid skipped."
+                notice = "Import complete: ${result.imported} added, ${result.skippedDuplicates} duplicates skipped, ${result.rejected} invalid skipped."
             } catch (error: Exception) {
-                notice = "Import failed: \${error.message ?: "Unknown error"}"
+                notice = "Import failed: ${error.message ?: "Unknown error"}"
             }
         }
     }
@@ -702,7 +702,7 @@ private fun MemoryVaultScreen() {
                     ?: throw IllegalStateException("ফাইলে লেখা যায়নি।")
                 notice = "Backup file saved successfully."
             } catch (error: Exception) {
-                notice = "Export failed: \${error.message ?: "Unknown error"}"
+                notice = "Export failed: ${error.message ?: "Unknown error"}"
             }
         }
     }
