@@ -14,6 +14,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
 import androidx.core.app.NotificationCompat
 import java.util.Locale
 
@@ -30,10 +31,15 @@ class GalaxyVoiceWakeService : Service() {
     private var isListening = false
     private var stopped = false
     private var restartQueued = false
+    private var wakeArmed = false
+    private var tts: TextToSpeech? = null
 
     override fun onCreate() {
         super.onCreate()
         createChannel()
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) tts?.language = Locale("bn", "BD")
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -147,30 +153,55 @@ class GalaxyVoiceWakeService : Service() {
 
     private fun processPhrase(text: String) {
         if (text.isBlank()) return
-        if (!isWakePhrase(text)) return
-        val command = text.lowercase(Locale.ROOT)
-            .replace("hey galaxy", "")
-            .replace("হেই গ্যালাক্সি", "")
-            .replace("হে গ্যালাক্সি", "")
-            .trim()
+        val hasWakePhrase = isWakePhrase(text)
+        val command = if (hasWakePhrase) {
+            text.lowercase(Locale.ROOT)
+                .replace("hey galaxy", "")
+                .replace("হেই গ্যালাক্সি", "")
+                .replace("হে গ্যালাক্সি", "")
+                .trim()
+        } else if (wakeArmed) {
+            text.trim()
+        } else {
+            return
+        }
+
+        if (hasWakePhrase && command.isBlank()) {
+            wakeArmed = true
+            updateNotification("Galaxy is ready • বলো, কী করতে হবে?")
+            tts?.speak("জি, বলো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-ready")
+            handler.removeCallbacks(wakeTimeout)
+            handler.postDelayed(wakeTimeout, 8000)
+            return
+        }
+
+        wakeArmed = false
+        handler.removeCallbacks(wakeTimeout)
         when {
-            command.contains("wifi") || command.contains("wi-fi") || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
+            command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
                 showActionNotification("Galaxy heard: Wi-Fi settings", Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
             }
-            command.contains("bluetooth") || command.contains("ব্লুটুথ") -> {
+            command.contains("bluetooth", true) || command.contains("ব্লুটুথ") -> {
                 showActionNotification("Galaxy heard: Bluetooth settings", Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS))
             }
-            command.contains("settings") || command.contains("সেটিংস") -> {
+            command.contains("settings", true) || command.contains("সেটিংস") -> {
                 showActionNotification("Galaxy heard: Settings", Intent(android.provider.Settings.ACTION_SETTINGS))
             }
-            command.contains("youtube") || command.contains("ইউটিউব") -> {
+            command.contains("youtube", true) || command.contains("ইউটিউব") -> {
                 val launch = packageManager.getLaunchIntentForPackage("com.google.android.youtube")
                     ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
                 showActionNotification("Galaxy heard: Open YouTube", launch)
             }
-            command.isBlank() -> updateNotification("Hey Galaxy detected • say your command")
-            else -> updateNotification("Hey Galaxy detected • command heard: $command • open Galaxy")
+            else -> {
+                updateNotification("Command received: $command • more actions coming soon")
+                tts?.speak("এই কাজটি এখনো শেখানো হয়নি।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-unsupported")
+            }
         }
+    }
+
+    private val wakeTimeout = Runnable {
+        wakeArmed = false
+        if (!stopped) updateNotification("Listening in background • say Hey Galaxy")
     }
 
     private fun showActionNotification(message: String, actionIntent: Intent) {
@@ -204,6 +235,10 @@ class GalaxyVoiceWakeService : Service() {
         try { recognizer?.cancel() } catch (_: Exception) { }
         recognizer?.destroy()
         recognizer = null
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
+        wakeArmed = false
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -213,6 +248,9 @@ class GalaxyVoiceWakeService : Service() {
         handler.removeCallbacksAndMessages(null)
         recognizer?.destroy()
         recognizer = null
+        tts?.stop()
+        tts?.shutdown()
+        tts = null
         super.onDestroy()
     }
 
