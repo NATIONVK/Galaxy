@@ -1,38 +1,100 @@
-# PROJECT GALAXY AI 🌌
-
-An Android-first, bilingual (বাংলা + English) personal AI assistant project by **NATIONVK**.
-
-## Vision
-A personal assistant combining conversational AI, voice interaction, long-term memory, camera understanding, web research, model switching, data analysis, and permission-based Android automation.
-
-## Current status
-**Stage 0 — Repository initialized.** This repository currently contains the project foundation and setup notes. AI providers, Firebase services, native automation, and production APK packaging still require implementation and configuration.
-
-## Planned modules
-- Cosmic Universe home experience
-- AI chat and multi-model provider layer
-- Voice input/output
-- User-controlled long-term memory
-- Camera and image understanding
-- Web search and news
-- Research and data analysis workspace
-- Programming and defensive cybersecurity lab
-- Android automation with explicit permissions and confirmation
-- Settings, privacy controls, and chat history
-
-## Technology direction
-- Kotlin
-- Android Jetpack Compose
-- Gradle Kotlin DSL
-- Firebase integration (to be configured)
-- Secure backend proxy for model API keys
-
-## Build
-Open this project in Android Studio after the Android Gradle project files are added. Never commit API keys, Firebase service secrets, signing keys, or personal credentials.
-
-## Safety and privacy
-Device actions must be permission-gated, transparent, and user-confirmed where appropriate. Memory must be reviewable and deletable by the user. Cybersecurity tools are intended for authorized, defensive learning only.
+<div align="center">
+  <img src="assets/galaxy-banner.svg" alt="Project Galaxy AI animated cosmic banner" width="100%" />
+  <h1>🌌 PROJECT GALAXY AI</h1>
+  <p><strong>Your personal AI universe — বাংলা + English</strong></p>
+  <p>
+    <a href="https://github.com/NATIONVK/Galaxy"><img alt="Repository" src="https://img.shields.io/badge/GitHub-NATIONVK%2FGalaxy-111827?style=for-the-badge&logo=github"></a>
+    <img alt="Platform" src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android&logoColor=white">
+    <img alt="Language" src="https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white">
+    <img alt="Status" src="https://img.shields.io/badge/Status-In%20Development-00B8D9?style=for-the-badge">
+  </p>
+  <h3>✨ An assistant that grows with you.</h3>
+  <p>Explore the <a href="docs/galaxy-visual.html">animated Galaxy experience</a> (HTML + CSS).</p>
+</div>
 
 ---
-**Author:** NATIONVK  
-**Project:** PROJECT GALAXY AI
+
+## 🚀 About Galaxy
+
+**Galaxy AI** is an Android-first personal assistant project by **NATIONVK**, designed to bring voice interaction, personal memory, AI-powered workflows and creative tools into one evolving mobile experience.
+
+Our goal is to build a bilingual assistant that feels natural to use, keeps the user in control, and grows through modular updates.
+
+## 🧠 Project modules
+
+| Module | Purpose | Development direction |
+|---|---|---|
+| 🌌 Cosmic Home | Main Galaxy experience | Interactive assistant workspace |
+| 🎙️ Voice Engine | Speech input and spoken responses | Background voice, Bangla recognition, selectable voice |
+| 🧩 Memory Vault | Personal notes and remembered information | Local storage, edit, search, import/export |
+| 🕳️ Black Hole | Dedicated visual/settings experience | Independent controls inside Settings |
+| 🤖 AI Core | Conversational intelligence | Provider integration and smart model routing |
+| 🔬 Research Lab | Learning, data analysis and research | Statistics, coding and research tools |
+| 🛡️ Security | Privacy and device permissions | Transparent, permission-based controls |
+
+## ✅ Current implementation snapshot
+
+- Android app foundation built with **Kotlin** and **Jetpack Compose**.
+- Local Memory Vault with memory management and JSON import/export.
+- Voice assistant service foundation with foreground notification and speech recognition.
+- Voice preferences and dedicated Black Hole settings area.
+- Ongoing work on consistent background voice responses and natural Bangladeshi/Indian Bengali female TTS voice support.
+
+> **Development note:** Features are actively evolving. Background listening depends on Android microphone permission, foreground-service rules, device battery settings and an available speech/TTS engine. A Bangladeshi female voice is available only when the device's installed speech engine provides one; otherwise a supported Bengali voice is used as fallback. Force-stopping the app prevents background listening.
+
+## 🛠️ Technology
+
+- **Kotlin** — Android application logic
+- **Jetpack Compose** — UI
+- **Gradle Kotlin DSL** — build system
+- **Android Speech APIs** — speech recognition and text-to-speech
+- **Firebase** — planned integration; configure securely when enabled
+
+## 📦 Build the Android app
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/NATIONVK/Galaxy.git
+   ```
+2. Open the project in Android Studio.
+3. Allow Gradle to sync and install the required Android SDK.
+4. Build and run the app on an Android device.
+
+Build configuration and device compatibility may change during development. An APK should be considered release-ready only after a successful build and real-device testing.
+
+## 🔐 Privacy & security
+
+- Keep API keys, Firebase secrets, signing keys and personal credentials out of Git.
+- Request Android permissions only when the related feature is used.
+- Make background microphone use visible and controllable.
+- Keep personal memory reviewable and deletable by the user.
+- Device actions must be permission-gated and confirmed where appropriate.
+- Cybersecurity learning features are intended for authorized, defensive use only.
+
+## 🗺️ Roadmap
+
+- [x] Android foundation and core UI
+- [x] Local Memory Vault foundation
+- [x] Foreground voice-service foundation
+- [ ] Reliable background voice response
+- [ ] Consistent male/female voice selection across app and service
+- [ ] Natural Bangladeshi Bengali female voice with supported fallback
+- [ ] AI provider integration and intelligent model selection
+- [ ] Expanded creative, research and analysis workspace
+- [ ] Security, performance and device testing
+- [ ] Production APK release
+
+## 👨‍🚀 Project identity
+
+<div align="center">
+  <h3>🌠 FIND YOUR OWN PATH</h3>
+  <p><strong>AUTHOR: YEASIEN AHMED</strong></p>
+  <p><strong>GITHUB: <a href="https://github.com/NATIONVK">NATIONVK</a></strong></p>
+  <p>Built with curiosity, code and a little cosmic ambition.</p>
+</div>
+
+---
+
+<div align="center">
+  <sub>PROJECT GALAXY AI · NATIONVK · Made for exploration</sub>
+</div>
