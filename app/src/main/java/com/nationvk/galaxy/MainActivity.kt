@@ -915,6 +915,15 @@ private fun CyberLabScreen() {
     var completed by remember { mutableStateOf(setOf<String>()) }
     var sandboxTarget by remember { mutableStateOf("Local practice environment") }
     var sandboxStatus by remember { mutableStateOf("IDLE") }
+    var selectedTool by remember { mutableStateOf("Network Concepts") }
+    val toolGuides = mapOf(
+        "Network Concepts" to "An IP address identifies a host on a network. A port identifies a service endpoint. TCP provides an ordered, reliable byte stream; UDP sends independent datagrams with lower protocol overhead. Practice: explain why a web server commonly listens on port 443.",
+        "Password Safety" to "Use a unique passphrase for every account and store it in a reputable password manager. Turn on multi-factor authentication, prefer phishing-resistant methods when available, and never share one-time codes. Practice: identify why reusing one password creates a chain-reaction risk.",
+        "Log Explorer" to "Read logs by timestamp, source, event type and outcome. Establish a normal baseline before investigating anomalies. Repeated failed logins, unusual time windows and unexpected privilege changes are signals to review—not proof of compromise. Practice: group events by source and time.",
+        "Hash Learning" to "A cryptographic hash maps input data to a fixed-length digest. Secure hashes are designed to make it impractical to recover the input or find collisions. Hashes are not encryption and cannot be decrypted. Password storage should use a password-hashing scheme such as Argon2id, scrypt or bcrypt with unique salts.",
+        "HTTP Inspector" to "HTTP requests contain a method, path, headers and sometimes a body. Responses contain a status code, headers and an optional body. HTTPS protects HTTP traffic in transit using TLS. Practice: compare GET and POST and explain why status 401 differs from 403.",
+        "Linux Command Guide" to "Start with safe navigation and inspection: pwd shows the current directory, ls lists files, cd changes directory, cat displays text and grep searches text. Understand paths and permissions before using commands that modify or delete files."
+    )
     val paths = listOf(
         "Cybersecurity Foundations" to "Core concepts, ethics and safe security habits",
         "Networking Basics" to "IP, DNS, ports and network fundamentals",
@@ -1054,15 +1063,25 @@ private fun CyberLabScreen() {
                 Spacer(Modifier.height(5.dp))
                 Text("Learning aids and safe sample-data utilities.", color = Muted, fontSize = 10.sp)
                 tools.forEach { tool ->
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(if (selectedTool == tool.first) Color(0xFF25294F) else Panel).semantics { role = Role.Button }.clickable { selectedTool = tool.first }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(35.dp).clip(RoundedCornerShape(11.dp)).background(Panel2), contentAlignment = Alignment.Center) { Text("⌘", color = Cyan, fontSize = 17.sp) }
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(tool.first, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                             Text(tool.second, color = Muted, fontSize = 10.sp)
                         }
-                        Text("GUIDE", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(if (selectedTool == tool.first) "OPEN" else "GUIDE", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
+                }
+                Spacer(Modifier.height(13.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFF101A2B)).padding(14.dp)) {
+                    Text("LEARNING GUIDE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(7.dp))
+                    Text(selectedTool, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(7.dp))
+                    Text(toolGuides[selectedTool] ?: "Choose a guide to begin.", color = Color(0xFFD5DDF1), fontSize = 11.sp, lineHeight = 18.sp)
+                    Spacer(Modifier.height(10.dp))
+                    Text("SAFE PRACTICE • CONCEPTS ONLY", color = Color(0xFF8BE0B5), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
