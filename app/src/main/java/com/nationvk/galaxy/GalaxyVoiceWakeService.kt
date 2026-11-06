@@ -227,12 +227,17 @@ class GalaxyVoiceWakeService : Service() {
             Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CANCEL_PENDING),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val appIntent = PendingIntent.getActivity(
+            this, 4113, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentTitle("Galaxy needs your confirmation")
             .setContentText("$label settings খুলব? Confirm চাপলে Android page খুলবে।")
-            .setContentIntent(confirmIntent)
+            .setContentIntent(appIntent)
             .setOngoing(true)
+            .setAutoCancel(false)
             .addAction(android.R.drawable.ic_menu_view, "Confirm • Open", confirmIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelIntent)
             .build()
