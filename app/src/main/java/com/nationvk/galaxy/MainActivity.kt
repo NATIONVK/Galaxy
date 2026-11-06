@@ -457,8 +457,10 @@ private fun VoiceStudioScreen() {
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
     val recognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) status = "Microphone permission granted. Tap Start Listening."
-        else status = "Microphone permission denied."
+        if (granted) {
+            status = "Microphone permission granted. Starting background listener…"
+            ContextCompat.startForegroundService(context, Intent(context, GalaxyVoiceWakeService::class.java))
+        } else status = "Microphone permission denied."
     }
 
     DisposableEffect(context) {
@@ -618,6 +620,25 @@ private fun VoiceStudioScreen() {
                 }.padding(horizontal = 18.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("STOP", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Color(0xFF173B45)).heightIn(min = 54.dp).semantics { role = Role.Button }.clickable {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    ContextCompat.startForegroundService(context, Intent(context, GalaxyVoiceWakeService::class.java))
+                    status = "Background listening enabled. You can switch apps and say Hey Galaxy."
+                } else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            }.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("START BACKGROUND", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                Text("Across apps • persistent notification", color = Color(0xFFB8D8E8), fontSize = 9.sp)
+            }
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Color(0xFF542B3A)).heightIn(min = 54.dp).semantics { role = Role.Button }.clickable {
+                context.startService(Intent(context, GalaxyVoiceWakeService::class.java).setAction(GalaxyVoiceWakeService.ACTION_STOP))
+                status = "Background listening stopped"
+            }.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("STOP BACKGROUND", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                Text("Microphone released", color = Color(0xFFE8B8C8), fontSize = 9.sp)
             }
         }
         Spacer(Modifier.height(16.dp))
