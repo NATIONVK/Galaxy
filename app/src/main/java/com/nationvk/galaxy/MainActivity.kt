@@ -19,6 +19,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -179,9 +183,18 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
     var intensity by remember { mutableFloatStateOf(1.0f) }
     var particles by remember { mutableFloatStateOf(0.65f) }
     var glView by remember { mutableStateOf<GalaxyGLSurfaceView?>(null) }
+    var panOffset by remember { mutableStateOf(Offset.Zero) }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize()
+                .graphicsLayer { translationX = panOffset.x; translationY = panOffset.y }
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoomChange, _ ->
+                        zoom = (zoom * zoomChange).coerceIn(0.7f, 1.8f)
+                        panOffset += pan
+                        glView?.updateVisuals(zoom, speed, intensity, particles)
+                    }
+                },
             factory = { context -> GalaxyGLSurfaceView(context).also { glView = it } },
             update = { it.updateVisuals(zoom, speed, intensity, particles) }
         )
@@ -196,6 +209,7 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color(0xCC080B1B)).padding(15.dp)) {
                 Text("THE SINGULARITY", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
                 Text("LIVE VISUAL CONTROLS", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp)
+                Text("Pinch to zoom · Drag to move", color = Muted, fontSize = 10.sp)
                 Spacer(Modifier.height(8.dp))
                 Text("Zoom  ${String.format("%.1f", zoom)}×", color = Color.White, fontSize = 11.sp)
                 Slider(value = zoom, onValueChange = { zoom = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.7f..1.8f)
