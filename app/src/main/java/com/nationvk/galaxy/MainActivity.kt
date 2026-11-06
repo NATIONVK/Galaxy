@@ -896,6 +896,7 @@ private fun MemoryVaultScreen() {
     var noteDraft by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf(GalaxyMemoryStore.getAll(context)) }
     var showEditor by remember { mutableStateOf(false) }
+    var editingMemoryId by remember { mutableStateOf<Long?>(null) }
     var notice by remember { mutableStateOf("") }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -989,12 +990,17 @@ private fun MemoryVaultScreen() {
                 Text("${filtered.size} item(s) • persistent local storage", color = Muted, fontSize = 10.sp)
             }
             Text("+ ADD", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Violet).clickable { showEditor = !showEditor }.padding(horizontal = 14.dp, vertical = 11.dp))
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Violet).clickable {
+                    editingMemoryId = null
+                    noteDraft = ""
+                    selectedCategory = "NOTES"
+                    showEditor = true
+                }.padding(horizontal = 14.dp, vertical = 11.dp))
         }
         if (showEditor) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel2).padding(13.dp)) {
-                Text("SAVE A MEMORY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text(if (editingMemoryId == null) "SAVE A MEMORY" else "EDIT MEMORY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     categories.drop(1).forEach { category ->
@@ -1010,15 +1016,30 @@ private fun MemoryVaultScreen() {
                     decorationBox = { inner -> Box { if (noteDraft.isEmpty()) Text("কোনো তথ্য, নির্দেশনা, project update বা task লিখে রাখ...", color = Muted, fontSize = 10.sp); inner() } }
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    Text("CANCEL", color = Muted, modifier = Modifier.clickable { showEditor = false; noteDraft = "" }.padding(9.dp))
-                    Text("SAVE MEMORY", color = Cyan, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
+                    Text("CANCEL", color = Muted, modifier = Modifier.clickable {
+                        showEditor = false; noteDraft = ""; editingMemoryId = null; selectedCategory = "ALL"
+                    }.padding(9.dp))
+                    Text(if (editingMemoryId == null) "SAVE MEMORY" else "UPDATE MEMORY", color = Cyan, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
                         val body = noteDraft.trim()
+                        val category = if (selectedCategory in categories.drop(1)) selectedCategory else "NOTES"
+                        val editingId = editingMemoryId
                         if (body.isNotEmpty()) {
-                            val category = if (selectedCategory in categories.drop(1)) selectedCategory else "NOTES"
-                            GalaxyMemoryStore.add(context, category, body)
-                            notes = GalaxyMemoryStore.getAll(context)
-                            noteDraft = ""; showEditor = false; selectedCategory = "ALL"
-                            notice = "Memory saved permanently on this device."
+                            val duplicate = GalaxyMemoryStore.isDuplicate(context, category, body, editingId)
+                            if (duplicate) {
+                                notice = "এই category-তে একই memory আগে থেকেই আছে। Duplicate save করা হয়নি।"
+                            } else {
+                                val saved = if (editingId == null) GalaxyMemoryStore.add(context, category, body)
+                                    else GalaxyMemoryStore.update(context, editingId, category, body)
+                                if (saved) {
+                                    notes = GalaxyMemoryStore.getAll(context)
+                                    noteDraft = ""; showEditor = false; editingMemoryId = null; selectedCategory = "ALL"
+                                    notice = if (editingId == null) "Memory saved on this device." else "Memory updated successfully."
+                                } else {
+                                    notice = "Memory save করা যায়নি। আবার চেষ্টা কর।"
+                                }
+                            }
+                        } else {
+                            notice = "Memory খালি রাখা যাবে না।"
                         }
                     }.padding(9.dp))
                 }
@@ -1038,10 +1059,20 @@ private fun MemoryVaultScreen() {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(item.category, color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                         Text("LOCAL", color = Muted, fontSize = 9.sp)
+                        Text(" EDIT ", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                editingMemoryId = item.id
+                                selectedCategory = item.category
+                                noteDraft = item.content
+                                showEditor = true
+                            }.padding(start = 8.dp))
                         Text("  ×", color = Color(0xFFFFA7B8), fontSize = 16.sp,
                             modifier = Modifier.clickable {
                                 GalaxyMemoryStore.delete(context, item.id)
                                 notes = GalaxyMemoryStore.getAll(context)
+                                if (editingMemoryId == item.id) {
+                                    editingMemoryId = null; showEditor = false; noteDraft = ""
+                                }
                             }.padding(start = 8.dp))
                     }
                     Spacer(Modifier.height(6.dp))
