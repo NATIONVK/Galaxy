@@ -15,6 +15,14 @@ class GalaxyGLSurfaceView @JvmOverloads constructor(
 ) : GLSurfaceView(context, attrs) {
     private val galaxyRenderer = BlackHoleRenderer()
 
+    fun updateVisuals(zoom: Float, speed: Float, intensity: Float, particles: Float) {
+        galaxyRenderer.zoom = zoom
+        galaxyRenderer.speed = speed
+        galaxyRenderer.intensity = intensity
+        galaxyRenderer.particleDensity = particles
+        requestRender()
+    }
+
     init {
         setEGLContextClientVersion(2)
         setRenderer(galaxyRenderer)
@@ -38,6 +46,14 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
     private var timeLocation = 0
     private var surfaceWidth = 1
     private var surfaceHeight = 1
+    @Volatile var zoom = 1.0f
+    @Volatile var speed = 1.0f
+    @Volatile var intensity = 1.0f
+    @Volatile var particleDensity = 1.0f
+    private var zoomLocation = 0
+    private var speedLocation = 0
+    private var intensityLocation = 0
+    private var particleLocation = 0
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.008f, 0.008f, 0.025f, 1f)
@@ -47,6 +63,10 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
         program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
         resolutionLocation = GLES20.glGetUniformLocation(program, "uResolution")
         timeLocation = GLES20.glGetUniformLocation(program, "uTime")
+        zoomLocation = GLES20.glGetUniformLocation(program, "uZoom")
+        speedLocation = GLES20.glGetUniformLocation(program, "uSpeed")
+        intensityLocation = GLES20.glGetUniformLocation(program, "uIntensity")
+        particleLocation = GLES20.glGetUniformLocation(program, "uParticles")
         startedAt = System.nanoTime()
     }
 
@@ -63,6 +83,10 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform2f(resolutionLocation, surfaceWidth.toFloat(), surfaceHeight.toFloat())
         val elapsed = (System.nanoTime() - startedAt) / 1_000_000_000f
         GLES20.glUniform1f(timeLocation, elapsed)
+        GLES20.glUniform1f(zoomLocation, zoom)
+        GLES20.glUniform1f(speedLocation, speed)
+        GLES20.glUniform1f(intensityLocation, intensity)
+        GLES20.glUniform1f(particleLocation, particleDensity)
         val position = GLES20.glGetAttribLocation(program, "aPosition")
         GLES20.glEnableVertexAttribArray(position)
         GLES20.glVertexAttribPointer(position, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
@@ -117,6 +141,10 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
             varying vec2 vUv;
             uniform vec2 uResolution;
             uniform float uTime;
+            uniform float uZoom;
+            uniform float uSpeed;
+            uniform float uIntensity;
+            uniform float uParticles;
 
             float hash(vec2 p) {
                 return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -130,8 +158,8 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
             }
 
             void main() {
-                vec2 uv = (vUv - 0.5) * vec2(uResolution.x/uResolution.y, 1.0);
-                float t = uTime * 0.30;
+                vec2 uv = (vUv - 0.5) * vec2(uResolution.x/uResolution.y, 1.0) / max(uZoom, 0.5);
+                float t = uTime * 0.30 * uSpeed;
                 float r = length(uv);
                 float a = atan(uv.y, uv.x);
 
@@ -141,7 +169,7 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
                 float stars = step(0.9965, starSeed);
                 float twinkle = 0.55 + 0.45*sin(uTime*2.2 + starSeed*90.0);
                 vec3 col = vec3(0.004, 0.006, 0.022);
-                col += stars * twinkle * vec3(0.45,0.66,1.0);
+                col += stars * twinkle * vec3(0.45,0.66,1.0) * uIntensity;
 
                 // Gravitationally warped background and a soft outer corona.
                 float bend = 0.075 / max(r, 0.06);
@@ -163,10 +191,11 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
                 float brightness = ring * inner * outer * (0.34 + 0.72*turbulence + 0.22*spiral);
                 vec3 hot = mix(vec3(0.30,0.08,0.92), vec3(0.08,0.72,1.0), 0.5+0.5*sin(angle-t));
                 hot = mix(hot, vec3(1.0,0.67,0.35), pow(max(0.0,cos(angle-t*0.9)), 5.0)*0.72);
-                col += hot * brightness * 2.45;
+                col += hot * brightness * 2.45 * uIntensity;
 
                 // Orbiting luminous knots and animated particle streaks.
-                for (int i=0; i<7; i++) {
+                for (int i=0; i<12; i++) {
+                    if (float(i) > uParticles * 12.0) continue;
                     float fi = float(i);
                     float orbitA = t*(0.35+fi*0.025) + fi*0.897;
                     float orbitR = 0.27 + 0.018*sin(t*1.4+fi*2.0);
@@ -178,7 +207,7 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
                 // Bright photon ring, pulsing halo and deep event horizon.
                 float pulse = 0.82 + 0.18*sin(uTime*2.0);
                 float photon = exp(-pow((r-0.165)*150.0, 2.0));
-                col += vec3(0.42,0.76,1.0)*photon*pulse*1.15;
+                col += vec3(0.42,0.76,1.0)*photon*pulse*1.15*uIntensity;
                 float horizon = smoothstep(0.153, 0.177, r);
                 col *= horizon;
                 float halo = exp(-pow((r-0.205)*11.0,2.0));
