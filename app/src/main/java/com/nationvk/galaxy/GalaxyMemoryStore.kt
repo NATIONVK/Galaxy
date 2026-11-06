@@ -38,9 +38,26 @@ object GalaxyMemoryStore {
         val clean = content.trim().take(10000)
         if (clean.isEmpty()) return false
         val entries = getAll(context).toMutableList()
-        entries.add(0, GalaxyMemoryEntry(System.currentTimeMillis(), category.take(24), clean, System.currentTimeMillis()))
+        val nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
+        entries.add(0, GalaxyMemoryEntry(nextId, category.take(24), clean, System.currentTimeMillis()))
         return save(context, entries.take(MAX_ENTRIES))
     }
+
+    fun search(context: Context, query: String, category: String? = null, limit: Int = 8): List<GalaxyMemoryEntry> {
+        val terms = query.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length > 1 }
+        return getAll(context).asSequence()
+            .filter { category == null || it.category.equals(category, ignoreCase = true) }
+            .map { entry ->
+                val haystack = (entry.content + " " + entry.category).lowercase()
+                val score = if (terms.isEmpty()) 1 else terms.count { haystack.contains(it) }
+                entry to score
+            }
+            .filter { it.second > 0 }
+            .sortedWith(compareByDescending<Pair<GalaxyMemoryEntry, Int>> { it.second }.thenByDescending { it.first.createdAt })
+            .take(limit).map { it.first }.toList()
+    }
+
+    fun recent(context: Context, limit: Int = 5): List<GalaxyMemoryEntry> = getAll(context).take(limit)
 
     fun delete(context: Context, id: Long): Boolean =
         save(context, getAll(context).filterNot { it.id == id })
