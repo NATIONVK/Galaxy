@@ -183,6 +183,7 @@ class GalaxyVoiceWakeService : Service() {
 
         wakeArmed = false
         handler.removeCallbacks(wakeTimeout)
+        GalaxyVoiceHistory.add(this, command, "Command received")
         val shutdownText = command.lowercase(Locale.ROOT).trim()
         val shutdownPhrases = listOf(
             "shutdown your system", "shut down your system",
@@ -191,6 +192,7 @@ class GalaxyVoiceWakeService : Service() {
             "বন্ধ কর", "বন্ধ হয়ে যাও", "বন্ধ হয়ে যাও", "সব বন্ধ"
         )
         if (shutdownPhrases.any { shutdownText.contains(it) }) {
+            GalaxyVoiceHistory.add(this, command, "Galaxy shutdown")
             updateNotification("Galaxy is shutting down…")
             stopAssistant()
             return
@@ -231,6 +233,7 @@ class GalaxyVoiceWakeService : Service() {
 
     /** Voice requests never change protected system settings directly. */
     private fun requestSettingsConfirmation(label: String, actionIntent: Intent) {
+        GalaxyVoiceHistory.add(this, label, "Waiting for confirmation")
         val confirmIntent = PendingIntent.getActivity(
             this, label.hashCode(), actionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
