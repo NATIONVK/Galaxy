@@ -23,6 +23,9 @@ class GalaxyVoiceWakeService : Service() {
         const val ACTION_STOP = "com.nationvk.galaxy.voice.STOP"
         const val ACTION_TOGGLE = "com.nationvk.galaxy.voice.TOGGLE"
         const val ACTION_CANCEL_PENDING = "com.nationvk.galaxy.voice.CANCEL_PENDING"
+        const val ACTION_CONFIRM_MEMORY_DELETE = "com.nationvk.galaxy.voice.CONFIRM_MEMORY_DELETE"
+        const val ACTION_CANCEL_MEMORY_DELETE = "com.nationvk.galaxy.voice.CANCEL_MEMORY_DELETE"
+        private const val PREF_PENDING_DELETE = "pending_memory_delete_id"
         private const val CHANNEL_ID = "galaxy_voice_assistant"
         private const val NOTIFICATION_ID = 4107
     }
@@ -50,6 +53,22 @@ class GalaxyVoiceWakeService : Service() {
         }
         if (intent?.action == ACTION_CANCEL_PENDING) {
             updateNotification("Request cancelled • say Hey Galaxy")
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_CONFIRM_MEMORY_DELETE) {
+            val id = getSharedPreferences("galaxy_runtime", MODE_PRIVATE).getLong(PREF_PENDING_DELETE, -1L)
+            if (id > 0L && GalaxyMemoryStore.delete(this, id)) {
+                updateNotification("Memory deleted • say Hey Galaxy")
+                tts?.speak("মেমোরিটি মুছে ফেলা হয়েছে।", TextToSpeech.QUEUE_FLUSH, null, "memory-deleted")
+                GalaxyVoiceHistory.add(this, "Delete memory", "Deleted after confirmation")
+            } else updateNotification("Memory could not be deleted")
+            getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().remove(PREF_PENDING_DELETE).apply()
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_CANCEL_MEMORY_DELETE) {
+            getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().remove(PREF_PENDING_DELETE).apply()
+            updateNotification("Memory deletion cancelled")
+            tts?.speak("মেমোরি মুছে ফেলা বাতিল করা হয়েছে।", TextToSpeech.QUEUE_FLUSH, null, "memory-delete-cancelled")
             return START_STICKY
         }
         stopped = false
@@ -197,6 +216,8 @@ class GalaxyVoiceWakeService : Service() {
             stopAssistant()
             return
         }
+        if (handleMemoryCommand(command)) return
+
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
                 requestSettingsConfirmation("Wi-Fi", Intent("android.settings.panel.action.WIFI"))
@@ -229,6 +250,116 @@ class GalaxyVoiceWakeService : Service() {
                 tts?.speak("এই কাজটি এখনো শেখানো হয়নি।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-unsupported")
             }
         }
+    }
+
+
+    private fun speakMemory(message: String, notification: String = message) {
+        updateNotification(notification.take(180))
+        tts?.speak(message.take(3500), TextToSpeech.QUEUE_FLUSH, null, "galaxy-memory")
+    }
+
+    private fun handleMemoryCommand(rawCommand: String): Boolean {
+        val command = rawCommand.trim()
+        val lower = command.lowercase(Locale.ROOT)
+        fun capture(prefixes: List<String>): String? {
+            val prefix = prefixes.firstOrNull { lower.startsWith(it) } ?: return null
+            return command.drop(prefix.length).trim().takeIf { it.isNotBlank() }
+        }
+
+        val project = capture(listOf("save project update ", "project update মনে রাখ ", "প্রজেক্ট আপডেট মনে রাখ "))
+        if (project != null) {
+            val ok = GalaxyMemoryStore.add(this, "PROJECT", project)
+            speakMemory(if (ok) "Project update local memory-তে save করেছি।" else "Project update save করা যায়নি।")
+            GalaxyVoiceHistory.add(this, command, if (ok) "Project memory saved" else "Memory save failed")
+            return true
+        }
+        val task = capture(listOf("remember my task ", "save task ", "আমার কাজ মনে রাখ ", "টাস্ক মনে রাখ "))
+        if (task != null) {
+            val ok = GalaxyMemoryStore.add(this, "TASK", task)
+            speakMemory(if (ok) "Task local memory-তে save করেছি।" else "Task save করা যায়নি।")
+            GalaxyVoiceHistory.add(this, command, if (ok) "Task memory saved" else "Memory save failed")
+            return true
+        }
+        val research = capture(listOf("save research note ", "research মনে রাখ ", "রিসার্চ নোট মনে রাখ "))
+        if (research != null) {
+            val ok = GalaxyMemoryStore.add(this, "RESEARCH", research)
+            speakMemory(if (ok) "Research note save করেছি।" else "Research note save করা যায়নি।")
+            GalaxyVoiceHistory.add(this, command, if (ok) "Research memory saved" else "Memory save failed")
+            return true
+        }
+        val remembered = capture(listOf("remember that ", "remember this: ", "remember this ", "remember ",
+            "মনে রাখ যে ", "মনে রাখো যে ", "এটা মনে রাখ ", "এটা মনে রাখো ", "মনে রাখ ", "মনে রেখো "))
+        if (remembered != null) {
+            val category = if (lower.contains("i am ") || lower.contains("আমি ")) "PERSONAL" else "NOTES"
+            val ok = GalaxyMemoryStore.add(this, category, remembered)
+            speakMemory(if (ok) "ঠিক আছে, কথাটি এই ফোনের Galaxy memory-তে save করেছি।" else "Memory save করা যায়নি।")
+            GalaxyVoiceHistory.add(this, command, if (ok) "Memory saved: $category" else "Memory save failed")
+            return true
+        }
+        if (lower == "remember this" || lower == "মনে রাখ" || lower == "এটা মনে রাখ" || lower == "মনে রেখো") {
+            wakeArmed = true
+            updateNotification("বল, কী মনে রাখব? এখন বলো…")
+            tts?.speak("কী মনে রাখব? এখন বলো।", TextToSpeech.QUEUE_FLUSH, null, "memory-capture")
+            handler.removeCallbacks(wakeTimeout)
+            handler.postDelayed(wakeTimeout, 10000)
+            return true
+        }
+        if (lower.contains("what do you remember about me") ||
+            lower.contains("আমার সম্পর্কে কী মনে আছে") || lower.contains("আমার ব্যাপারে কী মনে আছে")) {
+            val items = GalaxyMemoryStore.search(this, "", "PERSONAL", 5).ifEmpty { GalaxyMemoryStore.recent(this, 5) }
+            if (items.isEmpty()) speakMemory("এখনো কোনো local memory save করা নেই।", "No saved memories yet")
+            else speakMemory("তোমার local memory থেকে পেয়েছি: " + items.joinToString(". ") { it.content },
+                "Found ${items.size} saved memories")
+            GalaxyVoiceHistory.add(this, command, "Recalled local memories")
+            return true
+        }
+        val searchPrefix = listOf("find memory ", "search memory ", "find my ", "খুঁজে দে ", "খুঁজে দাও ", "আগের ")
+            .firstOrNull { lower.startsWith(it) }
+        if (searchPrefix != null) {
+            val matches = GalaxyMemoryStore.search(this, command.drop(searchPrefix.length).trim(), limit = 5)
+            val message = if (matches.isEmpty()) "এই বিষয়ে local memory-তে কিছু পাইনি।"
+                else matches.joinToString(". ") { it.content }
+            speakMemory(message, if (matches.isEmpty()) "No matching local memory" else "Found ${matches.size} matching memories")
+            GalaxyVoiceHistory.add(this, command, if (matches.isEmpty()) "No memory match" else "Memory search results: ${matches.size}")
+            return true
+        }
+        val forgetPrefix = listOf("forget memory ", "forget ", "এই memory মুছে দে ", "এই মেমোরি মুছে দে ", "মনে রাখা তথ্য মুছে দে ")
+            .firstOrNull { lower.startsWith(it) }
+        if (forgetPrefix != null) {
+            val query = command.drop(forgetPrefix.length).trim()
+            if (query.isBlank() || query.equals("all", true) || query == "সব") {
+                speakMemory("নিরাপত্তার জন্য voice command দিয়ে সব memory একসাথে মুছব না। নির্দিষ্ট memory বলো।")
+                return true
+            }
+            val match = GalaxyMemoryStore.search(this, query, limit = 1).firstOrNull()
+            if (match == null) speakMemory("এই কথার সঙ্গে মিলে এমন memory পাইনি।")
+            else {
+                getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putLong(PREF_PENDING_DELETE, match.id).apply()
+                showMemoryDeleteConfirmation(match)
+                GalaxyVoiceHistory.add(this, command, "Waiting for memory deletion confirmation")
+            }
+            return true
+        }
+        return false
+    }
+
+    private fun showMemoryDeleteConfirmation(entry: GalaxyMemoryEntry) {
+        val confirm = PendingIntent.getService(this, 4211,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CONFIRM_MEMORY_DELETE),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val cancel = PendingIntent.getService(this, 4212,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CANCEL_MEMORY_DELETE),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Delete this saved memory?")
+            .setContentText(entry.content.take(100))
+            .setOngoing(true).setAutoCancel(false)
+            .addAction(android.R.drawable.ic_menu_delete, "Confirm delete", confirm)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancel)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+        tts?.speak("এই মেমোরিটি মুছতে notification থেকে confirm করো, না হলে cancel করো।", TextToSpeech.QUEUE_FLUSH, null, "memory-delete-confirm")
     }
 
     /** Voice requests never change protected system settings directly. */
