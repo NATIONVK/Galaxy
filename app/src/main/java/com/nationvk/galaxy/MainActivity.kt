@@ -71,14 +71,12 @@ fun GalaxyApp() {
                             GalaxyTab.VOICE -> FeatureScreen("VOICE STUDIO", "তোমার কণ্ঠের AI অভিজ্ঞতা", "Speak naturally with your assistant.", "Voice interface layout: voice orb, listening state, conversation transcript and voice preferences. Microphone and speech services will be connected in the core phase.", "Voice controls", "Microphone service not connected")
                             GalaxyTab.RESEARCH -> FeatureScreen("RESEARCH HUB", "Research & Data Analysis", "Turn questions into structured insights.", "Workspace layout for research projects, datasets, analysis tools, charts and saved reports. Data processing engine will be added later.", "Create research workspace", "Analysis engine not connected")
                             GalaxyTab.CAMERA -> FeatureScreen("VISION STUDIO", "Camera & Image Understanding", "See, capture and explore.", "Camera screen layout for live preview, capture action, image upload and analysis history. Camera permission and vision model are not connected yet.", "Open camera preview", "Camera service not connected")
-                            GalaxyTab.MODELS -> FeatureScreen("MODEL CONTROL", "Choose your AI model", "One interface, multiple intelligence engines.", "Model directory layout with provider, model description, connection state and preferred model selection. Provider APIs will be configured in the core phase.", "Manage AI providers", "No AI provider connected")
+                            GalaxyTab.MODELS -> ModelControlScreen()
                             GalaxyTab.NOTIFICATIONS -> FeatureScreen("NOTIFICATION CENTER", "Your universe updates", "Important activity in one place.", "Notification inbox layout for assistant updates, reminders, system messages and security events. Push notifications are not configured.", "Notification preferences", "Notifications are not enabled")
                             GalaxyTab.SETTINGS -> SettingsScreen()
                         }
                     }
-                    if (selected != GalaxyTab.BLACKHOLE) {
-                        BottomNavigation(selected = selected, onSelect = { selected = it })
-                    }
+                    if (selected != GalaxyTab.BLACKHOLE) BottomNavigation(selected = selected, onSelect = { selected = it })
                 }
             }
         }
@@ -87,50 +85,36 @@ fun GalaxyApp() {
 
 @Composable
 private fun GalaxyTopBar() {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 15.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier.size(42.dp).clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Violet, Color(0xFF242A58)))),
-            contentAlignment = Alignment.Center
-        ) { Text("✦", color = Color.White, fontSize = 23.sp) }
+    Row(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 15.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(42.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Violet, Color(0xFF242A58)))), contentAlignment = Alignment.Center) {
+            Text("✦", color = Color.White, fontSize = 23.sp)
+        }
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
             Text("GALAXY", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
             Text("PERSONAL AI UNIVERSE", color = Cyan, fontSize = 8.sp, letterSpacing = 2.sp)
         }
-        Box(
-            Modifier.clip(CircleShape).background(Color(0xFF14283A)).padding(horizontal = 11.dp, vertical = 7.dp)
-        ) { Text("●  SYSTEM DESIGN", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
+        Box(Modifier.clip(CircleShape).background(Color(0xFF14283A)).padding(horizontal = 11.dp, vertical = 7.dp)) {
+            Text("●  UI FINALIZATION", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
 @Composable
 private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("WELCOME TO YOUR UNIVERSE", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
                 Text("Hello, Explorer.", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
             }
-            Box(Modifier.clip(CircleShape).background(Panel2).padding(11.dp)) {
-                Text("✧", color = Violet, fontSize = 21.sp)
-            }
+            Box(Modifier.clip(CircleShape).background(Panel2).padding(11.dp)) { Text("✧", color = Violet, fontSize = 21.sp) }
         }
         Spacer(Modifier.height(12.dp))
         Box(Modifier.fillMaxWidth().height(390.dp).clip(RoundedCornerShape(25.dp)).clickable { onOpen(GalaxyTab.BLACKHOLE) }) {
             GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
-            Box(
-                Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xDD050611))))
-                    .padding(18.dp)
-            ) {
+            Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xDD050611)))).padding(18.dp)) {
                 Column {
                     Text("SINGULARITY", color = Cyan, fontSize = 9.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
                     Text("Explore the unknown.", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
@@ -147,7 +131,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(11.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
             ModuleCard("◈", "MEMORY", "Your knowledge vault", Modifier.weight(1f)) { onOpen(GalaxyTab.MEMORY) }
-            ModuleCard("⌁", "RESEARCH", "Analysis workspace", Modifier.weight(1f)) { onOpen(GalaxyTab.LAB) }
+            ModuleCard("⌁", "RESEARCH", "Analysis workspace", Modifier.weight(1f)) { onOpen(GalaxyTab.RESEARCH) }
         }
         Spacer(Modifier.height(20.dp))
         SectionHeading("MORE GALAXY MODULES", "Open a workspace")
@@ -177,6 +161,63 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
 }
 
 @Composable
+private fun ModelControlScreen() {
+    var mode by remember { mutableStateOf("AUTO") }
+    var selectedModel by remember { mutableStateOf("Galaxy Default") }
+    val models = listOf("Galaxy Default", "Fast Assistant", "Reasoning Model", "Vision-capable Model")
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
+        Text("INTELLIGENCE CONTROL", color = Cyan, fontSize = 10.sp, letterSpacing = 2.5.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(9.dp))
+        Text("Model Control", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Text("একটি Galaxy Core, তোমার পছন্দমতো model selection.", color = Muted, fontSize = 12.sp)
+        Spacer(Modifier.height(22.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Panel).padding(16.dp)) {
+            Text("SELECTION MODE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SelectionModeCard("AUTO", "Smart routing", "Galaxy chooses by task", mode == "AUTO", Modifier.weight(1f)) { mode = "AUTO" }
+                SelectionModeCard("MANUAL", "Your choice", "You select the model", mode == "MANUAL", Modifier.weight(1f)) { mode = "MANUAL" }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(if (mode == "AUTO") "Automatic mode will select an available model based on task type and capability. Routing activates after Core integration." else "Manual mode lets you choose a preferred model. The selection below is currently a UI preference preview.", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("MODEL DIRECTORY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        models.forEachIndexed { index, model ->
+            val active = selectedModel == model
+            Row(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp)).background(if (active) Color(0xFF202447) else Panel).clickable { if (mode == "MANUAL") selectedModel = model }.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(if (active) Color(0x443FBCFF) else Panel2), contentAlignment = Alignment.Center) {
+                    Text(listOf("✦", "⚡", "◈", "◉")[index], color = if (active) Cyan else Violet, fontSize = 18.sp)
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(model, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(if (index == 3) "Image and document tasks" else if (index == 2) "Complex multi-step tasks" else if (index == 1) "Quick everyday responses" else "Default assistant profile", color = Muted, fontSize = 10.sp)
+                }
+                Text(if (active) "SELECTED" else if (mode == "AUTO") "AUTO" else "CHOOSE", color = if (active) Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF14283A)).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("●", color = Cyan, fontSize = 10.sp)
+            Spacer(Modifier.width(9.dp))
+            Text("Demo interface only — no model provider is connected yet.", color = Color(0xFFB8D8E8), fontSize = 10.sp)
+        }
+    }
+}
+
+@Composable
+private fun SelectionModeCard(title: String, heading: String, description: String, active: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Column(modifier.clip(RoundedCornerShape(15.dp)).background(if (active) Color(0xFF25294F) else Panel2).clickable(onClick = onClick).padding(12.dp)) {
+        Text(if (active) "●  $title" else "○  $title", color = if (active) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text(heading, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(description, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+    }
+}
+
+@Composable
 private fun BlackHoleExperience(onBack: () -> Unit) {
     var zoom by remember { mutableFloatStateOf(1.0f) }
     var speed by remember { mutableFloatStateOf(1.0f) }
@@ -186,8 +227,7 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
         AndroidView(
-            modifier = Modifier.fillMaxSize()
-                .graphicsLayer { translationX = panOffset.x; translationY = panOffset.y }
+            modifier = Modifier.fillMaxSize().graphicsLayer { translationX = panOffset.x; translationY = panOffset.y }
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoomChange, _ ->
                         zoom = (zoom * zoomChange).coerceIn(0.7f, 1.8f)
@@ -223,6 +263,7 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
         }
     }
 }
+
 @Composable
 private fun GalaxyGLSurfaceViewHost(modifier: Modifier) {
     AndroidView(modifier = modifier, factory = { context -> GalaxyGLSurfaceView(context) })
@@ -238,11 +279,7 @@ private fun SectionHeading(title: String, subtitle: String) {
 
 @Composable
 private fun ModuleCard(icon: String, title: String, description: String, modifier: Modifier, onClick: () -> Unit) {
-    Column(
-        modifier.clip(RoundedCornerShape(19.dp))
-            .background(Brush.linearGradient(listOf(Panel2, Panel)))
-            .clickable(onClick = onClick).padding(15.dp)
-    ) {
+    Column(modifier.clip(RoundedCornerShape(19.dp)).background(Brush.linearGradient(listOf(Panel2, Panel))).clickable(onClick = onClick).padding(15.dp)) {
         Box(Modifier.size(35.dp).clip(RoundedCornerShape(12.dp)).background(Color(0x332F9DFF)), contentAlignment = Alignment.Center) {
             Text(icon, color = Cyan, fontSize = 21.sp)
         }
@@ -277,10 +314,7 @@ private fun StatusRow(name: String, status: String, tint: Color) {
 
 @Composable
 private fun FeatureScreen(tag: String, title: String, subtitle: String, detail: String, action: String, status: String) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp),
-        horizontalAlignment = Alignment.Start
-    ) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp), horizontalAlignment = Alignment.Start) {
         Spacer(Modifier.height(18.dp))
         Text(tag, color = Cyan, fontSize = 10.sp, letterSpacing = 2.5.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(9.dp))
@@ -288,10 +322,7 @@ private fun FeatureScreen(tag: String, title: String, subtitle: String, detail: 
         Spacer(Modifier.height(6.dp))
         Text(subtitle, color = Muted, fontSize = 13.sp)
         Spacer(Modifier.height(28.dp))
-        Box(
-            Modifier.fillMaxWidth().height(175.dp).clip(RoundedCornerShape(24.dp))
-                .background(Brush.radialGradient(listOf(Color(0xFF34306C), Panel, Space)))
-        , contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxWidth().height(175.dp).clip(RoundedCornerShape(24.dp)).background(Brush.radialGradient(listOf(Color(0xFF34306C), Panel, Space))), contentAlignment = Alignment.Center) {
             Text("✦", color = Violet, fontSize = 74.sp)
         }
         Spacer(Modifier.height(20.dp))
@@ -367,18 +398,10 @@ private fun SettingsGroup(title: String, items: List<Pair<String, String>>) {
 
 @Composable
 private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xFF090B17)).padding(horizontal = 8.dp, vertical = 9.dp),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(Modifier.fillMaxWidth().background(Color(0xFF090B17)).padding(horizontal = 8.dp, vertical = 9.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
         listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.MEMORY, GalaxyTab.PROFILE).forEach { tab ->
             val active = tab == selected
-            Column(
-                Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
-                    .clickable { onSelect(tab) }.padding(vertical = 5.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).clickable { onSelect(tab) }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(tab.glyph, color = if (active) Cyan else Muted, fontSize = 20.sp)
                 Spacer(Modifier.height(3.dp))
                 Text(tab.label, color = if (active) Color.White else Muted, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
@@ -394,14 +417,9 @@ private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit)
 @Composable
 private fun StarBackdrop(modifier: Modifier = Modifier) {
     Canvas(modifier) {
-        val stars = listOf(
-            0.06f to 0.12f, 0.91f to 0.10f, 0.18f to 0.31f, 0.86f to 0.42f,
-            0.08f to 0.66f, 0.94f to 0.75f, 0.63f to 0.22f, 0.42f to 0.86f,
-            0.72f to 0.92f, 0.30f to 0.52f, 0.52f to 0.08f
-        )
+        val stars = listOf(0.06f to 0.12f, 0.91f to 0.10f, 0.18f to 0.31f, 0.86f to 0.42f, 0.08f to 0.66f, 0.94f to 0.75f, 0.63f to 0.22f, 0.42f to 0.86f, 0.72f to 0.92f, 0.30f to 0.52f, 0.52f to 0.08f)
         stars.forEachIndexed { index, p ->
-            drawCircle(if (index % 3 == 0) Cyan.copy(alpha = 0.65f) else Color.White.copy(alpha = 0.55f),
-                if (index % 4 == 0) 2.0f else 1.1f, androidx.compose.ui.geometry.Offset(p.first * size.width, p.second * size.height))
+            drawCircle(if (index % 3 == 0) Cyan.copy(alpha = 0.65f) else Color.White.copy(alpha = 0.55f), if (index % 4 == 0) 2.0f else 1.1f, Offset(p.first * size.width, p.second * size.height))
         }
     }
 }
