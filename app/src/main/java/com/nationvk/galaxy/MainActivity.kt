@@ -674,138 +674,134 @@ private fun VoiceStudioScreen() {
 
 @Composable
 private fun MemoryVaultScreen() {
+    val context = LocalContext.current
     var selectedCategory by remember { mutableStateOf("ALL") }
     var search by remember { mutableStateOf("") }
     var noteDraft by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var notes by remember { mutableStateOf(GalaxyMemoryStore.getAll(context)) }
     var showEditor by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf("") }
-    val categories = listOf("ALL", "NOTES", "IDEAS", "RESEARCH", "LEARNING")
-    val filtered = notes.filter { (category, content) ->
-        (selectedCategory == "ALL" || selectedCategory == category) && content.contains(search, ignoreCase = true)
+    val categories = listOf("ALL", "PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
+    val filtered = notes.filter { item ->
+        (selectedCategory == "ALL" || item.category == selectedCategory) &&
+            (item.content.contains(search, ignoreCase = true) || item.category.contains(search, ignoreCase = true))
     }
 
-    Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 10.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("YOUR PERSONAL KNOWLEDGE SPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+                Text("GALAXY LONG-TERM MEMORY", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
                 Text("Memory Vault", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                Text("Notes, ideas and saved context — organized.", color = Muted, fontSize = 10.sp)
+                Text("তথ্য, পছন্দ, project ও task — এই ডিভাইসে সংরক্ষিত।", color = Muted, fontSize = 10.sp)
             }
             Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
-                Text("◈", color = Violet, fontSize = 23.sp, modifier = Modifier.semantics { contentDescription = "Memory Vault" })
+                Text("◈", color = Violet, fontSize = 23.sp)
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("⌕", color = Cyan, fontSize = 20.sp, modifier = Modifier.semantics { contentDescription = "Search memory notes" })
+            Text("⌕", color = Cyan, fontSize = 20.sp)
             Spacer(Modifier.width(8.dp))
             androidx.compose.foundation.text.BasicTextField(
-                value = search,
-                onValueChange = { search = it },
-                modifier = Modifier.weight(1f),
+                value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f),
                 textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
                 cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
-                decorationBox = { inner ->
-                    Box {
-                        if (search.isEmpty()) Text("Search your vault...", color = Muted, fontSize = 11.sp)
-                        inner()
-                    }
-                }
+                decorationBox = { inner -> Box { if (search.isEmpty()) Text("Search saved memory...", color = Muted, fontSize = 11.sp); inner() } }
             )
-            if (search.isNotEmpty()) Text("×", color = Muted, fontSize = 18.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Clear memory search"; role = Role.Button }.clickable { search = "" })
+            if (search.isNotEmpty()) Text("×", color = Muted, modifier = Modifier.clickable { search = "" }.padding(6.dp))
         }
-        Spacer(Modifier.height(13.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             categories.forEach { category ->
                 val active = selectedCategory == category
                 Text(category, color = if (active) Color.White else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (active) Color(0xFF302A5B) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedCategory = category }.padding(horizontal = 10.dp, vertical = 9.dp))
+                    modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (active) Color(0xFF302A5B) else Panel).clickable { selectedCategory = category }.padding(horizontal = 11.dp, vertical = 10.dp))
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("YOUR COLLECTION", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
-                Text("${filtered.size} local item(s)", color = Muted, fontSize = 10.sp)
+                Text("SAVED MEMORIES", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+                Text("${filtered.size} item(s) • persistent local storage", color = Muted, fontSize = 10.sp)
             }
-            Text("+ NEW NOTE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showEditor = !showEditor }.padding(horizontal = 12.dp, vertical = 10.dp))
+            Text("+ ADD", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Violet).clickable { showEditor = !showEditor }.padding(horizontal = 14.dp, vertical = 11.dp))
         }
         if (showEditor) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel2).padding(13.dp)) {
-                Text("CREATE LOCAL NOTE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("SAVE A MEMORY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("NOTES", "IDEAS", "RESEARCH", "LEARNING").forEach { category ->
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    categories.drop(1).forEach { category ->
                         Text(category, color = if (selectedCategory == category) Cyan else Muted, fontSize = 10.sp,
-                            modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedCategory = category }.padding(vertical = 4.dp))
+                            modifier = Modifier.clickable { selectedCategory = category }.padding(vertical = 7.dp))
                     }
                 }
                 androidx.compose.foundation.text.BasicTextField(
-                    value = noteDraft,
-                    onValueChange = { noteDraft = it },
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 65.dp).padding(vertical = 8.dp),
+                    value = noteDraft, onValueChange = { noteDraft = it },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).padding(vertical = 8.dp),
                     textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp, lineHeight = 17.sp),
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
-                    decorationBox = { inner ->
-                        Box {
-                            if (noteDraft.isEmpty()) Text("Write a thought, idea or learning note...", color = Muted, fontSize = 10.sp)
-                            inner()
-                        }
-                    }
+                    decorationBox = { inner -> Box { if (noteDraft.isEmpty()) Text("কোনো তথ্য, নির্দেশনা, project update বা task লিখে রাখ...", color = Muted, fontSize = 10.sp); inner() } }
                 )
-                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    Text("CANCEL", color = Muted, fontSize = 10.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showEditor = false; noteDraft = "" }.padding(8.dp))
-                    Text("SAVE NOTE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    Text("CANCEL", color = Muted, modifier = Modifier.clickable { showEditor = false; noteDraft = "" }.padding(9.dp))
+                    Text("SAVE MEMORY", color = Cyan, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
                         val body = noteDraft.trim()
                         if (body.isNotEmpty()) {
                             val category = if (selectedCategory in categories.drop(1)) selectedCategory else "NOTES"
-                            notes = listOf(category to body) + notes
-                            noteDraft = ""
-                            showEditor = false
-                            selectedCategory = "ALL"
-                            notice = "Note saved in this screen's temporary state."
+                            GalaxyMemoryStore.add(context, category, body)
+                            notes = GalaxyMemoryStore.getAll(context)
+                            noteDraft = ""; showEditor = false; selectedCategory = "ALL"
+                            notice = "Memory saved permanently on this device."
                         }
-                    }.padding(8.dp))
+                    }.padding(9.dp))
                 }
             }
         }
-        if (notice.isNotBlank()) {
-            Text(notice, color = Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 7.dp))
-        }
+        if (notice.isNotBlank()) Text(notice, color = Cyan, fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp))
         Spacer(Modifier.height(10.dp))
         if (filtered.isEmpty()) {
-            Column(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Brush.radialGradient(listOf(Color(0xFF25234D), Panel, Space))).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Text("◈", color = Violet, fontSize = 58.sp)
-                Spacer(Modifier.height(12.dp))
-                Text(if (search.isEmpty()) "Your vault is waiting" else "No matching memories", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(6.dp))
-                Text(if (search.isEmpty()) "Create a note to start collecting your knowledge. Your notes are currently temporary and will reset when this screen is recreated." else "Try another keyword or category.", color = Muted, fontSize = 10.sp, lineHeight = 16.sp)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Brush.radialGradient(listOf(Color(0xFF25234D), Panel, Space))).padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("◈", color = Violet, fontSize = 48.sp)
+                Text(if (search.isEmpty()) "Your memory starts here" else "No matching memories", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("নিজের গুরুত্বপূর্ণ তথ্য ও project update এখানে যোগ কর।", color = Muted, fontSize = 10.sp)
             }
         } else {
-            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
-                filtered.forEach { item ->
-                    Column(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(item.first, color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
-                            Text("LOCAL", color = Muted, fontSize = 10.sp)
-                            Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Delete note in category ${item.first}"; role = Role.Button }.clickable { notes = notes - item }.padding(start = 8.dp))
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(item.second, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
+            filtered.forEach { item ->
+                Column(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(item.category, color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text("LOCAL", color = Muted, fontSize = 9.sp)
+                        Text("  ×", color = Color(0xFFFFA7B8), fontSize = 16.sp,
+                            modifier = Modifier.clickable {
+                                GalaxyMemoryStore.delete(context, item.id)
+                                notes = GalaxyMemoryStore.getAll(context)
+                            }.padding(start = 8.dp))
                     }
+                    Spacer(Modifier.height(6.dp))
+                    Text(item.content, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
+                    Text(java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(item.createdAt)), color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 7.dp))
                 }
             }
         }
         Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 10.sp)
-            Spacer(Modifier.width(8.dp))
-            Text("Demo vault: temporary screen state only. Persistent storage, synced memory and AI recall are not connected.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 14.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("EXPORT BACKUP", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
+                    val backup = GalaxyMemoryStore.exportJson(context)
+                    val send = Intent(Intent.ACTION_SEND).apply { type = "application/json"; putExtra(Intent.EXTRA_SUBJECT, "Galaxy Memory Backup"); putExtra(Intent.EXTRA_TEXT, backup) }
+                    context.startActivity(Intent.createChooser(send, "Export Galaxy Memory"))
+                }.padding(13.dp))
+            Text("CLEAR ALL", color = Color(0xFFFFA7B8), fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
+                    GalaxyMemoryStore.clear(context); notes = emptyList(); notice = "All local memories cleared."
+                }.padding(13.dp))
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(7.dp))
+        Text("Local-only memory: এই build-এ Galaxy নিজে থেকে সব পুরোনো chat পড়তে পারে না। তুই এখানে যোগ করলে তা app বন্ধ করলেও থাকবে। কোনো cloud/Firebase sync নেই।", color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+        Spacer(Modifier.height(12.dp))
     }
 }
 
