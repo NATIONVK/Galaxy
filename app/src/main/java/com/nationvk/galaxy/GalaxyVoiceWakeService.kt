@@ -41,6 +41,7 @@ class GalaxyVoiceWakeService : Service() {
     private var wakeArmed = false
     private var tts: TextToSpeech? = null
     private var recognitionLanguage = "bn-BD"
+    private var useOnDeviceRecognition: Boolean? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -83,6 +84,7 @@ class GalaxyVoiceWakeService : Service() {
         }
         stopped = false
         recognitionLanguage = "bn-BD"
+        useOnDeviceRecognition = null
         getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", true).apply()
         startForeground(NOTIFICATION_ID, buildNotification("Galaxy is active • say Hey Galaxy"))
         startRecognition()
@@ -133,7 +135,11 @@ class GalaxyVoiceWakeService : Service() {
         }
         try {
             if (recognizer == null) {
-                recognizer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SpeechRecognizer.isOnDeviceRecognitionAvailable(this)) {
+                if (useOnDeviceRecognition == null) {
+                    useOnDeviceRecognition = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                        SpeechRecognizer.isOnDeviceRecognitionAvailable(this)
+                }
+                recognizer = if (useOnDeviceRecognition == true) {
                     SpeechRecognizer.createOnDeviceSpeechRecognizer(this)
                 } else {
                     SpeechRecognizer.createSpeechRecognizer(this)
@@ -188,7 +194,13 @@ class GalaxyVoiceWakeService : Service() {
                 }
                 SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
                 SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> {
-                    if (recognitionLanguage != "en-US") {
+                    if (useOnDeviceRecognition == true) {
+                        useOnDeviceRecognition = false
+                        updateNotification("On-device speech unavailable • trying system speech service")
+                        try { recognizer?.destroy() } catch (_: Exception) { }
+                        recognizer = null
+                        scheduleRestart(900)
+                    } else if (recognitionLanguage != "en-US") {
                         recognitionLanguage = "en-US"
                         updateNotification("Bangla recognition unavailable • switching to English")
                         try { recognizer?.destroy() } catch (_: Exception) { }
