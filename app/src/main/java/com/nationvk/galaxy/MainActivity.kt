@@ -71,7 +71,7 @@ fun GalaxyApp() {
                             GalaxyTab.MEMORY -> MemoryVaultScreen()
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
                             GalaxyTab.VOICE -> VoiceStudioScreen()
-                            GalaxyTab.RESEARCH -> FeatureScreen("RESEARCH HUB", "Research & Data Analysis", "Turn questions into structured insights.", "Workspace layout for research projects, datasets, analysis tools, charts and saved reports. Data processing engine will be added later.", "Create research workspace", "Analysis engine not connected")
+                            GalaxyTab.RESEARCH -> ResearchHubScreen()
                             GalaxyTab.CAMERA -> FeatureScreen("VISION STUDIO", "Camera & Image Understanding", "See, capture and explore.", "Camera screen layout for live preview, capture action, image upload and analysis history. Camera permission and vision model are not connected yet.", "Open camera preview", "Camera service not connected")
                             GalaxyTab.MODELS -> ModelControlScreen()
                             GalaxyTab.NOTIFICATIONS -> FeatureScreen("NOTIFICATION CENTER", "Your universe updates", "Important activity in one place.", "Notification inbox layout for assistant updates, reminders, system messages and security events. Push notifications are not configured.", "Notification preferences", "Notifications are not enabled")
@@ -827,6 +827,215 @@ private fun CyberLabScreen() {
             Text("●", color = Cyan, fontSize = 9.sp)
             Spacer(Modifier.width(8.dp))
             Text("UI preview only • no live cyber operations or external connections.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun ResearchHubScreen() {
+    var section by remember { mutableStateOf("OVERVIEW") }
+    var selectedDataset by remember { mutableStateOf("Student Study Habits (sample)") }
+    var importedFile by remember { mutableStateOf("") }
+    var projectName by remember { mutableStateOf("Study Time & GPA Analysis") }
+    var projectCreated by remember { mutableStateOf(false) }
+    var reportPreview by remember { mutableStateOf(false) }
+    val datasets = listOf("Student Study Habits (sample)", "Campus Survey (sample)", "Health Indicators (sample)")
+    val sampleRows = listOf(
+        listOf("ID", "Study hrs", "Sleep hrs", "GPA"),
+        listOf("S001", "3.5", "7.0", "3.60"),
+        listOf("S002", "2.0", "6.0", "3.20"),
+        listOf("S003", "5.0", "8.0", "3.85"),
+        listOf("S004", "4.0", "7.5", "3.72")
+    )
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("DATA • STATISTICS • DISCOVERY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Text("Research Hub", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                Text("Explore data and shape your findings.", color = Muted, fontSize = 11.sp)
+            }
+            Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
+                Text("⌁", color = Cyan, fontSize = 24.sp)
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Color(0xFF1D3552), Panel))).padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Column {
+                Text("RESEARCH WORKSPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("3 sample datasets", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("1 project draft • demo charts", color = Muted, fontSize = 9.sp)
+            }
+            Text("✦", color = Violet, fontSize = 32.sp)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Panel).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            listOf("OVERVIEW", "DATASETS", "ANALYSIS", "PROJECTS", "REPORT").forEach { tab ->
+                Text(tab, color = if (section == tab) Color.White else Muted, fontSize = 7.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (section == tab) Color(0xFF302A5B) else Color.Transparent).clickable { section = tab }.padding(vertical = 11.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        Spacer(Modifier.height(15.dp))
+        when (section) {
+            "OVERVIEW" -> {
+                Text("YOUR RESEARCH DESK", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("From raw data to clear insight.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                Text("A focused workspace for organizing datasets, planning analysis and preparing research reports.", color = Muted, fontSize = 10.sp, lineHeight = 16.sp)
+                Spacer(Modifier.height(13.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("DATASETS" to "03", "PROJECTS" to "01", "REPORTS" to "01").forEach { item ->
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(13.dp)).background(Panel).padding(11.dp)) {
+                            Text(item.second, color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                            Text(item.first, color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(15.dp))
+                Text("RECENT DATASET", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).clickable { section = "DATASETS" }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(selectedDataset, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Sample data • 4 observations • 3 variables", color = Muted, fontSize = 9.sp)
+                    }
+                    Text("OPEN  ›", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(15.dp))
+                Text("QUICK ANALYSIS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                listOf("Descriptive statistics", "Correlation overview", "Distribution chart").forEach { label ->
+                    Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(12.dp)).background(Panel).clickable { section = "ANALYSIS" }.padding(12.dp)) {
+                        Text("◈", color = Violet, fontSize = 15.sp)
+                        Spacer(Modifier.width(9.dp))
+                        Text(label, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                        Text("VIEW", color = Muted, fontSize = 8.sp)
+                    }
+                }
+            }
+            "DATASETS" -> {
+                Text("DATASET WORKSPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("Manage your research data.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                datasets.forEach { dataset ->
+                    Row(Modifier.fillMaxWidth().padding(bottom = 7.dp).clip(RoundedCornerShape(12.dp)).background(if (selectedDataset == dataset) Color(0xFF25294F) else Panel).clickable { selectedDataset = dataset }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("▦", color = Cyan, fontSize = 18.sp)
+                        Spacer(Modifier.width(9.dp))
+                        Text(dataset, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                        Text(if (selectedDataset == dataset) "ACTIVE" else "SELECT", color = if (selectedDataset == dataset) Cyan else Muted, fontSize = 8.sp)
+                    }
+                }
+                Spacer(Modifier.height(7.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(13.dp)) {
+                    Text("IMPORT CSV FILE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(6.dp))
+                    Text("CSV import interface preview. File picker and parsing will be connected in a later data-engine phase.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+                    Spacer(Modifier.height(10.dp))
+                    Text(if (importedFile.isEmpty()) "＋  CHOOSE CSV FILE" else "✓  $importedFile", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet).clickable { importedFile = "sample_research_data.csv (demo)" }.padding(horizontal = 13.dp, vertical = 10.dp))
+                }
+                Spacer(Modifier.height(14.dp))
+                Text("DATA PREVIEW • $selectedDataset", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(7.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(8.dp)) {
+                    sampleRows.forEachIndexed { index, cells ->
+                        Row(Modifier.fillMaxWidth().background(if (index == 0) Panel2 else Color.Transparent).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            cells.forEach { cell -> Text(cell, color = if (index == 0) Cyan else Color(0xFFDDE2F2), fontSize = 8.sp, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+                        }
+                    }
+                }
+            }
+            "ANALYSIS" -> {
+                Text("STATISTICAL ANALYSIS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("Explore the sample indicators.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Illustrative values only — calculations are not connected to a live dataset yet.", color = Muted, fontSize = 9.sp)
+                Spacer(Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Mean study" to "3.63 h", "Mean GPA" to "3.59", "Mean sleep" to "7.13 h").forEach { item ->
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(13.dp)).background(Panel).padding(10.dp)) {
+                            Text(item.first, color = Muted, fontSize = 8.sp)
+                            Text(item.second, color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                Text("STUDY HOURS BY SAMPLE STUDENT", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(7.dp))
+                Canvas(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(14.dp)).background(Panel).padding(12.dp)) {
+                    val values = listOf(3.5f, 2f, 5f, 4f)
+                    val max = 6f
+                    val gap = size.width / (values.size * 2 + 1)
+                    values.forEachIndexed { i, v ->
+                        val left = gap * (1 + i * 2)
+                        val top = size.height - (v / max * size.height)
+                        drawRoundRect(Color(0xFF55DFFF), Offset(left, top), androidx.compose.ui.geometry.Size(gap, size.height - top), cornerRadius = androidx.compose.ui.geometry.CornerRadius(7f, 7f))
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("DESCRIPTIVE SUMMARY", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                listOf("Study hours" to "Mean 3.63 • Min 2.0 • Max 5.0", "Sleep hours" to "Mean 7.13 • Min 6.0 • Max 8.0", "GPA" to "Mean 3.59 • Min 3.20 • Max 3.85").forEach { row ->
+                    Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(11.dp)).background(Panel).padding(11.dp)) {
+                        Text(row.first, color = Color.White, fontSize = 9.sp, modifier = Modifier.weight(1f))
+                        Text(row.second, color = Muted, fontSize = 8.sp)
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("Planned methods: frequency tables • mean/median • standard deviation • correlation • linear regression.", color = Muted, fontSize = 9.sp, lineHeight = 15.sp)
+            }
+            "PROJECTS" -> {
+                Text("RESEARCH PROJECTS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("Organize your investigations.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(13.dp)) {
+                    Text("NEW PROJECT NAME", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(7.dp))
+                    Text(projectName, color = Color.White, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Panel2).padding(12.dp))
+                    Text("Tap below to cycle through suggested project titles.", color = Muted, fontSize = 8.sp)
+                    Spacer(Modifier.height(9.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("EDIT TITLE", color = Color.White, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable { projectName = if (projectName.startsWith("Study")) "Campus Attendance & GPA" else "Study Time & GPA Analysis" }.padding(10.dp))
+                        Text("CREATE PROJECT", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Violet).clickable { projectCreated = true }.padding(10.dp))
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Panel).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(if (projectCreated) projectName else "Study Time & GPA Analysis", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(if (projectCreated) "Draft created in this screen session" else "Draft workspace • sample project", color = Muted, fontSize = 9.sp)
+                    }
+                    Text(if (projectCreated) "DRAFT" else "SAMPLE", color = Cyan, fontSize = 8.sp)
+                }
+                Text("Project state is temporary UI state; cloud/database saving is not active.", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 9.dp))
+            }
+            "REPORT" -> {
+                Text("REPORT PREVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("Research summary draft.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFFF0F1F8)).padding(16.dp)) {
+                    Text("RESEARCH REPORT", color = Color(0xFF252A48), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Study Time, Sleep Duration and GPA", color = Color(0xFF171A2C), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                    Text("Sample analysis • Draft preview", color = Color(0xFF62677D), fontSize = 9.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Text("1. Objective", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Explore illustrative relationships between study habits and academic performance.", color = Color(0xFF44495D), fontSize = 9.sp, lineHeight = 14.sp)
+                    Spacer(Modifier.height(9.dp))
+                    Text("2. Dataset", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Four fictional observations with study hours, sleep hours and GPA.", color = Color(0xFF44495D), fontSize = 9.sp)
+                    Spacer(Modifier.height(9.dp))
+                    Text("3. Preliminary findings", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Descriptive values are shown for interface demonstration only. No inferential conclusion should be drawn.", color = Color(0xFF44495D), fontSize = 9.sp, lineHeight = 14.sp)
+                    Spacer(Modifier.height(9.dp))
+                    Text("4. Limitations", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("Synthetic sample; not suitable for academic claims or publication.", color = Color(0xFF44495D), fontSize = 9.sp)
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(if (reportPreview) "Preview refreshed • no file exported" else "Preview is a visual draft; PDF/export is not connected.", color = Muted, fontSize = 9.sp)
+                Text("REFRESH PREVIEW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Violet).clickable { reportPreview = true }.padding(horizontal = 13.dp, vertical = 10.dp))
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("●", color = Cyan, fontSize = 9.sp)
+            Spacer(Modifier.width(8.dp))
+            Text("UI preview only • no live data processing, file parsing or AI Core connection.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(8.dp))
     }
