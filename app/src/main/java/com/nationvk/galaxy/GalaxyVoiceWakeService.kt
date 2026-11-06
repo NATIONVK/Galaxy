@@ -292,6 +292,26 @@ class GalaxyVoiceWakeService : Service() {
                     ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
                 requestSettingsConfirmation("Open YouTube", launch)
             }
+            command.contains("camera", true) || command.contains("ক্যামেরা") -> {
+                val launch = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+                showActionNotification("Camera খুলতে notification থেকে Run action চাপো", launch)
+                tts?.speak("ক্যামেরা খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-camera")
+            }
+            command.contains("phone", true) || command.contains("dialer", true) || command.contains("ফোন", true) || command.contains("কল", true) -> {
+                val launch = Intent(Intent.ACTION_DIAL)
+                showActionNotification("Phone dialer খুলতে Run action চাপো", launch)
+                tts?.speak("Phone dialer খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-dialer")
+            }
+            command.contains("browser", true) || command.contains("ব্রাউজার") -> {
+                val launch = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+                showActionNotification("Browser খুলতে Run action চাপো", launch)
+                tts?.speak("Browser খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-browser")
+            }
+            command.contains("maps", true) || command.contains("map", true) || command.contains("ম্যাপ") -> {
+                val launch = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0?q=nearby places"))
+                showActionNotification("Nearby Maps খুলতে Run action চাপো", launch)
+                tts?.speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-maps")
+            }
             else -> {
                 GalaxyVoiceHistory.add(this, command, "Unsupported command")
                 updateNotification("Command not supported yet • $command".take(180))
