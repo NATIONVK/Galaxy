@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,42 +79,11 @@ fun GalaxyHome() {
 
 @Composable
 private fun BlackHole(modifier: Modifier = Modifier) {
-    val motion = rememberInfiniteTransition(label = "black-hole-motion")
-    val rotation by motion.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(18000, easing = LinearEasing), RepeatMode.Restart),
-        label = "disk-rotation"
+    AndroidView(
+        modifier = modifier,
+        factory = { context -> GalaxyGLSurfaceView(context) },
+        update = { }
     )
-    val pulse by motion.animateFloat(
-        initialValue = 0.88f, targetValue = 1.08f,
-        animationSpec = infiniteRepeatable(tween(2400), RepeatMode.Reverse),
-        label = "glow-pulse"
-    )
-    Canvas(modifier = modifier) {
-        val c = Offset(size.width / 2f, size.height / 2f)
-        val radius = size.minDimension * 0.235f
-        drawCircle(Brush.radialGradient(listOf(Violet.copy(alpha = 0.30f * pulse), Color.Transparent), c, radius * 2.6f), radius * 2.6f, c)
-        rotate(rotation, c) {
-            drawOval(
-                brush = Brush.sweepGradient(listOf(Color.Transparent, Violet, Cyan, Color.White, Violet, Color.Transparent), c),
-                topLeft = Offset(c.x - radius * 2.25f, c.y - radius * 0.55f),
-                size = Size(radius * 4.5f, radius * 1.1f),
-                style = Stroke(width = radius * 0.20f)
-            )
-            drawOval(
-                brush = Brush.horizontalGradient(listOf(Color.Transparent, Violet.copy(alpha = 0.85f), Color.White, Cyan, Color.Transparent)),
-                topLeft = Offset(c.x - radius * 1.85f, c.y - radius * 0.22f),
-                size = Size(radius * 3.7f, radius * 0.44f),
-                style = Stroke(width = radius * 0.08f)
-            )
-        }
-        drawCircle(Color(0xFF010105), radius, c)
-        drawCircle(Brush.radialGradient(listOf(Color.Black, Color(0xFF05030C), Color.Transparent), c, radius * 1.18f), radius * 1.18f, c, style = Stroke(width = radius * 0.10f))
-    }
-}
-
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.rotate(degrees: Float, pivot: Offset, block: androidx.compose.ui.graphics.drawscope.DrawScope.() -> Unit) {
-    androidx.compose.ui.graphics.drawscope.rotate(degrees, pivot, block)
 }
 
 @Composable
