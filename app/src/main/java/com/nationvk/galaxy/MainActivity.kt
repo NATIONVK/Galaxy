@@ -532,13 +532,64 @@ private fun VoiceStudioScreen() {
     var listening by remember { mutableStateOf(false) }
     var speed by remember { mutableFloatStateOf(1f) }
     var ttsReady by remember { mutableStateOf(false) }
+    var pendingBackgroundStart by remember { mutableStateOf(false) }
     val tts = remember { mutableStateOf<TextToSpeech?>(null) }
     val recognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
+    val notificationPermissionRequired = android.os.Build.VERSION.SDK_INT >= 33
+    val notificationPermissionGranted = !notificationPermissionRequired ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (pendingBackgroundStart) {
+            pendingBackgroundStart = false
+            try {
+                ContextCompat.startForegroundService(context, Intent(context, GalaxyVoiceWakeService::class.java))
+                status = if (granted) "Background listening চালু হয়েছে। Notification থেকে status দেখতে পারবি।"
+                    else "Background listening চালু হয়েছে; notification permission না থাকায় notification drawer-এ status নাও দেখা যেতে পারে।"
+            } catch (error: Exception) {
+                status = "Background service চালু হয়নি: ${error.message ?: "অজানা সমস্যা"}"
+            }
+        }
+    }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
-            status = "Microphone permission granted. Starting background listener…"
+            status = if (pendingBackgroundStart) "Microphone allowed. Notification permission যাচাই হচ্ছে…" else "Microphone allowed. আবার START LISTENING চাপ।"
+            if (pendingBackgroundStart) {
+                if (notificationPermissionRequired && !notificationPermissionGranted) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    pendingBackgroundStart = false
+                    try {
+                        ContextCompat.startForegroundService(context, Intent(context, GalaxyVoiceWakeService::class.java))
+                        status = "Background listening চালু হয়েছে।"
+                    } catch (error: Exception) {
+                        status = "Background service চালু হয়নি: ${error.message ?: "অজানা সমস্যা"}"
+                    }
+                }
+            }
+        } else {
+            pendingBackgroundStart = false
+            status = "Microphone permission denied. Android App Settings থেকে permission দিলে Voice চালু হবে।"
+        }
+    }
+
+    fun requestBackgroundListening() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            pendingBackgroundStart = true
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        if (notificationPermissionRequired && !notificationPermissionGranted) {
+            pendingBackgroundStart = true
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        try {
             ContextCompat.startForegroundService(context, Intent(context, GalaxyVoiceWakeService::class.java))
-        } else status = "Microphone permission denied."
+            status = "Background listening চালু হয়েছে। Notification থেকে status দেখতে পারবি।"
+        } catch (error: Exception) {
+            status = "Background service চালু হয়নি: ${error.message ?: "অজানা সমস্যা"}"
+        }
     }
 
     DisposableEffect(context) {
@@ -703,10 +754,7 @@ private fun VoiceStudioScreen() {
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(Color(0xFF173B45)).heightIn(min = 54.dp).semantics { role = Role.Button }.clickable {
-                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    ContextCompat.startForegroundService(context, Intent(context, GalaxyVoiceWakeService::class.java))
-                    status = "Background listening enabled. You can switch apps and say Hey Galaxy."
-                } else permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                requestBackgroundListening()
             }.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("START BACKGROUND", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                 Text("Across apps • persistent notification", color = Color(0xFFB8D8E8), fontSize = 9.sp)
