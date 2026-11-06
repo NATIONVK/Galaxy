@@ -336,8 +336,9 @@ private fun StatusRow(name: String, status: String, tint: Color) {
 
 @Composable
 private fun ChatScreen() {
+    val context = LocalContext.current
     var draft by remember { mutableStateOf("") }
-    var messages by remember { mutableStateOf(listOf<Pair<Boolean, String>>()) }
+    var messages by remember { mutableStateOf(GalaxyLocalConversationStore.load(context)) }
     var attachmentOpen by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf("") }
 
@@ -428,9 +429,14 @@ private fun ChatScreen() {
             Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) Panel else Violet).semantics { contentDescription = "Send message"; role = Role.Button }.clickable {
                 val value = draft.trim()
                 if (value.isNotEmpty()) {
-                    messages = messages + (true to value)
-                    draft = ""
-                    notice = "Saved locally in this screen — AI response unavailable in demo mode."
+                    val updated = messages + (true to value)
+                    if (GalaxyLocalConversationStore.save(context, updated)) {
+                        messages = updated
+                        draft = ""
+                        notice = "Saved securely on this device. AI response unavailable in offline demo mode."
+                    } else {
+                        notice = "Could not save this message. Please try again."
+                    }
                 }
             }, contentAlignment = Alignment.Center) {
                 Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
@@ -439,8 +445,12 @@ private fun ChatScreen() {
         Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Demo mode • local screen state only", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
             Text("CLEAR CHAT", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
-                messages = emptyList()
-                notice = "Local conversation cleared."
+                if (GalaxyLocalConversationStore.clear(context)) {
+                    messages = emptyList()
+                    notice = "Local conversation cleared."
+                } else {
+                    notice = "Could not clear local conversation."
+                }
             }.padding(5.dp))
         }
     }
