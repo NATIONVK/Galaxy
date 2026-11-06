@@ -527,6 +527,7 @@ private fun ChatScreen() {
 private fun VoiceStudioScreen() {
     val context = LocalContext.current
     var selectedVoice by remember { mutableStateOf("Male") }
+    var recognitionLanguage by remember { mutableStateOf("bn-BD") }
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
     var listening by remember { mutableStateOf(false) }
@@ -714,7 +715,7 @@ private fun VoiceStudioScreen() {
                 if (session != recognitionSession) return
                 listening = false
                 val heard = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                val wake = heard.contains("hey galaxy", true) || heard.contains("হেই গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি")
+                val wake = heard.contains("hey galaxy", true) || heard.contains("হেই গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি")
                 if (wake) runCommand(heard)
                 else {
                     transcript = heard
@@ -733,8 +734,8 @@ private fun VoiceStudioScreen() {
         })
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "bn-BD")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, recognitionLanguage)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, recognitionLanguage)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Hey Galaxy / হেই গ্যালাক্সি বলুন")
@@ -813,6 +814,27 @@ private fun VoiceStudioScreen() {
                 Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (selectedVoice == voice) Color(0xFF29264F) else Panel2).heightIn(min = 52.dp).semantics { role = Role.Button }.clickable { selectedVoice = voice; speak(if (voice == "Male") "আমি Galaxy। কীভাবে সাহায্য করতে পারি?" else "আমি Galaxy। কীভাবে সাহায্য করতে পারি?") }.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(if (selectedVoice == voice) "● $voice" else voice, color = if (selectedVoice == voice) Cyan else Color.White, fontWeight = FontWeight.Bold)
                     Text(if (voice == "Male") "পুরুষ কণ্ঠ" else "নারী কণ্ঠ", color = Muted, fontSize = 10.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Text("RECOGNITION LANGUAGE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+        Text("Speech-to-text ভাষা নির্বাচন কর", color = Muted, fontSize = 10.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 8.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf("bn-BD" to "বাংলা", "en-US" to "English").forEach { (code, label) ->
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(13.dp)).background(if (recognitionLanguage == code) Color(0xFF29264F) else Panel2).semantics { role = Role.Button; selected = recognitionLanguage == code }.clickable {
+                    recognitionLanguage = code
+                    if (listening) {
+                        recognitionSession++
+                        listening = false
+                        recognizer.value?.cancel()
+                        recognizer.value?.destroy()
+                        recognizer.value = null
+                        status = "$label selected. আবার Start চাপ।"
+                    } else status = "$label recognition selected"
+                }.padding(13.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (recognitionLanguage == code) "● $label" else label, color = if (recognitionLanguage == code) Cyan else Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    Text(if (code == "bn-BD") "Bangladesh" else "United States", color = Muted, fontSize = 9.sp)
                 }
             }
         }
