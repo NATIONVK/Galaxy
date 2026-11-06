@@ -686,7 +686,20 @@ private fun VoiceStudioScreen() {
             override fun onEndOfSpeech() { status = "কথা বিশ্লেষণ করছি…" }
             override fun onError(error: Int) {
                 listening = false
-                status = "শোনা যায়নি (code $error)। আবার Start চাপ"
+                status = when (error) {
+                    SpeechRecognizer.ERROR_AUDIO -> "Microphone audio পাওয়া যায়নি। Microphone permission ও অন্য recording app পরীক্ষা কর।"
+                    SpeechRecognizer.ERROR_CLIENT -> "Speech service বন্ধ হয়েছে। আবার Start চাপ।"
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission নেই। Settings থেকে permission Allow কর।"
+                    SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Speech recognition network সমস্যা। Internet সংযোগ পরীক্ষা কর।"
+                    SpeechRecognizer.ERROR_NO_MATCH -> "কথা বোঝা যায়নি। একটু স্পষ্ট করে আবার বল।"
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech service ব্যস্ত। কয়েক সেকেন্ড পরে আবার চেষ্টা কর।"
+                    SpeechRecognizer.ERROR_SERVER -> "Speech recognition server error। পরে আবার চেষ্টা কর।"
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "কোনো কথা শোনা যায়নি। Start চাপার পর কথা বল।"
+                    SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> "বাংলা (বাংলাদেশ) recognition এই service-এ পাওয়া যাচ্ছে না।"
+                    else -> "Speech recognition error (code $error)। আবার চেষ্টা কর।"
+                }
+                recognizer.value?.destroy()
+                recognizer.value = null
             }
             override fun onResults(results: Bundle?) {
                 listening = false
@@ -715,7 +728,19 @@ private fun VoiceStudioScreen() {
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Hey Galaxy / হেই গ্যালাক্সি বলুন")
         }
-        sr.startListening(intent)
+        try {
+            sr.startListening(intent)
+        } catch (error: SecurityException) {
+            listening = false
+            status = "Microphone permission পাওয়া যায়নি। Android Settings থেকে permission পরীক্ষা কর।"
+            sr.destroy()
+            recognizer.value = null
+        } catch (error: IllegalStateException) {
+            listening = false
+            status = "Speech service এখন প্রস্তুত নয়। একটু পরে আবার চেষ্টা কর।"
+            sr.destroy()
+            recognizer.value = null
+        }
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
