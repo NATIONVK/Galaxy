@@ -119,7 +119,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             Box(Modifier.clip(CircleShape).background(Panel2).padding(11.dp)) { Text("✧", color = Violet, fontSize = 21.sp) }
         }
         Spacer(Modifier.height(12.dp))
-        Box(Modifier.fillMaxWidth().height(390.dp).clip(RoundedCornerShape(25.dp)).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { onOpen(GalaxyTab.BLACKHOLE) }) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 220.dp, max = 390.dp).clip(RoundedCornerShape(25.dp)).semantics { contentDescription = "Open Black Hole experience"; role = Role.Button }.clickable { onOpen(GalaxyTab.BLACKHOLE) }) {
             GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
             Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xDD050611)))).padding(18.dp)) {
                 Column {
@@ -393,7 +393,7 @@ private fun ChatScreen() {
         }
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel2).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(CircleShape).background(Panel).semantics { contentDescription = if (attachmentOpen) "Close attachment options" else "Open attachment options"; role = Role.Button }.clickable { attachmentOpen = !attachmentOpen }, contentAlignment = Alignment.Center) {
-                Text("＋", color = Cyan, fontSize = 21.sp, modifier = Modifier.semantics { contentDescription = "Open attachment options" })
+                Text("＋", color = Cyan, fontSize = 21.sp)
             }
             Spacer(Modifier.width(8.dp))
             androidx.compose.foundation.text.BasicTextField(
@@ -418,7 +418,7 @@ private fun ChatScreen() {
                     notice = "Saved locally in this screen — AI response unavailable in demo mode."
                 }
             }, contentAlignment = Alignment.Center) {
-                Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { contentDescription = "Send message" })
+                Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -1473,8 +1473,8 @@ private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit)
     Row(Modifier.fillMaxWidth().background(Color(0xFF090B17)).padding(horizontal = 8.dp, vertical = 9.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
         listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.MEMORY, GalaxyTab.PROFILE).forEach { tab ->
             val active = tab == selected
-            Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { onSelect(tab) }.semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(tab.glyph, color = if (active) Cyan else Muted, fontSize = 20.sp, modifier = Modifier.semantics { contentDescription = "${tab.label} tab icon" })
+            Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab; selected = active }.clickable { onSelect(tab) }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(tab.glyph, color = if (active) Cyan else Muted)
                 Spacer(Modifier.height(3.dp))
                 Text(tab.label, color = if (active) Color.White else Muted, fontSize = 10.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
                 if (active) {
