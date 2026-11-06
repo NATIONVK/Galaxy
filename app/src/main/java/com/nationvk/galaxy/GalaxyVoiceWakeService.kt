@@ -22,6 +22,7 @@ class GalaxyVoiceWakeService : Service() {
     companion object {
         const val ACTION_STOP = "com.nationvk.galaxy.voice.STOP"
         const val ACTION_TOGGLE = "com.nationvk.galaxy.voice.TOGGLE"
+        const val ACTION_CANCEL_PENDING = "com.nationvk.galaxy.voice.CANCEL_PENDING"
         private const val CHANNEL_ID = "galaxy_voice_assistant"
         private const val NOTIFICATION_ID = 4107
     }
@@ -46,6 +47,10 @@ class GalaxyVoiceWakeService : Service() {
         if (intent?.action == ACTION_STOP) {
             stopAssistant()
             return START_NOT_STICKY
+        }
+        if (intent?.action == ACTION_CANCEL_PENDING) {
+            updateNotification("Request cancelled • say Hey Galaxy")
+            return START_STICKY
         }
         stopped = false
         startForeground(NOTIFICATION_ID, buildNotification("Galaxy is active • say Hey Galaxy"))
@@ -179,24 +184,60 @@ class GalaxyVoiceWakeService : Service() {
         handler.removeCallbacks(wakeTimeout)
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
-                showActionNotification("Galaxy heard: Wi-Fi settings", Intent(android.provider.Settings.ACTION_WIFI_SETTINGS))
+                requestSettingsConfirmation("Wi-Fi", Intent("android.settings.panel.action.WIFI"))
             }
             command.contains("bluetooth", true) || command.contains("ব্লুটুথ") -> {
-                showActionNotification("Galaxy heard: Bluetooth settings", Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS))
+                requestSettingsConfirmation("Bluetooth", Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS))
+            }
+            command.contains("location", true) || command.contains("লোকেশন") -> {
+                requestSettingsConfirmation("Location", Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }
+            command.contains("dark mode", true) || command.contains("dark theme", true) || command.contains("ডার্ক মোড") -> {
+                requestSettingsConfirmation("Display / Dark mode", Intent(android.provider.Settings.ACTION_DISPLAY_SETTINGS))
+            }
+            command.contains("dnd", true) || command.contains("do not disturb", true) || command.contains("ডু নট ডিস্টার্ব") -> {
+                requestSettingsConfirmation("Do Not Disturb access", Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+            }
+            command.contains("airplane", true) || command.contains("এয়ারপ্লেন") || command.contains("এয়ারপ্লেন") -> {
+                requestSettingsConfirmation("Airplane mode settings", Intent(android.provider.Settings.ACTION_AIRPLANE_MODE_SETTINGS))
             }
             command.contains("settings", true) || command.contains("সেটিংস") -> {
-                showActionNotification("Galaxy heard: Settings", Intent(android.provider.Settings.ACTION_SETTINGS))
+                requestSettingsConfirmation("Android Settings", Intent(android.provider.Settings.ACTION_SETTINGS))
             }
             command.contains("youtube", true) || command.contains("ইউটিউব") -> {
                 val launch = packageManager.getLaunchIntentForPackage("com.google.android.youtube")
                     ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
-                showActionNotification("Galaxy heard: Open YouTube", launch)
+                requestSettingsConfirmation("Open YouTube", launch)
             }
             else -> {
                 updateNotification("Command received: $command • more actions coming soon")
                 tts?.speak("এই কাজটি এখনো শেখানো হয়নি।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-unsupported")
             }
         }
+    }
+
+    /** Voice requests never change protected system settings directly. */
+    private fun requestSettingsConfirmation(label: String, actionIntent: Intent) {
+        val confirmIntent = PendingIntent.getActivity(
+            this, label.hashCode(), actionIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val cancelIntent = PendingIntent.getService(
+            this, 4112,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CANCEL_PENDING),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Galaxy needs your confirmation")
+            .setContentText("$label settings খুলব? Confirm চাপলে Android page খুলবে।")
+            .setContentIntent(confirmIntent)
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_view, "Confirm • Open", confirmIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelIntent)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+        tts?.speak("$label settings খুলতে notification থেকে confirm করো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-confirm")
     }
 
     private val wakeTimeout = Runnable {
