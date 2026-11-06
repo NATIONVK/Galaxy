@@ -66,7 +66,7 @@ fun GalaxyApp() {
                         when (selected) {
                             GalaxyTab.BLACKHOLE -> BlackHoleExperience(onBack = { selected = GalaxyTab.HOME })
                             GalaxyTab.HOME -> HomeScreen(onOpen = { selected = it })
-                            GalaxyTab.CHAT -> FeatureScreen("AI CHAT", "তোমার ব্যক্তিগত AI কথোপকথন", "A thoughtful assistant, ready when you are.", "Chat interface is being prepared. AI connection will be added in the core phase.", "Start a conversation", "Conversation engine coming next")
+                            GalaxyTab.CHAT -> ChatScreen()
                             GalaxyTab.LAB -> FeatureScreen("CYBER LAB", "নিরাপদে শেখো, পরীক্ষা করো", "Your personal learning & security workspace.", "Practice area, learning paths and local sandbox tools will be built here.", "Explore learning paths", "Lab tools are not connected yet")
                             GalaxyTab.MEMORY -> FeatureScreen("MEMORY VAULT", "তোমার জ্ঞান, এক জায়গায়", "A private space for saved context and notes.", "Memory controls, searchable notes and personal preferences will be added in a later phase.", "Open memory vault", "Memory storage is not active yet")
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
@@ -311,6 +311,118 @@ private fun StatusRow(name: String, status: String, tint: Color) {
         Spacer(Modifier.width(10.dp))
         Text(name, color = Color(0xFFD8DDF0), fontSize = 11.sp, modifier = Modifier.weight(1f))
         Text(status, color = tint, fontSize = 10.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+@Composable
+private fun ChatScreen() {
+    var draft by remember { mutableStateOf("") }
+    var messages by remember { mutableStateOf(listOf<Pair<Boolean, String>>()) }
+    var attachmentOpen by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("GALAXY CONVERSATION", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                Text("AI Chat", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
+            }
+            Text("DEMO UI", color = Violet, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 12.dp, vertical = 8.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("✦", color = Cyan, fontSize = 18.sp)
+            Spacer(Modifier.width(9.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Galaxy Assistant", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                Text("Conversation interface preview • AI Core not connected", color = Muted, fontSize = 9.sp)
+            }
+            Text("● OFFLINE", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(12.dp))
+        if (messages.isEmpty()) {
+            Column(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Brush.radialGradient(listOf(Color(0xFF24234D), Panel, Space))).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Box(Modifier.size(76.dp).clip(CircleShape).background(Color(0x332F9DFF)), contentAlignment = Alignment.Center) {
+                    Text("✧", color = Cyan, fontSize = 42.sp)
+                }
+                Spacer(Modifier.height(18.dp))
+                Text("Where should we begin?", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(7.dp))
+                Text("তোমার ভাবনা লিখে রাখো। AI Core যুক্ত হলে এখানেই বাস্তব উত্তর পাবে।", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
+                Spacer(Modifier.height(20.dp))
+                listOf("Explain a statistics concept", "Help me plan a research project", "Explore a Python idea").forEach { suggestion ->
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(12.dp)).background(Panel2).clickable { draft = suggestion }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("✧", color = Violet, fontSize = 13.sp)
+                        Spacer(Modifier.width(9.dp))
+                        Text(suggestion, color = Color(0xFFDCE2F7), fontSize = 11.sp)
+                        Spacer(Modifier.weight(1f))
+                        Text("↗", color = Cyan, fontSize = 12.sp)
+                    }
+                }
+            }
+        } else {
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 5.dp)) {
+                messages.forEach { message ->
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.first) Arrangement.End else Arrangement.Start) {
+                        Column(Modifier.widthIn(max = 290.dp).padding(vertical = 5.dp).clip(RoundedCornerShape(17.dp)).background(if (message.first) Color(0xFF29264F) else Panel).padding(13.dp)) {
+                            Text(if (message.first) "YOU" else "LOCAL NOTE", color = if (message.first) Cyan else Violet, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Spacer(Modifier.height(5.dp))
+                            Text(message.second, color = Color.White, fontSize = 12.sp, lineHeight = 18.sp)
+                        }
+                    }
+                }
+                Text("Messages are stored in this screen only. No AI reply is generated in demo mode.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 10.dp))
+            }
+        }
+        if (attachmentOpen) {
+            Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(RoundedCornerShape(13.dp)).background(Panel2).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("＋", color = Cyan, fontSize = 18.sp)
+                Spacer(Modifier.width(8.dp))
+                Text("Attachments will be enabled with file and vision services.", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                Text("CLOSE", color = Cyan, fontSize = 9.sp, modifier = Modifier.clickable { attachmentOpen = false })
+            }
+        }
+        if (notice.isNotBlank()) {
+            Text(notice, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(start = 5.dp, bottom = 6.dp))
+        }
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel2).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(38.dp).clip(CircleShape).background(Panel).clickable { attachmentOpen = !attachmentOpen }, contentAlignment = Alignment.Center) {
+                Text("＋", color = Cyan, fontSize = 21.sp)
+            }
+            Spacer(Modifier.width(8.dp))
+            androidx.compose.foundation.text.BasicTextField(
+                value = draft,
+                onValueChange = { draft = it; notice = "" },
+                modifier = Modifier.weight(1f).padding(vertical = 10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                decorationBox = { inner ->
+                    Box {
+                        if (draft.isEmpty()) Text("Write a message...", color = Muted, fontSize = 12.sp)
+                        inner()
+                    }
+                }
+            )
+            Spacer(Modifier.width(7.dp))
+            Box(Modifier.size(40.dp).clip(CircleShape).background(if (draft.isBlank()) Panel else Violet).clickable {
+                val value = draft.trim()
+                if (value.isNotEmpty()) {
+                    messages = messages + (true to value)
+                    draft = ""
+                    notice = "Saved locally in this screen — AI response unavailable in demo mode."
+                }
+            }, contentAlignment = Alignment.Center) {
+                Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Demo mode • local screen state only", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f))
+            Text("CLEAR CHAT", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable {
+                messages = emptyList()
+                notice = "Local conversation cleared."
+            }.padding(5.dp))
+        }
     }
 }
 
