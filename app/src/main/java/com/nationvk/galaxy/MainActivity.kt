@@ -341,6 +341,22 @@ private fun ChatScreen() {
     var messages by remember { mutableStateOf(GalaxyLocalConversationStore.load(context)) }
     var attachmentOpen by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use {
+                    it.write(GalaxyLocalConversationStore.exportJson(context))
+                }
+                notice = "Conversation backup exported as JSON."
+            } catch (_: Exception) {
+                notice = "Export failed. Check available device storage and try again."
+            }
+        }
+    }
+    val visibleMessages = remember(messages, searchQuery) {
+        if (searchQuery.isBlank()) messages else messages.filter { it.second.contains(searchQuery.trim(), ignoreCase = true) }
+    }
 
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -348,8 +364,31 @@ private fun ChatScreen() {
                 Text("GALAXY CONVERSATION", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 Text("AI Chat", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             }
-            Text("DEMO UI", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 12.dp, vertical = 8.dp))
+            Column(horizontalAlignment = Alignment.End) {
+                Text("DEMO UI", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(5.dp))
+                Text("EXPORT JSON", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable {
+                        exportLauncher.launch("galaxy-chat-backup.json")
+                    }.padding(horizontal = 9.dp, vertical = 7.dp))
+            }
+        }
+        if (messages.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("⌕", color = Cyan, fontSize = 18.sp)
+                Spacer(Modifier.width(8.dp))
+                androidx.compose.foundation.text.BasicTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.weight(1f).padding(vertical = 9.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                    decorationBox = { inner -> Box { if (searchQuery.isEmpty()) Text("Search saved messages...", color = Muted, fontSize = 11.sp); inner() } }
+                )
+                if (searchQuery.isNotEmpty()) Text("CLEAR", color = Muted, fontSize = 9.sp,
+                    modifier = Modifier.clickable { searchQuery = "" }.padding(5.dp))
+            }
         }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -384,7 +423,10 @@ private fun ChatScreen() {
             }
         } else {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 5.dp)) {
-                messages.forEach { message ->
+                if (visibleMessages.isEmpty()) {
+                    Text("No matching saved messages.", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(12.dp))
+                }
+                visibleMessages.forEach { message ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.first) Arrangement.End else Arrangement.Start) {
                         Column(Modifier.widthIn(max = 290.dp).padding(vertical = 5.dp).clip(RoundedCornerShape(17.dp)).background(if (message.first) Color(0xFF29264F) else Panel).padding(13.dp)) {
                             Text(if (message.first) "YOU" else "LOCAL NOTE", color = if (message.first) Cyan else Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -393,7 +435,7 @@ private fun ChatScreen() {
                         }
                     }
                 }
-                Text("Messages are stored in this screen only. No AI reply is generated in demo mode.", color = Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 10.dp))
+                Text("Messages are stored locally on this device. Search and JSON export work offline; no AI reply is generated in demo mode.", color = Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 10.dp))
             }
         }
         if (attachmentOpen) {
