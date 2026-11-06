@@ -36,6 +36,8 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
     private var startedAt = 0L
     private var resolutionLocation = 0
     private var timeLocation = 0
+    private var surfaceWidth = 1
+    private var surfaceHeight = 1
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.008f, 0.008f, 0.025f, 1f)
@@ -49,14 +51,16 @@ private class BlackHoleRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-        GLES20.glViewport(0, 0, width, height)
+        surfaceWidth = width.coerceAtLeast(1)
+        surfaceHeight = height.coerceAtLeast(1)
+        GLES20.glViewport(0, 0, surfaceWidth, surfaceHeight)
     }
 
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         if (program == 0) return
         GLES20.glUseProgram(program)
-        GLES20.glUniform2f(resolutionLocation, width.toFloat(), height.toFloat())
+        GLES20.glUniform2f(resolutionLocation, surfaceWidth.toFloat(), surfaceHeight.toFloat())
         val elapsed = (System.nanoTime() - startedAt) / 1_000_000_000f
         GLES20.glUniform1f(timeLocation, elapsed)
         val position = GLES20.glGetAttribLocation(program, "aPosition")
