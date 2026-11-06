@@ -530,6 +530,7 @@ private fun VoiceStudioScreen() {
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
     var listening by remember { mutableStateOf(false) }
+    var recognitionSession by remember { mutableIntStateOf(0) }
     var speed by remember { mutableFloatStateOf(1f) }
     var ttsReady by remember { mutableStateOf(false) }
     var pendingBackgroundStart by remember { mutableStateOf(false) }
@@ -602,6 +603,7 @@ private fun VoiceStudioScreen() {
         }
         tts.value = engine
         onDispose {
+            recognitionSession++
             listening = false
             recognizer.value?.destroy()
             recognizer.value = null
@@ -665,6 +667,10 @@ private fun VoiceStudioScreen() {
     }
 
     fun startListening() {
+        if (listening) {
+            status = "ইতিমধ্যে শুনছি। নতুন session শুরু করতে আগে Stop চাপ।"
+            return
+        }
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             status = "এই ডিভাইসে Speech Recognition service পাওয়া যায়নি"
             return
@@ -673,18 +679,21 @@ private fun VoiceStudioScreen() {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             return
         }
+        val session = recognitionSession + 1
+        recognitionSession = session
         val sr = SpeechRecognizer.createSpeechRecognizer(context)
         recognizer.value?.destroy()
         recognizer.value = sr
         listening = true
         status = "শুনছি… “Hey Galaxy” বল"
         sr.setRecognitionListener(object : RecognitionListener {
-            override fun onReadyForSpeech(params: Bundle?) { status = "শুনছি… Hey Galaxy" }
-            override fun onBeginningOfSpeech() { status = "কথা শনাক্ত করছি…" }
+            override fun onReadyForSpeech(params: Bundle?) { if (session != recognitionSession) return; status = "শুনছি… Hey Galaxy" }
+            override fun onBeginningOfSpeech() { if (session != recognitionSession) return; status = "কথা শনাক্ত করছি…" }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() { status = "কথা বিশ্লেষণ করছি…" }
+            override fun onEndOfSpeech() { if (session != recognitionSession) return; status = "কথা বিশ্লেষণ করছি…" }
             override fun onError(error: Int) {
+                if (session != recognitionSession) return
                 listening = false
                 status = when (error) {
                     SpeechRecognizer.ERROR_AUDIO -> "Microphone audio পাওয়া যায়নি। Microphone permission ও অন্য recording app পরীক্ষা কর।"
@@ -702,6 +711,7 @@ private fun VoiceStudioScreen() {
                 recognizer.value = null
             }
             override fun onResults(results: Bundle?) {
+                if (session != recognitionSession) return
                 listening = false
                 val heard = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
                 val wake = heard.contains("hey galaxy", true) || heard.contains("হেই গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি")
@@ -715,6 +725,7 @@ private fun VoiceStudioScreen() {
                 recognizer.value = null
             }
             override fun onPartialResults(partialResults: Bundle?) {
+                if (session != recognitionSession) return
                 val partial = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                 if (!partial.isNullOrBlank()) status = "শুনছি: $partial"
             }
@@ -766,6 +777,7 @@ private fun VoiceStudioScreen() {
                     Text(if (listening) "LISTENING" else "START LISTENING", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.clip(RoundedCornerShape(14.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+                    recognitionSession++
                     listening = false
                     recognizer.value?.cancel()
                     recognizer.value?.destroy()
