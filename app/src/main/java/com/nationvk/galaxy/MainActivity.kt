@@ -1,6 +1,19 @@
 package com.nationvk.galaxy
 
 import android.os.Bundle
+import java.util.Locale
+import androidx.core.content.ContextCompat
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.provider.Settings
+import android.speech.tts.Voice
+import android.speech.tts.TextToSpeech
+import android.speech.SpeechRecognizer
+import android.speech.RecognizerIntent
+import android.speech.RecognitionListener
+import android.content.pm.PackageManager
+import android.content.Intent
+import android.Manifest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
@@ -434,102 +447,205 @@ private fun ChatScreen() {
 
 @Composable
 private fun VoiceStudioScreen() {
-    var voiceMode by remember { mutableStateOf("LISTEN") }
-    var selectedVoice by remember { mutableStateOf("Nova") }
+    val context = LocalContext.current
+    var selectedVoice by remember { mutableStateOf("Male") }
     var transcript by remember { mutableStateOf("") }
-    var showVoices by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
+    var listening by remember { mutableStateOf(false) }
+    var speed by remember { mutableFloatStateOf(1f) }
+    var ttsReady by remember { mutableStateOf(false) }
+    val tts = remember { mutableStateOf<TextToSpeech?>(null) }
+    val recognizer = remember { mutableStateOf<SpeechRecognizer?>(null) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) status = "Microphone permission granted. Tap Start Listening."
+        else status = "Microphone permission denied."
+    }
+
+    DisposableEffect(context) {
+        val engine = TextToSpeech(context) { result ->
+            ttsReady = result == TextToSpeech.SUCCESS
+            if (result == TextToSpeech.SUCCESS) {
+                tts.value?.language = Locale("bn", "BD")
+                tts.value?.setSpeechRate(speed)
+            }
+        }
+        tts.value = engine
+        onDispose {
+            listening = false
+            recognizer.value?.destroy()
+            recognizer.value = null
+            engine.stop()
+            engine.shutdown()
+            tts.value = null
+        }
+    }
+
+    fun speak(text: String) {
+        val engine = tts.value ?: return
+        val voices = engine.voices ?: emptySet<Voice>()
+        val wanted = if (selectedVoice == "Male") "male" else "female"
+        val match = voices.firstOrNull { it.name.contains(wanted, ignoreCase = true) }
+        if (match != null) engine.voice = match
+        val bn = engine.setLanguage(Locale("bn", "BD"))
+        if (bn == TextToSpeech.LANG_MISSING_DATA || bn == TextToSpeech.LANG_NOT_SUPPORTED) {
+            engine.setLanguage(Locale.US)
+        }
+        engine.setSpeechRate(speed)
+        engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "galaxy_reply")
+    }
+
+    fun runCommand(raw: String) {
+        val command = raw.lowercase(Locale.ROOT)
+            .replace("hey galaxy", "").replace("হেই গ্যালাক্সি", "")
+            .replace("হে গ্যালাক্সি", "").trim()
+        transcript = raw
+        when {
+            command.contains("youtube") || command.contains("ইউটিউব") -> {
+                val launch = context.packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                if (launch != null) context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                status = "YouTube খোলার নির্দেশ দেওয়া হয়েছে"
+                speak("YouTube খুলছি")
+            }
+            command.contains("wifi") || command.contains("wi-fi") || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
+                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                status = "Wi-Fi settings খোলা হচ্ছে"
+                speak("Wi-Fi settings খুলছি")
+            }
+            command.contains("bluetooth") || command.contains("ব্লুটুথ") -> {
+                context.startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                status = "Bluetooth settings খোলা হচ্ছে"
+                speak("Bluetooth settings খুলছি")
+            }
+            command.contains("settings") || command.contains("সেটিংস") -> {
+                context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                status = "Settings খোলা হচ্ছে"
+                speak("Settings খুলছি")
+            }
+            command.isBlank() -> {
+                status = "Wake phrase শুনেছি। এখন command বল।"
+                speak("জি, বলুন।")
+            }
+            else -> {
+                status = "Command চিনেছি: $command — এই action এখনো যোগ করা হয়নি"
+                speak("তোমার নির্দেশটি বুঝেছি। এই কাজটি এখনো শেখানো হয়নি।")
+            }
+        }
+    }
+
+    fun startListening() {
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+            status = "এই ডিভাইসে Speech Recognition service পাওয়া যায়নি"
+            return
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        val sr = SpeechRecognizer.createSpeechRecognizer(context)
+        recognizer.value?.destroy()
+        recognizer.value = sr
+        listening = true
+        status = "শুনছি… “Hey Galaxy” বল"
+        sr.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) { status = "শুনছি… Hey Galaxy" }
+            override fun onBeginningOfSpeech() { status = "কথা শনাক্ত করছি…" }
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() { status = "কথা বিশ্লেষণ করছি…" }
+            override fun onError(error: Int) {
+                listening = false
+                status = "শোনা যায়নি (code $error)। আবার Start চাপ"
+            }
+            override fun onResults(results: Bundle?) {
+                listening = false
+                val heard = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
+                val wake = heard.contains("hey galaxy", true) || heard.contains("হেই গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি")
+                if (wake) runCommand(heard)
+                else {
+                    transcript = heard
+                    status = "Wake phrase মেলেনি। “Hey Galaxy” দিয়ে শুরু কর"
+                    speak("আমাকে ডাকতে Hey Galaxy বলুন")
+                }
+                recognizer.value?.destroy()
+                recognizer.value = null
+            }
+            override fun onPartialResults(partialResults: Bundle?) {
+                val partial = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+                if (!partial.isNullOrBlank()) status = "শুনছি: $partial"
+            }
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        })
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "bn-BD")
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Say Hey Galaxy / হেই গ্যালাক্সি বলুন")
+        }
+        sr.startListening(intent)
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("GALAXY AUDIO EXPERIENCE", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                Text("GALAXY VOICE ASSISTANT", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 Text("Voice Studio", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
-                Text("কথা বলার অভিজ্ঞতার জন্য প্রস্তুত workspace", color = Muted, fontSize = 11.sp)
+                Text("বাংলা + English • On-device Android voice services", color = Muted, fontSize = 11.sp)
             }
-            Text("UI PREVIEW", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 10.dp, vertical = 8.dp))
+            Text("LOCAL", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 10.dp, vertical = 8.dp))
         }
         Spacer(Modifier.height(18.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.radialGradient(listOf(Color(0xFF34306C), Panel, Space))).padding(vertical = 24.dp, horizontal = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(Modifier.size(166.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0x6655DFFF), Color(0x449B69FF), Color(0x11101326)))), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(124.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF51418D), Color(0xFF171B33), Color(0xFF101326)))), contentAlignment = Alignment.Center) {
-                    Text("♫", color = Cyan, fontSize = 54.sp)
-                }
+            Box(Modifier.size(150.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0x6655DFFF), Color(0x449B69FF), Color(0x11101326)))), contentAlignment = Alignment.Center) {
+                Text(if (listening) "◉" else "♫", color = Cyan, fontSize = 54.sp)
             }
             Spacer(Modifier.height(15.dp))
-            Text(if (voiceMode == "LISTEN") "Ready to listen" else if (voiceMode == "SPEAK") "Speech preview selected" else "Voice paused", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("Microphone and speech engine are not connected", color = Muted, fontSize = 10.sp)
-            Spacer(Modifier.height(18.dp))
+            Text(if (listening) "Listening…" else "Hey Galaxy", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+            Text(status, color = Muted, fontSize = 11.sp)
+            Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf("LISTEN", "SPEAK", "PAUSE").forEach { mode ->
-                    Column(Modifier.clip(RoundedCornerShape(14.dp)).background(if (voiceMode == mode) Color(0xFF29264F) else Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { voiceMode = mode }.padding(horizontal = 15.dp, vertical = 11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (voiceMode == mode) "● $mode" else mode, color = if (voiceMode == mode) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
+                Column(Modifier.clip(RoundedCornerShape(14.dp)).background(if (listening) Color(0xFF542B3A) else Color(0xFF173B45)).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { if (!listening) startListening() }.padding(horizontal = 18.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (listening) "LISTENING" else "START LISTENING", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.clip(RoundedCornerShape(14.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+                    listening = false
+                    recognizer.value?.cancel()
+                    recognizer.value?.destroy()
+                    recognizer.value = null
+                    status = "Voice paused"
+                }.padding(horizontal = 18.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("STOP", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
         Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFF14283A)).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 10.sp)
-            Spacer(Modifier.width(9.dp))
-            Text("Preview controls only — no audio is recorded, played or uploaded.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp)
-        }
-        Spacer(Modifier.height(18.dp))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("VOICE PROFILE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.weight(1f))
-            Text("CHANGE", color = Muted, fontSize = 10.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showVoices = !showVoices })
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showVoices = !showVoices }.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(42.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) { Text("✧", color = Violet, fontSize = 22.sp) }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(selectedVoice, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                Text("Cosmic voice profile • demo preset", color = Muted, fontSize = 10.sp)
-            }
-            Text(if (showVoices) "⌃" else "⌄", color = Cyan, fontSize = 18.sp)
-        }
-        if (showVoices) {
-            listOf("Nova", "Orion", "Luna", "Atlas").forEach { voice ->
-                Row(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(12.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedVoice = voice; showVoices = false }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(voice, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
-                    Text(if (selectedVoice == voice) "SELECTED" else "SELECT", color = if (selectedVoice == voice) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Text("VOICE TYPE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf("Male", "Female").forEach { voice ->
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (selectedVoice == voice) Color(0xFF29264F) else Panel2).heightIn(min = 52.dp).semantics { role = Role.Button }.clickable { selectedVoice = voice; speak(if (voice == "Male") "আমি Galaxy। কীভাবে সাহায্য করতে পারি?" else "আমি Galaxy। কীভাবে সাহায্য করতে পারি?") }.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (selectedVoice == voice) "● $voice" else voice, color = if (selectedVoice == voice) Cyan else Color.White, fontWeight = FontWeight.Bold)
+                    Text(if (voice == "Male") "পুরুষ কণ্ঠ" else "নারী কণ্ঠ", color = Muted, fontSize = 10.sp)
                 }
             }
-        }
-        Spacer(Modifier.height(18.dp))
-        Text("TRANSCRIPT / TEXT INPUT", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(14.dp)) {
-            androidx.compose.foundation.text.BasicTextField(
-                value = transcript,
-                onValueChange = { transcript = it },
-                modifier = Modifier.fillMaxWidth().heightIn(min = 74.dp),
-                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp, lineHeight = 18.sp),
-                cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
-                decorationBox = { inner ->
-                    Box {
-                        if (transcript.isEmpty()) Text("এখানে কথার transcript বা text লিখে রাখো...", color = Muted, fontSize = 11.sp)
-                        inner()
-                    }
-                }
-            )
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("LOCAL DRAFT ONLY", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
-                Text("CLEAR", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { transcript = "" }.padding(5.dp))
-            }
-        }
-        Spacer(Modifier.height(16.dp))
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(15.dp)) {
-            Text("AUDIO SETTINGS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(10.dp))
-            Text("Speech speed", color = Color.White, fontSize = 11.sp)
-            var speed by remember { mutableFloatStateOf(1f) }
-            Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.5f..2f)
-            Text("Speed preference: ${String.format("%.1f", speed)}× • demo only", color = Muted, fontSize = 10.sp)
         }
         Spacer(Modifier.height(12.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+            Text("SPEECH SPEED", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.7f..1.4f)
+            Text("Speed: ${String.format("%.1f", speed)}×", color = Muted, fontSize = 10.sp)
+            Spacer(Modifier.height(8.dp))
+            Text("RECOGNIZED SPEECH", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(transcript.ifBlank { "এখনো কোনো কথা শনাক্ত হয়নি" }, color = Color.White, fontSize = 13.sp)
+            Spacer(Modifier.height(8.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel2).padding(12.dp)) {
+                Text("Supported starter commands", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                Text("• Hey Galaxy, open YouTube\n• Hey Galaxy, Wi-Fi settings\n• Hey Galaxy, Bluetooth settings\n• Hey Galaxy, open Settings", color = Muted, fontSize = 11.sp, lineHeight = 18.sp)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("Wake phrase currently works while Voice Studio is open and listening. Background / always-on wake word requires a separate Android foreground microphone service, visible notification and battery testing.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
