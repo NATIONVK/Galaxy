@@ -80,6 +80,47 @@ object GalaxyMemoryStore {
         return root.toString(2)
     }
 
+
+    data class ImportSummary(val imported: Int, val skippedDuplicates: Int, val rejected: Int)
+
+    fun importJson(context: Context, rawJson: String): ImportSummary {
+        if (rawJson.length > 5_000_000) throw IllegalArgumentException("Backup file is too large (5 MB limit).")
+        val root = try { JSONObject(rawJson) } catch (_: Exception) {
+            throw IllegalArgumentException("This file is not valid Galaxy JSON.")
+        }
+        if (root.optString("app") != "Galaxy") throw IllegalArgumentException("This backup was not created by Galaxy.")
+        val version = root.optInt("formatVersion", -1)
+        if (version != 1) throw IllegalArgumentException("Unsupported backup format version: $version")
+        val array = root.optJSONArray("memories") ?: throw IllegalArgumentException("Backup has no memories list.")
+        if (array.length() > 5000) throw IllegalArgumentException("Backup contains too many records.")
+        val existing = getAll(context).toMutableList()
+        val known = existing.map { dedupeKey(it.category, it.content) }.toMutableSet()
+        var imported = 0
+        var duplicates = 0
+        var rejected = 0
+        var nextId = (existing.maxOfOrNull { it.id } ?: 0L) + 1L
+        val allowed = setOf("PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
+        for (index in 0 until array.length()) {
+            val item = array.optJSONObject(index)
+            if (item == null) { rejected++; continue }
+            val content = item.optString("content", "").trim()
+            val category = item.optString("category", "NOTES").uppercase().take(24)
+            if (content.isEmpty() || content.length > 10000 || category !in allowed) { rejected++; continue }
+            val key = dedupeKey(category, content)
+            if (!known.add(key)) { duplicates++; continue }
+            val timestamp = item.optLong("createdAt", System.currentTimeMillis()).coerceIn(0L, System.currentTimeMillis() + 86_400_000L)
+            existing.add(GalaxyMemoryEntry(nextId++, category, content, timestamp))
+            imported++
+        }
+        if (imported > 0 && !save(context, existing.sortedByDescending { it.createdAt }.take(MAX_ENTRIES))) {
+            throw IllegalStateException("Could not save imported memories.")
+        }
+        return ImportSummary(imported, duplicates, rejected)
+    }
+
+    private fun dedupeKey(category: String, content: String): String =
+        category.trim().uppercase() + "|" + content.trim().replace(Regex("\\s+"), " ").lowercase()
+
     private fun save(context: Context, entries: List<GalaxyMemoryEntry>): Boolean {
         val array = JSONArray()
         entries.forEach { entry ->
