@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -173,9 +174,18 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
 
 @Composable
 private fun BlackHoleExperience(onBack: () -> Unit) {
+    var zoom by remember { mutableFloatStateOf(1.0f) }
+    var speed by remember { mutableFloatStateOf(1.0f) }
+    var intensity by remember { mutableFloatStateOf(1.0f) }
+    var particles by remember { mutableFloatStateOf(0.65f) }
+    var glView by remember { mutableStateOf<GalaxyGLSurfaceView?>(null) }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
-        Column(Modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.SpaceBetween) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context -> GalaxyGLSurfaceView(context).also { glView = it } },
+            update = { it.updateVisuals(zoom, speed, intensity, particles) }
+        )
+        Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.SpaceBetween) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.clip(RoundedCornerShape(30.dp)).background(Color(0xAA101326)).clickable(onClick = onBack).padding(horizontal = 16.dp, vertical = 11.dp)) {
                     Text("←  BACK TO GALAXY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -183,11 +193,18 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 Text("LIVE VISUAL", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp)
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC050611)))).padding(16.dp)) {
-                Text("PROJECT GALAXY  •  DEEP SPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp)
-                Spacer(Modifier.height(5.dp))
-                Text("THE SINGULARITY", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-                Text("Gravitational lensing · Plasma flow · Orbital particles", color = Color(0xFFB7C0DA), fontSize = 10.sp)
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color(0xCC080B1B)).padding(15.dp)) {
+                Text("THE SINGULARITY", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
+                Text("LIVE VISUAL CONTROLS", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Zoom  ${String.format("%.1f", zoom)}×", color = Color.White, fontSize = 11.sp)
+                Slider(value = zoom, onValueChange = { zoom = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.7f..1.8f)
+                Text("Animation speed  ${String.format("%.1f", speed)}×", color = Color.White, fontSize = 11.sp)
+                Slider(value = speed, onValueChange = { speed = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.2f..2.5f)
+                Text("Glow intensity  ${String.format("%.1f", intensity)}×", color = Color.White, fontSize = 11.sp)
+                Slider(value = intensity, onValueChange = { intensity = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.3f..2.0f)
+                Text("Particle density  ${String.format("%.0f", particles * 100)}%", color = Color.White, fontSize = 11.sp)
+                Slider(value = particles, onValueChange = { particles = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.1f..1.0f)
             }
         }
     }
