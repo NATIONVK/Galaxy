@@ -358,7 +358,7 @@ private fun ChatScreen() {
                 Spacer(Modifier.height(20.dp))
                 listOf("Explain a statistics concept", "Help me plan a research project", "Explore a Python idea").forEach { suggestion ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(12.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { draft = suggestion }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("✧", color = Violet, fontSize = 13.sp)
+                        Text("✧", color = Violet, fontSize = 13.sp, modifier = Modifier.semantics { contentDescription = "Suggested prompt" })
                         Spacer(Modifier.width(9.dp))
                         Text(suggestion, color = Color(0xFFDCE2F7), fontSize = 11.sp)
                         Spacer(Modifier.weight(1f))
@@ -393,7 +393,7 @@ private fun ChatScreen() {
         }
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel2).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(CircleShape).background(Panel).semantics { contentDescription = if (attachmentOpen) "Close attachment options" else "Open attachment options"; role = Role.Button }.clickable { attachmentOpen = !attachmentOpen }, contentAlignment = Alignment.Center) {
-                Text("＋", color = Cyan, fontSize = 21.sp)
+                Text("＋", color = Cyan, fontSize = 21.sp, modifier = Modifier.semantics { contentDescription = "Open attachment options" })
             }
             Spacer(Modifier.width(8.dp))
             androidx.compose.foundation.text.BasicTextField(
@@ -553,12 +553,12 @@ private fun MemoryVaultScreen() {
                 Text("Notes, ideas and saved context — organized.", color = Muted, fontSize = 10.sp)
             }
             Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
-                Text("◈", color = Violet, fontSize = 23.sp)
+                Text("◈", color = Violet, fontSize = 23.sp, modifier = Modifier.semantics { contentDescription = "Memory Vault" })
             }
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("⌕", color = Cyan, fontSize = 20.sp)
+            Text("⌕", color = Cyan, fontSize = 20.sp, modifier = Modifier.semantics { contentDescription = "Search memory notes" })
             Spacer(Modifier.width(8.dp))
             androidx.compose.foundation.text.BasicTextField(
                 value = search,
@@ -651,7 +651,7 @@ private fun MemoryVaultScreen() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(item.first, color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
                             Text("LOCAL", color = Muted, fontSize = 7.sp)
-                            Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { notes = notes - item }.padding(start = 8.dp))
+                            Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Delete note: ${item.title}"; role = Role.Button }.clickable { notes = notes - item }.padding(start = 8.dp))
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(item.second, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
@@ -1064,7 +1064,7 @@ private fun VisionStudioScreen() {
                 Text("Capture, organize and explore visual content.", color = Muted, fontSize = 10.sp)
             }
             Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
-                Text("◉", color = Cyan, fontSize = 23.sp)
+                Text("◉", color = Cyan, fontSize = 23.sp, modifier = Modifier.semantics { contentDescription = "Vision Studio" })
             }
         }
         Spacer(Modifier.height(14.dp))
@@ -1096,7 +1096,7 @@ private fun VisionStudioScreen() {
                         }
                     }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("◉", color = Cyan, fontSize = 42.sp)
+                        Text("◉", color = Cyan, fontSize = 42.sp, modifier = Modifier.semantics { contentDescription = "Camera preview placeholder" })
                         Spacer(Modifier.height(8.dp))
                         Text("CAMERA PREVIEW PLACEHOLDER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         Text("Camera permission and hardware preview are not connected.", color = Muted, fontSize = 8.sp)
@@ -1474,7 +1474,7 @@ private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit)
         listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.MEMORY, GalaxyTab.PROFILE).forEach { tab ->
             val active = tab == selected
             Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { onSelect(tab) }.semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(tab.glyph, color = if (active) Cyan else Muted, fontSize = 20.sp)
+                Text(tab.glyph, color = if (active) Cyan else Muted, fontSize = 20.sp, modifier = Modifier.semantics { contentDescription = "${tab.label} tab icon" })
                 Spacer(Modifier.height(3.dp))
                 Text(tab.label, color = if (active) Color.White else Muted, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
                 if (active) {
