@@ -56,7 +56,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { GalaxyApp() }
+        val requestedTab = intent?.getStringExtra("galaxy_widget_tab")
+        setContent { GalaxyApp(initialTab = requestedTab) }
     }
 }
 
@@ -74,8 +75,18 @@ private enum class GalaxyTab(val label: String, val glyph: String) {
 }
 
 @Composable
-fun GalaxyApp() {
-    var selected by remember { mutableStateOf(GalaxyTab.HOME) }
+fun GalaxyApp(initialTab: String? = null) {
+    var selected by remember {
+        mutableStateOf(
+            when (initialTab?.uppercase(Locale.ROOT)) {
+                "CHAT" -> GalaxyTab.CHAT
+                "VOICE" -> GalaxyTab.VOICE
+                "SETTINGS" -> GalaxyTab.SETTINGS
+                "PROFILE" -> GalaxyTab.PROFILE
+                else -> GalaxyTab.HOME
+            }
+        )
+    }
     MaterialTheme {
         Surface(Modifier.fillMaxSize(), color = Space) {
             Box(Modifier.fillMaxSize()) {
