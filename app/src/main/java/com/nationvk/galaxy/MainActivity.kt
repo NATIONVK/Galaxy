@@ -1561,6 +1561,9 @@ private fun SettingsScreen() {
         Spacer(Modifier.height(18.dp))
         SettingsSectionTitle("SMART PERMISSION MANAGER")
         PermissionManagerPanel()
+        Spacer(Modifier.height(16.dp))
+        SettingsSectionTitle("ANDROID SETTINGS SWITCH CONTROL")
+        SettingsSwitchControlPanel()
         SettingsInfoRow("Memory controls", "Memory service not connected")
         SettingsInfoRow("Data & privacy", "Local preferences stay on this device")
         Spacer(Modifier.height(18.dp))
@@ -1611,6 +1614,61 @@ private fun PermissionManagerPanel() {
         PermissionStatusRow("Contacts / Location", "নির্দিষ্ট feature চালু হলে চাইবে", false, null, "এখন প্রয়োজন নেই")
         Spacer(Modifier.height(10.dp))
         Text("Accessibility একটি শক্তিশালী special access। Galaxy এটি নিজে enable করতে পারে না; নিয়ন্ত্রণ তোর হাতেই থাকবে।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+    }
+}
+
+
+@Composable
+private fun SettingsSwitchControlPanel() {
+    val context = LocalContext.current
+
+    fun openSystemSettings(action: String, extraKey: String? = null, extraValue: String? = null) {
+        val intent = Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (extraKey != null && extraValue != null) intent.putExtra(extraKey, extraValue)
+        try {
+            context.startActivity(intent)
+        } catch (_: android.content.ActivityNotFoundException) {
+            context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Text("Supported system controls", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text("Android-এর নিরাপত্তা নিয়ম মেনে Galaxy প্রয়োজনীয় system panel বা Settings page খুলবে। যেখানে third-party app সরাসরি switch করতে পারে না, সেখানে তুই নিজে পরিবর্তন করবি।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp, bottom = 12.dp))
+        SettingsActionRow("Wi-Fi", "System Wi-Fi panel খুলবে", "OPEN") {
+            openSystemSettings("android.settings.panel.action.WIFI")
+        }
+        SettingsActionRow("Bluetooth", "Bluetooth settings খুলবে", "OPEN") {
+            openSystemSettings(Settings.ACTION_BLUETOOTH_SETTINGS)
+        }
+        SettingsActionRow("Location", "Location settings খুলবে", "OPEN") {
+            openSystemSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        }
+        SettingsActionRow("Display / Dark mode", "Display settings খুলবে", "OPEN") {
+            openSystemSettings(Settings.ACTION_DISPLAY_SETTINGS)
+        }
+        SettingsActionRow("Do Not Disturb", "DND access page; grant করা থাকলেও user confirmation ছাড়া বদলাবে না", "ACCESS") {
+            openSystemSettings(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+        }
+        SettingsActionRow("Airplane mode", "System page only; Galaxy সরাসরি toggle করতে পারবে না", "OPEN") {
+            openSystemSettings(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
+        }
+        SettingsActionRow("App notifications", "এই Galaxy app-এর notification settings", "OPEN") {
+            openSystemSettings(Settings.ACTION_APP_NOTIFICATION_SETTINGS, Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("এখনকার ধাপে এগুলো নিরাপদ Settings shortcuts। Accessibility দিয়ে অন্য app-এর UI-তে স্বয়ংক্রিয় click এখনো চালু করা হয়নি। Wi-Fi, Bluetooth ও Airplane Mode-এর direct toggle Android version/OEM policy দ্বারা সীমাবদ্ধ।", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp)
+    }
+}
+
+@Composable
+private fun SettingsActionRow(title: String, description: String, actionLabel: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(bottom = 7.dp).clip(RoundedCornerShape(12.dp)).background(Panel2).padding(horizontal = 11.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(description, color = Muted, fontSize = 9.sp, lineHeight = 13.sp)
+        }
+        Text(actionLabel, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet).clickable(onClick = onClick).padding(horizontal = 11.dp, vertical = 8.dp))
     }
 }
 
