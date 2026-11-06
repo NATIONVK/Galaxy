@@ -630,8 +630,9 @@ private fun VoiceStudioScreen() {
 
     fun runCommand(raw: String) {
         val command = raw.lowercase(Locale.ROOT)
-            .replace("hey galaxy", "").replace("হেই গ্যালাক্সি", "")
-            .replace("হে গ্যালাক্সি", "").trim()
+            .replace("hey galaxy", "").replace("hey, galaxy", "")
+            .replace("হেই গ্যালাক্সি", "").replace("হে গ্যালাক্সি", "")
+            .trim()
         transcript = raw
         when {
             command.contains("youtube") || command.contains("ইউটিউব") -> {
@@ -755,12 +756,13 @@ private fun VoiceStudioScreen() {
                 if (session != recognitionSession) return
                 listening = false
                 val heard = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                val wake = heard.contains("hey galaxy", true) || heard.contains("হেই গ্যালাক্সি") || heard.contains("হে গ্যালাক্সি")
-                if (wake) runCommand(heard)
-                else {
-                    transcript = heard
-                    status = "Wake phrase মেলেনি। “Hey Galaxy” দিয়ে শুরু কর"
-                    speak("আমাকে ডাকতে Hey Galaxy বলুন")
+                transcript = heard
+                if (heard.isBlank()) {
+                    status = "কোনো কথা শনাক্ত হয়নি। আবার চেষ্টা কর।"
+                } else {
+                    // Voice Studio is already manually armed by the Start button,
+                    // so it must accept a direct command without requiring a wake phrase.
+                    runCommand(heard)
                 }
                 recognizer.value?.destroy()
                 recognizer.value = null
