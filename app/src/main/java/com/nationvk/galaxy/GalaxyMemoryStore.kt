@@ -46,11 +46,27 @@ object GalaxyMemoryStore {
     fun add(context: Context, category: String, content: String): Boolean {
         val clean = content.trim().take(10000)
         val cleanCategory = category.trim().uppercase().take(24)
-        if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES) return false
+        if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES || isDuplicate(context, cleanCategory, clean)) return false
         val entries = getAll(context).toMutableList()
         val nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
         entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis()))
         return save(context, entries.take(MAX_ENTRIES))
+    }
+
+    fun isDuplicate(context: Context, category: String, content: String, excludingId: Long? = null): Boolean {
+        val key = dedupeKey(category, content)
+        return getAll(context).any { it.id != excludingId && dedupeKey(it.category, it.content) == key }
+    }
+
+    fun update(context: Context, id: Long, category: String, content: String): Boolean {
+        val clean = content.trim().take(10000)
+        val cleanCategory = category.trim().uppercase().take(24)
+        if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES || isDuplicate(context, cleanCategory, clean, id)) return false
+        val entries = getAll(context).toMutableList()
+        val index = entries.indexOfFirst { it.id == id }
+        if (index < 0) return false
+        entries[index] = entries[index].copy(category = cleanCategory, content = clean)
+        return save(context, entries)
     }
 
     fun search(context: Context, query: String, category: String? = null, limit: Int = 8): List<GalaxyMemoryEntry> {
