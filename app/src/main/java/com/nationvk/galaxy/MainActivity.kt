@@ -4,6 +4,7 @@ import android.os.Bundle
 import java.util.Locale
 import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import android.provider.Settings
 import android.speech.tts.Voice
@@ -76,17 +77,29 @@ private enum class GalaxyTab(val label: String, val glyph: String) {
 
 @Composable
 fun GalaxyApp(initialTab: String? = null) {
-    var selected by remember {
-        mutableStateOf(
-            when (initialTab?.uppercase(Locale.ROOT)) {
-                "CHAT" -> GalaxyTab.CHAT
-                "VOICE" -> GalaxyTab.VOICE
-                "SETTINGS" -> GalaxyTab.SETTINGS
-                "PROFILE" -> GalaxyTab.PROFILE
-                else -> GalaxyTab.HOME
-            }
-        )
+    val startTab = when (initialTab?.uppercase(Locale.ROOT)) {
+        "CHAT" -> GalaxyTab.CHAT
+        "VOICE" -> GalaxyTab.VOICE
+        "SETTINGS" -> GalaxyTab.SETTINGS
+        "PROFILE" -> GalaxyTab.PROFILE
+        else -> GalaxyTab.HOME
     }
+    val navigationStack = remember {
+        mutableStateListOf<GalaxyTab>().apply {
+            add(GalaxyTab.HOME)
+            if (startTab != GalaxyTab.HOME) add(startTab)
+        }
+    }
+    val selected = navigationStack.last()
+
+    fun navigate(tab: GalaxyTab) {
+        if (navigationStack.lastOrNull() != tab) navigationStack.add(tab)
+    }
+
+    BackHandler(enabled = navigationStack.size > 1) {
+        navigationStack.removeAt(navigationStack.lastIndex)
+    }
+
     MaterialTheme {
         Surface(Modifier.fillMaxSize(), color = Space) {
             Box(Modifier.fillMaxSize()) {
@@ -96,12 +109,15 @@ fun GalaxyApp(initialTab: String? = null) {
                     if (selected != GalaxyTab.BLACKHOLE) GalaxyTopBar()
                     Box(Modifier.weight(1f)) {
                         when (selected) {
-                            GalaxyTab.BLACKHOLE -> BlackHoleExperience(onBack = { selected = GalaxyTab.HOME })
-                            GalaxyTab.HOME -> HomeScreen(onOpen = { selected = it })
+                            GalaxyTab.BLACKHOLE -> BlackHoleExperience(onBack = {
+                                if (navigationStack.size > 1) navigationStack.removeAt(navigationStack.lastIndex)
+                                else navigate(GalaxyTab.HOME)
+                            })
+                            GalaxyTab.HOME -> HomeScreen(onOpen = { navigate(it) })
                             GalaxyTab.CHAT -> ChatScreen()
                             GalaxyTab.LAB -> CyberLabScreen()
                             GalaxyTab.MEMORY -> MemoryVaultScreen()
-                            GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
+                            GalaxyTab.PROFILE -> ProfileScreen(onSettings = { navigate(GalaxyTab.SETTINGS) })
                             GalaxyTab.VOICE -> VoiceStudioScreen()
                             GalaxyTab.RESEARCH -> ResearchHubScreen()
                             GalaxyTab.CAMERA -> VisionStudioScreen()
@@ -110,7 +126,9 @@ fun GalaxyApp(initialTab: String? = null) {
                             GalaxyTab.SETTINGS -> SettingsScreen()
                         }
                     }
-                    if (selected != GalaxyTab.BLACKHOLE) BottomNavigation(selected = selected, onSelect = { selected = it })
+                    if (selected != GalaxyTab.BLACKHOLE) {
+                        BottomNavigation(selected = selected, onSelect = { navigate(it) })
+                    }
                 }
             }
         }
