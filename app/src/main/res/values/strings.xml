@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="galaxy_accessibility_description">Galaxy uses this optional access only to assist with explicitly requested Android Settings actions. It does not monitor unrelated apps or act without a user command.</string>
+    <string name="galaxy_widget_description">Galaxy quick access widget for Home, AI Chat, Voice and Settings.</string>
 </resources>
