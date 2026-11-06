@@ -1590,6 +1590,10 @@ private fun PermissionManagerPanel() {
     val notificationGranted = !notificationDeclared || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
     val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
+    val accessibilityComponent = android.content.ComponentName(context, GalaxyAccessibilityService::class.java).flattenToString()
+    val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
+    val accessibilityEnabled = refresh >= 0 && enabledServices.split(':').any { it.equals(accessibilityComponent, ignoreCase = true) }
+    val accessibilityLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { refresh++ }
 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
         Text("Permission Status", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -1598,11 +1602,15 @@ private fun PermissionManagerPanel() {
         Spacer(Modifier.height(8.dp))
         PermissionStatusRow("Notifications", "Background listening-এর স্থায়ী status", notificationGranted, if (notificationGranted || !notificationDeclared) null else { { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) } })
         Spacer(Modifier.height(8.dp))
+        PermissionStatusRow("Accessibility • Settings Switch", "তোর নির্দেশে Settings action-এর জন্য optional access", accessibilityEnabled, if (accessibilityEnabled) null else { { accessibilityLauncher.launch(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) } })
+        Spacer(Modifier.height(5.dp))
+        Text("Android Accessibility Settings-এ গিয়ে Galaxy Settings Switch Access নিজে ON করবি। এই আপডেটে service foundation যোগ হয়েছে; এখনো switch click করে না। পরের আপডেটে allowlisted switch control যোগ হবে।", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp)
+        Spacer(Modifier.height(8.dp))
         PermissionStatusRow("Camera", "Vision feature ব্যবহার করলে চাইবে", false, null, "এখন প্রয়োজন নেই")
         Spacer(Modifier.height(8.dp))
         PermissionStatusRow("Contacts / Location", "নির্দিষ্ট feature চালু হলে চাইবে", false, null, "এখন প্রয়োজন নেই")
         Spacer(Modifier.height(10.dp))
-        Text("Special access (যেমন Accessibility) Android Settings থেকে তোর হাতে enable করতে হবে। Galaxy নিজে থেকে এটি চালু করতে পারবে না।", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp)
+        Text("Accessibility একটি শক্তিশালী special access। Galaxy এটি নিজে enable করতে পারে না; নিয়ন্ত্রণ তোর হাতেই থাকবে।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
