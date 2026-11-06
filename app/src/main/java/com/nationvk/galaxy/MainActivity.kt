@@ -17,6 +17,7 @@ import android.Manifest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -1612,6 +1613,12 @@ private fun FeatureScreen(tag: String, title: String, subtitle: String, detail: 
 
 @Composable
 private fun ProfileScreen(onSettings: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("galaxy_profile", android.content.Context.MODE_PRIVATE) }
+    var displayName by remember { mutableStateOf(prefs.getString("display_name", "Galaxy Explorer") ?: "Galaxy Explorer") }
+    var draftName by remember { mutableStateOf(displayName) }
+    var saved by remember { mutableStateOf(false) }
+    val initial = displayName.trim().firstOrNull()?.uppercaseChar()?.toString() ?: "G"
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
         Text("YOUR SPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 2.5.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
@@ -1619,11 +1626,36 @@ private fun ProfileScreen(onSettings: () -> Unit) {
         Spacer(Modifier.height(22.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp)).background(Panel).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.size(76.dp).clip(CircleShape).background(Brush.linearGradient(listOf(Violet, Color(0xFF163E67)))), contentAlignment = Alignment.Center) {
-                Text("N", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black)
+                Text(initial, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.height(12.dp))
-            Text("Galaxy Explorer", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("Personal AI workspace", color = Muted, fontSize = 11.sp)
+            Text(displayName, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Personal Galaxy workspace", color = Muted, fontSize = 11.sp)
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("PERSONALIZE PROFILE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+            Text("DISPLAY NAME", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            BasicTextField(
+                value = draftName,
+                onValueChange = { draftName = it.take(32); saved = false },
+                singleLine = true,
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 14.sp),
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Panel2).padding(13.dp),
+                decorationBox = { inner -> if (draftName.isEmpty()) Text("Enter a display name", color = Muted, fontSize = 13.sp); inner() }
+            )
+            Spacer(Modifier.height(10.dp))
+            Text("SAVE PROFILE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet).heightIn(min = 44.dp).clickable {
+                    val clean = draftName.trim()
+                    if (clean.isNotEmpty()) {
+                        displayName = clean
+                        prefs.edit().putString("display_name", clean).apply()
+                        saved = true
+                    }
+                }.padding(horizontal = 14.dp, vertical = 12.dp))
+            if (saved) Text("Profile saved on this device.", color = Color(0xFF8BE0B5), fontSize = 10.sp, modifier = Modifier.padding(top = 8.dp))
         }
         Spacer(Modifier.height(18.dp))
         Text("APP INFORMATION", color = Muted, fontSize = 10.sp, letterSpacing = 1.5.sp)
