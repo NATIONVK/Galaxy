@@ -1621,6 +1621,17 @@ private fun PermissionManagerPanel() {
 @Composable
 private fun SettingsSwitchControlPanel() {
     val context = LocalContext.current
+    var switchReport by remember { mutableStateOf("এখনো কোনো supported switch state শনাক্ত হয়নি।") }
+
+    fun refreshSwitchReport() {
+        val (snapshot, capturedAt) = GalaxyAccessibilityService.getLatestSwitchSnapshot()
+        switchReport = if (snapshot.isEmpty()) {
+            "কোনো switch state পাওয়া যায়নি। Android Settings-এর সংশ্লিষ্ট screen খুলে আবার ফিরে এসে Refresh কর।"
+        } else {
+            snapshot.entries.joinToString(" • ") { (name, enabled) -> "$name: ${if (enabled) "ON" else "OFF"}" } +
+                if (capturedAt > 0L) "\\nশুধু Android Settings থেকে শনাক্ত; এটি live control নয়।" else ""
+        }
+    }
 
     fun openSystemSettings(action: String, extraKey: String? = null, extraValue: String? = null) {
         val intent = Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -1634,6 +1645,9 @@ private fun SettingsSwitchControlPanel() {
 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
         Text("Supported system controls", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text("DETECTED SWITCH STATES", color = Color(0xFF9D8CFF), fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp))
+        Text(switchReport, color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 4.dp))
+        Text("REFRESH STATUS", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 7.dp, bottom = 8.dp).clip(RoundedCornerShape(8.dp)).background(Violet).clickable { refreshSwitchReport() }.padding(horizontal = 12.dp, vertical = 8.dp))
         Text("Android-এর নিরাপত্তা নিয়ম মেনে Galaxy প্রয়োজনীয় system panel বা Settings page খুলবে। যেখানে third-party app সরাসরি switch করতে পারে না, সেখানে তুই নিজে পরিবর্তন করবি।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp, bottom = 12.dp))
         SettingsActionRow("Wi-Fi", "System Wi-Fi panel খুলবে", "OPEN") {
             openSystemSettings("android.settings.panel.action.WIFI")
