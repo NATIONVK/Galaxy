@@ -72,7 +72,7 @@ fun GalaxyApp() {
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
                             GalaxyTab.VOICE -> VoiceStudioScreen()
                             GalaxyTab.RESEARCH -> ResearchHubScreen()
-                            GalaxyTab.CAMERA -> FeatureScreen("VISION STUDIO", "Camera & Image Understanding", "See, capture and explore.", "Camera screen layout for live preview, capture action, image upload and analysis history. Camera permission and vision model are not connected yet.", "Open camera preview", "Camera service not connected")
+                            GalaxyTab.CAMERA -> VisionStudioScreen()
                             GalaxyTab.MODELS -> ModelControlScreen()
                             GalaxyTab.NOTIFICATIONS -> FeatureScreen("NOTIFICATION CENTER", "Your universe updates", "Important activity in one place.", "Notification inbox layout for assistant updates, reminders, system messages and security events. Push notifications are not configured.", "Notification preferences", "Notifications are not enabled")
                             GalaxyTab.SETTINGS -> SettingsScreen()
@@ -1038,6 +1038,183 @@ private fun ResearchHubScreen() {
             Text("UI preview only • no live data processing, file parsing or AI Core connection.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun VisionStudioScreen() {
+    var activeTab by remember { mutableStateOf("CAMERA") }
+    var cameraState by remember { mutableStateOf("READY") }
+    var selectedImage by remember { mutableStateOf("Galaxy sample • nebula.jpg") }
+    var uploadState by remember { mutableStateOf("No file selected") }
+    var analysisState by remember { mutableStateOf("IDLE") }
+    var showError by remember { mutableStateOf(false) }
+    var showGalleryEmpty by remember { mutableStateOf(false) }
+    val gallery = listOf("Nebula sample.jpg", "Galaxy cluster.png", "Planet surface.jpg", "Star field.png")
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("CAMERA • IMAGES • VISUAL INTELLIGENCE", color = Cyan, fontSize = 8.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("Vision Studio", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                Text("Capture, organize and explore visual content.", color = Muted, fontSize = 10.sp)
+            }
+            Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
+                Text("◉", color = Cyan, fontSize = 23.sp)
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Panel).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf("CAMERA", "UPLOAD", "GALLERY", "ANALYSIS").forEach { tab ->
+                Text(tab, color = if (activeTab == tab) Color.White else Muted, fontSize = 7.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (activeTab == tab) Color(0xFF302A5B) else Color.Transparent).clickable { activeTab = tab }.padding(vertical = 11.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        when (activeTab) {
+            "CAMERA" -> {
+                Text("CAMERA PREVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Box(Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(19.dp)).background(Brush.radialGradient(listOf(Color(0xFF30366B), Color(0xFF11162A), Color(0xFF070914)))), contentAlignment = Alignment.Center) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val cx = size.width / 2f
+                        val cy = size.height / 2f
+                        drawCircle(Color(0x3355DFFF), size.minDimension * 0.28f, Offset(cx, cy))
+                        drawCircle(Cyan.copy(alpha = 0.45f), size.minDimension * 0.18f, Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(2f))
+                        drawCircle(Violet.copy(alpha = 0.5f), size.minDimension * 0.29f, Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(1f))
+                        val corners = 24f
+                        val len = 27f
+                        listOf(Offset(20f,20f), Offset(size.width-20f,20f), Offset(20f,size.height-20f), Offset(size.width-20f,size.height-20f)).forEachIndexed { i,p ->
+                            val sx = if (i % 2 == 0) 1f else -1f
+                            val sy = if (i < 2) 1f else -1f
+                            drawLine(Cyan.copy(alpha=0.7f), p, Offset(p.x + sx*len,p.y), 2f)
+                            drawLine(Cyan.copy(alpha=0.7f), p, Offset(p.x,p.y + sy*len), 2f)
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("◉", color = Cyan, fontSize = 42.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Text("CAMERA PREVIEW PLACEHOLDER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text("Camera permission and hardware preview are not connected.", color = Muted, fontSize = 8.sp)
+                    }
+                    Text("● ${cameraState}", color = if (cameraState == "READY") Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(13.dp))
+                    Text("16:9  •  PREVIEW", color = Muted, fontSize = 8.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(13.dp))
+                }
+                Spacer(Modifier.height(11.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("START PREVIEW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(Violet).clickable { cameraState = "DEMO" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("CAPTURE DEMO", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(Panel2).clickable { selectedImage = "New demo capture • preview.png"; uploadState = "Demo capture selected"; activeTab = "ANALYSIS" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("CAMERA STATES", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(top = 7.dp)) {
+                    listOf("READY", "LOADING", "ERROR").forEach { state ->
+                        Text(state, color = if (cameraState == state) Color.White else Muted, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(if (cameraState == state) Color(0xFF302A5B) else Panel).clickable { cameraState = state }.padding(horizontal = 12.dp, vertical = 9.dp))
+                    }
+                }
+                if (cameraState == "ERROR") VisionStateCard("Camera unavailable", "Camera access is not configured in this build. Check permission and device support after integration.", "ERROR")
+                if (cameraState == "LOADING") VisionStateCard("Preparing preview…", "This is a loading-state design preview. No camera service is starting.", "LOADING")
+            }
+            "UPLOAD" -> {
+                Text("IMAGE UPLOAD", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("Bring an image into your workspace.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(Modifier.fillMaxWidth().height(145.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(Color(0xFF252A55), Color(0xFF101426)))), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("⇧", color = Cyan, fontSize = 38.sp)
+                            Text("SELECT IMAGE FILE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("JPG • PNG • WEBP", color = Muted, fontSize = 8.sp)
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text("＋  CHOOSE IMAGE", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Violet).clickable { uploadState = "Demo image selected"; selectedImage = "Uploaded sample • image.png"; showError = false }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Spacer(Modifier.height(8.dp))
+                    Text(uploadState, color = if (uploadState.startsWith("No")) Muted else Cyan, fontSize = 9.sp)
+                    Text("File picker and real image decoding will be connected in a later integration phase.", color = Muted, fontSize = 8.sp, lineHeight = 13.sp)
+                }
+                Spacer(Modifier.height(11.dp))
+                Text("UPLOAD VALIDATION STATES", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 7.dp)) {
+                    Text("SIMULATE ERROR", color = Color.White, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable { showError = true }.padding(10.dp))
+                    Text("RESET", color = Muted, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable { showError = false; uploadState = "No file selected" }.padding(10.dp))
+                }
+                if (showError) VisionStateCard("Unsupported file", "This demo state represents an invalid format or file that could not be read.", "ERROR")
+            }
+            "GALLERY" -> {
+                Text("IMAGE GALLERY & HISTORY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("Your recent visual workspace.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("SAMPLE ITEMS", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f).padding(top = 9.dp))
+                    Text(if (showGalleryEmpty) "SHOW ITEMS" else "EMPTY STATE", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showGalleryEmpty = !showGalleryEmpty }.padding(8.dp))
+                }
+                if (showGalleryEmpty) {
+                    VisionStateCard("No images yet", "Your uploaded images and captures will appear here once the gallery storage is connected.", "EMPTY")
+                } else {
+                    gallery.chunked(2).forEachIndexed { rowIndex, rowItems ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.padding(bottom = 9.dp)) {
+                            rowItems.forEachIndexed { colIndex, item ->
+                                val active = selectedImage == item
+                                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (active) Color(0xFF25294F) else Panel).clickable { selectedImage = item; activeTab = "ANALYSIS" }.padding(9.dp)) {
+                                    Box(Modifier.fillMaxWidth().height(92.dp).clip(RoundedCornerShape(10.dp)).background(Brush.radialGradient(listOf(if ((rowIndex+colIndex)%2==0) Color(0xFF48518C) else Color(0xFF24546C), Color(0xFF101426)))), contentAlignment = Alignment.Center) {
+                                        Text(if ((rowIndex+colIndex)%2==0) "✦" else "◉", color = Cyan, fontSize = 31.sp)
+                                    }
+                                    Spacer(Modifier.height(7.dp))
+                                    Text(item, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("Sample • preview only", color = Muted, fontSize = 8.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+                Text("Gallery items are illustrative placeholders; no image files are stored.", color = Muted, fontSize = 9.sp)
+            }
+            "ANALYSIS" -> {
+                Text("ANALYSIS RESULT PREVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("Visual insight workspace.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(10.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(13.dp)) {
+                    Text("SELECTED IMAGE", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text(selectedImage, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(10.dp))
+                    Box(Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(12.dp)).background(Brush.radialGradient(listOf(Color(0xFF4A4F89), Color(0xFF15203B), Color(0xFF080B17)))), contentAlignment = Alignment.Center) {
+                        Text("✦", color = Cyan, fontSize = 50.sp)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Text("DEMO RESULT", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("Sample cosmic image • bright central region • scattered light points", color = Color(0xFFD7DDF0), fontSize = 10.sp, lineHeight = 15.sp)
+                    Text("Confidence: not calculated • Model: not connected", color = Muted, fontSize = 8.sp)
+                }
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("RUN DEMO ANALYSIS", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Violet).clickable { analysisState = "LOADING" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("SIMULATE ERROR", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel2).clickable { analysisState = "ERROR" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+                if (analysisState == "LOADING") VisionStateCard("Analysis queued (demo)", "Loading state preview only. No image processing or AI request has been executed.", "LOADING")
+                if (analysisState == "ERROR") VisionStateCard("Analysis unavailable", "No vision provider is connected. Try again after the analysis service is configured.", "ERROR")
+                if (analysisState == "IDLE") VisionStateCard("Ready for preview", "Choose a sample image and preview the result layout.", "EMPTY")
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("●", color = Cyan, fontSize = 9.sp)
+            Spacer(Modifier.width(8.dp))
+            Text("UI preview only • camera, file picker, gallery storage and vision AI are not connected.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+        }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun VisionStateCard(title: String, detail: String, state: String) {
+    val tint = if (state == "ERROR") Color(0xFFFF8B9B) else if (state == "LOADING") Cyan else Muted
+    Row(Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(13.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.Top) {
+        Text(if (state == "ERROR") "!" else if (state == "LOADING") "◌" else "○", color = tint, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.width(10.dp))
+        Column {
+            Text(title, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(detail, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+        }
     }
 }
 
