@@ -1559,8 +1559,8 @@ private fun SettingsScreen() {
         }
 
         Spacer(Modifier.height(18.dp))
-        SettingsSectionTitle("PRIVACY & SECURITY")
-        SettingsInfoRow("App permissions", "No permissions requested by this screen")
+        SettingsSectionTitle("SMART PERMISSION MANAGER")
+        PermissionManagerPanel()
         SettingsInfoRow("Memory controls", "Memory service not connected")
         SettingsInfoRow("Data & privacy", "Local preferences stay on this device")
         Spacer(Modifier.height(18.dp))
@@ -1578,6 +1578,50 @@ private fun SettingsScreen() {
         SettingsInfoRow("Project", "Galaxy AI")
         Spacer(Modifier.height(12.dp))
         Text("Settings marked as preferences do not activate unavailable services.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+    }
+}
+
+@Composable
+private fun PermissionManagerPanel() {
+    val context = LocalContext.current
+    var refresh by remember { mutableIntStateOf(0) }
+    val micGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    val notificationDeclared = android.os.Build.VERSION.SDK_INT >= 33
+    val notificationGranted = !notificationDeclared || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Text("Permission Status", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        Text("Galaxy প্রয়োজনের সময় permission চাইবে। Allow না করলে সংশ্লিষ্ট কাজ চালু হবে না।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp, bottom = 12.dp))
+        PermissionStatusRow("Microphone", "Voice Assistant ও Hey Galaxy", micGranted, if (micGranted) null else { { micLauncher.launch(Manifest.permission.RECORD_AUDIO) } })
+        Spacer(Modifier.height(8.dp))
+        PermissionStatusRow("Notifications", "Background listening-এর স্থায়ী status", notificationGranted, if (notificationGranted || !notificationDeclared) null else { { notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) } })
+        Spacer(Modifier.height(8.dp))
+        PermissionStatusRow("Camera", "Vision feature ব্যবহার করলে চাইবে", false, null, "এখন প্রয়োজন নেই")
+        Spacer(Modifier.height(8.dp))
+        PermissionStatusRow("Contacts / Location", "নির্দিষ্ট feature চালু হলে চাইবে", false, null, "এখন প্রয়োজন নেই")
+        Spacer(Modifier.height(10.dp))
+        Text("Special access (যেমন Accessibility) Android Settings থেকে তোর হাতে enable করতে হবে। Galaxy নিজে থেকে এটি চালু করতে পারবে না।", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp)
+    }
+}
+
+@Composable
+private fun PermissionStatusRow(title: String, description: String, granted: Boolean, onRequest: (() -> Unit)?, deferred: String? = null) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel2).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(description, color = Muted, fontSize = 9.sp, lineHeight = 13.sp)
+        }
+        if (deferred != null) {
+            Text(deferred, color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        } else if (granted) {
+            Text("ALLOWED", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        } else if (onRequest != null) {
+            Text("ALLOW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet).clickable { onRequest() }.padding(horizontal = 12.dp, vertical = 9.dp))
+        } else {
+            Text("NOT GRANTED", color = Muted, fontSize = 9.sp)
+        }
     }
 }
 
