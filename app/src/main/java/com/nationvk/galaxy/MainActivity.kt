@@ -1618,6 +1618,9 @@ private fun SettingsScreen() {
         }
 
         Spacer(Modifier.height(18.dp))
+        SettingsSectionTitle("OFFLINE DATA CENTER")
+        OfflineDataPanel()
+        Spacer(Modifier.height(18.dp))
         SettingsSectionTitle("SMART PERMISSION MANAGER")
         PermissionManagerPanel()
         Spacer(Modifier.height(16.dp))
@@ -1640,6 +1643,34 @@ private fun SettingsScreen() {
         SettingsInfoRow("Project", "Galaxy AI")
         Spacer(Modifier.height(12.dp))
         Text("Settings marked as preferences do not activate unavailable services.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+    }
+}
+
+
+@Composable
+private fun OfflineDataPanel() {
+    val context = LocalContext.current
+    var refresh by remember { mutableIntStateOf(0) }
+    val memoryCount = remember(refresh) { GalaxyMemoryStore.getAll(context).size }
+    val chatCount = remember(refresh) { GalaxyLocalConversationStore.load(context).size }
+    val voiceCount = remember(refresh) { GalaxyVoiceHistory.getEntries(context).size }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("DEVICE-ONLY STORAGE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text("তোর ডেটা এই ফোনেই থাকে; Cloud sync এখনো চালু নয়।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable { refresh++ }.padding(horizontal = 10.dp, vertical = 9.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        StatusRow("Saved memories", memoryCount.toString(), Cyan)
+        StatusRow("Offline chat messages", chatCount.toString(), Violet)
+        StatusRow("Voice history records", voiceCount.toString(), Color(0xFFFFC66D))
+        Spacer(Modifier.height(8.dp))
+        Text("OFFLINE-READY", color = Color(0xFF8BE0B5), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Text("Memory Vault, saved chat notes, voice history, app preferences এবং Black Hole visual localভাবে ব্যবহার করা যায়। AI উত্তর, Cloud backup ও online research-এর জন্য Internet/পরবর্তী integration লাগবে।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+        Spacer(Modifier.height(6.dp))
+        Text("পরামর্শ: গুরুত্বপূর্ণ ডেটার JSON backup Memory Vault থেকে Export করে রাখ। অ্যাপ uninstall বা device reset হলে local data হারাতে পারে।", color = Color(0xFFFFDCA8), fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
