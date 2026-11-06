@@ -641,6 +641,8 @@ private fun VoiceStudioScreen() {
                 Text("Microphone released", color = Color(0xFFE8B8C8), fontSize = 9.sp)
             }
         }
+        Spacer(Modifier.height(14.dp))
+        VoiceCommandHistoryPanel()
         Spacer(Modifier.height(16.dp))
         Text("VOICE TYPE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -1581,6 +1583,41 @@ private fun SettingsScreen() {
         SettingsInfoRow("Project", "Galaxy AI")
         Spacer(Modifier.height(12.dp))
         Text("Settings marked as preferences do not activate unavailable services.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+    }
+}
+
+@Composable
+private fun VoiceCommandHistoryPanel() {
+    val context = LocalContext.current
+    var entries by remember { mutableStateOf(GalaxyVoiceHistory.getEntries(context)) }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("VOICE COMMAND HISTORY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text("এই ডিভাইসে সর্বশেষ ৩০টি command", color = Muted, fontSize = 10.sp)
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable {
+                    entries = GalaxyVoiceHistory.getEntries(context)
+                }.padding(horizontal = 10.dp, vertical = 8.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("CLEAR", color = Color(0xFFFFA7B8), fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable {
+                    GalaxyVoiceHistory.clear(context)
+                    entries = emptyList()
+                }.padding(horizontal = 10.dp, vertical = 8.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        if (entries.isEmpty()) {
+            Text("এখনো কোনো background voice command সংরক্ষিত হয়নি।", color = Muted, fontSize = 11.sp)
+        } else {
+            entries.forEach { entry ->
+                Text(entry, color = Color.White, fontSize = 10.sp, lineHeight = 15.sp,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp))
+            }
+        }
+        Text("History শুধু local storage-এ থাকে; কোনো cloud বা Firebase-এ পাঠানো হয় না।", color = Muted, fontSize = 9.sp, lineHeight = 13.sp)
     }
 }
 
