@@ -42,6 +42,7 @@ class GalaxyVoiceWakeService : Service() {
     private var tts: TextToSpeech? = null
     private var recognitionLanguage = "bn-BD"
     private var useOnDeviceRecognition: Boolean? = null
+    private var networkFailureCount = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -168,6 +169,7 @@ class GalaxyVoiceWakeService : Service() {
 
     private val listener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
+            networkFailureCount = 0
             val engine = if (useOnDeviceRecognition == true) "On-device" else "System"
             updateNotification("$engine recognition • $recognitionLanguage • say Hey Galaxy")
         }
@@ -195,8 +197,12 @@ class GalaxyVoiceWakeService : Service() {
                 }
                 SpeechRecognizer.ERROR_NETWORK,
                 SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
-                    updateNotification("Speech network unavailable • retrying")
-                    scheduleRestart(3500)
+                    networkFailureCount = (networkFailureCount + 1).coerceAtMost(5)
+                    val retryDelay = (3000L * (1L shl (networkFailureCount - 1))).coerceAtMost(30000L)
+                    updateNotification("Speech network unavailable • retry in " + (retryDelay / 1000) + "s")
+                    try { recognizer?.destroy() } catch (_: Exception) { }
+                    recognizer = null
+                    scheduleRestart(retryDelay)
                 }
                 SpeechRecognizer.ERROR_NO_MATCH,
                 SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
