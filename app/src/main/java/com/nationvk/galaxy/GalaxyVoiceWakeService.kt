@@ -40,6 +40,7 @@ class GalaxyVoiceWakeService : Service() {
     private var restartQueued = false
     private var wakeArmed = false
     private var tts: TextToSpeech? = null
+    private var recognitionLanguage = "bn-BD"
 
     override fun onCreate() {
         super.onCreate()
@@ -81,6 +82,7 @@ class GalaxyVoiceWakeService : Service() {
             return START_NOT_STICKY
         }
         stopped = false
+        recognitionLanguage = "bn-BD"
         getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", true).apply()
         startForeground(NOTIFICATION_ID, buildNotification("Galaxy is active • say Hey Galaxy"))
         startRecognition()
@@ -124,7 +126,9 @@ class GalaxyVoiceWakeService : Service() {
     private fun startRecognition() {
         if (stopped || isListening) return
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            updateNotification("Speech recognition unavailable on this device")
+            updateNotification("Speech recognition unavailable • install or enable a speech service")
+            getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().putBoolean("voice_running", false).apply()
+            stopAssistant()
             return
         }
         try {
@@ -138,8 +142,8 @@ class GalaxyVoiceWakeService : Service() {
             }
             val request = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "bn-BD")
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "bn-BD")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, recognitionLanguage)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, recognitionLanguage)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
@@ -149,6 +153,7 @@ class GalaxyVoiceWakeService : Service() {
         } catch (_: SecurityException) {
             isListening = false
             updateNotification("Microphone permission is required • open Galaxy")
+            stopAssistant()
         } catch (_: Exception) {
             isListening = false
             scheduleRestart(2500)
@@ -183,7 +188,16 @@ class GalaxyVoiceWakeService : Service() {
                 }
                 SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
                 SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> {
-                    updateNotification("Bangla speech recognition unavailable • check device speech settings")
+                    if (recognitionLanguage != "en-US") {
+                        recognitionLanguage = "en-US"
+                        updateNotification("Bangla recognition unavailable • switching to English")
+                        try { recognizer?.destroy() } catch (_: Exception) { }
+                        recognizer = null
+                        scheduleRestart(900)
+                    } else {
+                        updateNotification("Speech language unavailable • check device speech settings")
+                        scheduleRestart(5000)
+                    }
                 }
                 else -> {
                     updateNotification("Voice recognition interrupted • retrying")
