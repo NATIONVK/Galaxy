@@ -65,7 +65,7 @@ fun GalaxyApp() {
         Surface(Modifier.fillMaxSize(), color = Space) {
             Box(Modifier.fillMaxSize()) {
                 StarBackdrop(Modifier.fillMaxSize())
-                Column(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize().imePadding()) {
                     if (selected != GalaxyTab.BLACKHOLE) GalaxyTopBar()
                     Box(Modifier.weight(1f)) {
                         when (selected) {
