@@ -12,7 +12,8 @@ class GalaxyVoiceTileService : TileService() {
         super.onClick()
         val stop = Intent(this, GalaxyVoiceWakeService::class.java).setAction(GalaxyVoiceWakeService.ACTION_STOP)
         val start = Intent(this, GalaxyVoiceWakeService::class.java)
-        if (qsTile?.state == Tile.STATE_ACTIVE) {
+        val isRunning = getSharedPreferences("galaxy_runtime", MODE_PRIVATE).getBoolean("voice_running", false)
+        if (isRunning) {
             startService(stop)
             qsTile?.state = Tile.STATE_INACTIVE
             qsTile?.label = "Galaxy Voice"
@@ -36,8 +37,9 @@ class GalaxyVoiceTileService : TileService() {
 
     override fun onStartListening() {
         super.onStartListening()
-        qsTile?.label = "Galaxy Voice"
-        qsTile?.state = Tile.STATE_INACTIVE
+        val isRunning = getSharedPreferences("galaxy_runtime", MODE_PRIVATE).getBoolean("voice_running", false)
+        qsTile?.label = if (isRunning) "Galaxy Listening" else "Galaxy Voice"
+        qsTile?.state = if (isRunning) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         qsTile?.updateTile()
     }
 }
