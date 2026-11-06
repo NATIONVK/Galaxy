@@ -70,7 +70,7 @@ fun GalaxyApp() {
                             GalaxyTab.LAB -> FeatureScreen("CYBER LAB", "নিরাপদে শেখো, পরীক্ষা করো", "Your personal learning & security workspace.", "Practice area, learning paths and local sandbox tools will be built here.", "Explore learning paths", "Lab tools are not connected yet")
                             GalaxyTab.MEMORY -> FeatureScreen("MEMORY VAULT", "তোমার জ্ঞান, এক জায়গায়", "A private space for saved context and notes.", "Memory controls, searchable notes and personal preferences will be added in a later phase.", "Open memory vault", "Memory storage is not active yet")
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
-                            GalaxyTab.VOICE -> FeatureScreen("VOICE STUDIO", "তোমার কণ্ঠের AI অভিজ্ঞতা", "Speak naturally with your assistant.", "Voice interface layout: voice orb, listening state, conversation transcript and voice preferences. Microphone and speech services will be connected in the core phase.", "Voice controls", "Microphone service not connected")
+                            GalaxyTab.VOICE -> VoiceStudioScreen()
                             GalaxyTab.RESEARCH -> FeatureScreen("RESEARCH HUB", "Research & Data Analysis", "Turn questions into structured insights.", "Workspace layout for research projects, datasets, analysis tools, charts and saved reports. Data processing engine will be added later.", "Create research workspace", "Analysis engine not connected")
                             GalaxyTab.CAMERA -> FeatureScreen("VISION STUDIO", "Camera & Image Understanding", "See, capture and explore.", "Camera screen layout for live preview, capture action, image upload and analysis history. Camera permission and vision model are not connected yet.", "Open camera preview", "Camera service not connected")
                             GalaxyTab.MODELS -> ModelControlScreen()
@@ -423,6 +423,107 @@ private fun ChatScreen() {
                 notice = "Local conversation cleared."
             }.padding(5.dp))
         }
+    }
+}
+
+@Composable
+private fun VoiceStudioScreen() {
+    var voiceMode by remember { mutableStateOf("LISTEN") }
+    var selectedVoice by remember { mutableStateOf("Nova") }
+    var transcript by remember { mutableStateOf("") }
+    var showVoices by remember { mutableStateOf(false) }
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("GALAXY AUDIO EXPERIENCE", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                Text("Voice Studio", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                Text("কথা বলার অভিজ্ঞতার জন্য প্রস্তুত workspace", color = Muted, fontSize = 11.sp)
+            }
+            Text("UI PREVIEW", color = Violet, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 10.dp, vertical = 8.dp))
+        }
+        Spacer(Modifier.height(18.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.radialGradient(listOf(Color(0xFF34306C), Panel, Space))).padding(vertical = 24.dp, horizontal = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(166.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0x6655DFFF), Color(0x449B69FF), Color(0x11101326)))), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(124.dp).clip(CircleShape).background(Brush.radialGradient(listOf(Color(0xFF51418D), Color(0xFF171B33), Color(0xFF101326)))), contentAlignment = Alignment.Center) {
+                    Text("♫", color = Cyan, fontSize = 54.sp)
+                }
+            }
+            Spacer(Modifier.height(15.dp))
+            Text(if (voiceMode == "LISTEN") "Ready to listen" else if (voiceMode == "SPEAK") "Speech preview selected" else "Voice paused", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Microphone and speech engine are not connected", color = Muted, fontSize = 10.sp)
+            Spacer(Modifier.height(18.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf("LISTEN", "SPEAK", "PAUSE").forEach { mode ->
+                    Column(Modifier.clip(RoundedCornerShape(14.dp)).background(if (voiceMode == mode) Color(0xFF29264F) else Panel2).clickable { voiceMode = mode }.padding(horizontal = 15.dp, vertical = 11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (voiceMode == mode) "● $mode" else mode, color = if (voiceMode == mode) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFF14283A)).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("●", color = Cyan, fontSize = 10.sp)
+            Spacer(Modifier.width(9.dp))
+            Text("Preview controls only — no audio is recorded, played or uploaded.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 15.sp)
+        }
+        Spacer(Modifier.height(18.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("VOICE PROFILE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Text("CHANGE", color = Muted, fontSize = 9.sp, modifier = Modifier.clickable { showVoices = !showVoices })
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).clickable { showVoices = !showVoices }.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(42.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) { Text("✧", color = Violet, fontSize = 22.sp) }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(selectedVoice, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text("Cosmic voice profile • demo preset", color = Muted, fontSize = 10.sp)
+            }
+            Text(if (showVoices) "⌃" else "⌄", color = Cyan, fontSize = 18.sp)
+        }
+        if (showVoices) {
+            listOf("Nova", "Orion", "Luna", "Atlas").forEach { voice ->
+                Row(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(12.dp)).background(Panel2).clickable { selectedVoice = voice; showVoices = false }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(voice, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                    Text(if (selectedVoice == voice) "SELECTED" else "SELECT", color = if (selectedVoice == voice) Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("TRANSCRIPT / TEXT INPUT", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(14.dp)) {
+            androidx.compose.foundation.text.BasicTextField(
+                value = transcript,
+                onValueChange = { transcript = it },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 74.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 12.sp, lineHeight = 18.sp),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Cyan),
+                decorationBox = { inner ->
+                    Box {
+                        if (transcript.isEmpty()) Text("এখানে কথার transcript বা text লিখে রাখো...", color = Muted, fontSize = 11.sp)
+                        inner()
+                    }
+                }
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("LOCAL DRAFT ONLY", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f))
+                Text("CLEAR", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { transcript = "" }.padding(5.dp))
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(15.dp)) {
+            Text("AUDIO SETTINGS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            Text("Speech speed", color = Color.White, fontSize = 11.sp)
+            var speed by remember { mutableFloatStateOf(1f) }
+            Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.5f..2f)
+            Text("Speed preference: ${String.format("%.1f", speed)}× • demo only", color = Muted, fontSize = 9.sp)
+        }
+        Spacer(Modifier.height(12.dp))
     }
 }
 
