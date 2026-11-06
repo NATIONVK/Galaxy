@@ -41,7 +41,9 @@ private val Cyan = Color(0xFF55DFFF)
 private val Muted = Color(0xFF929AB8)
 
 private enum class GalaxyTab(val label: String, val glyph: String) {
-    HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), PROFILE("Profile", "◎")
+    HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), PROFILE("Profile", "◎"),
+    VOICE("Voice", "♫"), RESEARCH("Research", "⌁"), CAMERA("Camera", "◉"), MODELS("AI Models", "⎇"),
+    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙")
 }
 
 @Composable
@@ -59,8 +61,13 @@ fun GalaxyApp() {
                             GalaxyTab.CHAT -> FeatureScreen("AI CHAT", "তোমার ব্যক্তিগত AI কথোপকথন", "A thoughtful assistant, ready when you are.", "Chat interface is being prepared. AI connection will be added in the core phase.", "Start a conversation", "Conversation engine coming next")
                             GalaxyTab.LAB -> FeatureScreen("CYBER LAB", "নিরাপদে শেখো, পরীক্ষা করো", "Your personal learning & security workspace.", "Practice area, learning paths and local sandbox tools will be built here.", "Explore learning paths", "Lab tools are not connected yet")
                             GalaxyTab.MEMORY -> FeatureScreen("MEMORY VAULT", "তোমার জ্ঞান, এক জায়গায়", "A private space for saved context and notes.", "Memory controls, searchable notes and personal preferences will be added in a later phase.", "Open memory vault", "Memory storage is not active yet")
-                            GalaxyTab.PROFILE -> ProfileScreen()
-                        }
+                            GalaxyTab.PROFILE -> ProfileScreen(onSettings = { selected = GalaxyTab.SETTINGS })
+                            GalaxyTab.VOICE -> FeatureScreen("VOICE STUDIO", "তোমার কণ্ঠের AI অভিজ্ঞতা", "Speak naturally with your assistant.", "Voice interface layout: voice orb, listening state, conversation transcript and voice preferences. Microphone and speech services will be connected in the core phase.", "Voice controls", "Microphone service not connected")
+                            GalaxyTab.RESEARCH -> FeatureScreen("RESEARCH HUB", "Research & Data Analysis", "Turn questions into structured insights.", "Workspace layout for research projects, datasets, analysis tools, charts and saved reports. Data processing engine will be added later.", "Create research workspace", "Analysis engine not connected")
+                            GalaxyTab.CAMERA -> FeatureScreen("VISION STUDIO", "Camera & Image Understanding", "See, capture and explore.", "Camera screen layout for live preview, capture action, image upload and analysis history. Camera permission and vision model are not connected yet.", "Open camera preview", "Camera service not connected")
+                            GalaxyTab.MODELS -> FeatureScreen("MODEL CONTROL", "Choose your AI model", "One interface, multiple intelligence engines.", "Model directory layout with provider, model description, connection state and preferred model selection. Provider APIs will be configured in the core phase.", "Manage AI providers", "No AI provider connected")
+                            GalaxyTab.NOTIFICATIONS -> FeatureScreen("NOTIFICATION CENTER", "Your universe updates", "Important activity in one place.", "Notification inbox layout for assistant updates, reminders, system messages and security events. Push notifications are not configured.", "Notification preferences", "Notifications are not enabled")
+                            GalaxyTab.SETTINGS -> SettingsScreen()
                     }
                     BottomNavigation(selected = selected, onSelect = { selected = it })
                 }
@@ -132,6 +139,23 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
             ModuleCard("◈", "MEMORY", "Your knowledge vault", Modifier.weight(1f)) { onOpen(GalaxyTab.MEMORY) }
             ModuleCard("⌁", "RESEARCH", "Analysis workspace", Modifier.weight(1f)) { onOpen(GalaxyTab.LAB) }
+        }
+        Spacer(Modifier.height(20.dp))
+        SectionHeading("MORE GALAXY MODULES", "Open a workspace")
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            ModuleCard("♫", "VOICE STUDIO", "Voice assistant", Modifier.weight(1f)) { onOpen(GalaxyTab.VOICE) }
+            ModuleCard("◉", "VISION", "Camera & images", Modifier.weight(1f)) { onOpen(GalaxyTab.CAMERA) }
+        }
+        Spacer(Modifier.height(11.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            ModuleCard("⌁", "RESEARCH", "Data & reports", Modifier.weight(1f)) { onOpen(GalaxyTab.RESEARCH) }
+            ModuleCard("⎇", "AI MODELS", "Provider control", Modifier.weight(1f)) { onOpen(GalaxyTab.MODELS) }
+        }
+        Spacer(Modifier.height(11.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            ModuleCard("♢", "NOTIFICATIONS", "Activity inbox", Modifier.weight(1f)) { onOpen(GalaxyTab.NOTIFICATIONS) }
+            ModuleCard("⚙", "SETTINGS", "App preferences", Modifier.weight(1f)) { onOpen(GalaxyTab.SETTINGS) }
         }
         Spacer(Modifier.height(20.dp))
         SectionHeading("SYSTEM STATUS", "Foundation phase")
@@ -228,7 +252,7 @@ private fun FeatureScreen(tag: String, title: String, subtitle: String, detail: 
 }
 
 @Composable
-private fun ProfileScreen() {
+private fun ProfileScreen(onSettings: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
         Text("YOUR SPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 2.5.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
@@ -248,6 +272,40 @@ private fun ProfileScreen() {
         StatusPanel()
         Spacer(Modifier.height(16.dp))
         Text("Version 0.1.0  •  Project Galaxy AI", color = Muted, fontSize = 10.sp)
+        Spacer(Modifier.height(18.dp))
+        ModuleCard("⚙", "APP SETTINGS", "Preferences and appearance", Modifier.fillMaxWidth(), onSettings)
+    }
+}
+
+@Composable
+private fun SettingsScreen() {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
+        Text("CONTROL CENTER", color = Cyan, fontSize = 10.sp, letterSpacing = 2.5.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(10.dp))
+        Text("Settings", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Text("Shape your Galaxy experience.", color = Muted, fontSize = 12.sp)
+        Spacer(Modifier.height(22.dp))
+        SettingsGroup("APPEARANCE", listOf("Cosmic dark theme" to "Enabled", "Visual effects" to "High quality", "Language" to "বাংলা + English"))
+        SettingsGroup("PRIVACY & SECURITY", listOf("App permissions" to "Review permissions", "Memory controls" to "Not configured", "Data & privacy" to "View information"))
+        SettingsGroup("AI PREFERENCES", listOf("Preferred model" to "Not selected", "Voice preferences" to "Not configured", "Web access" to "Not connected"))
+        SettingsGroup("ABOUT", listOf("App version" to "0.1.0", "Developer" to "NATIONVK", "Project" to "Galaxy AI"))
+    }
+}
+
+@Composable
+private fun SettingsGroup(title: String, items: List<Pair<String, String>>) {
+    Column(Modifier.fillMaxWidth().padding(bottom = 17.dp)) {
+        Text(title, color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Column(Modifier.clip(RoundedCornerShape(18.dp)).background(Panel).padding(horizontal = 15.dp)) {
+            items.forEachIndexed { index, item ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(item.first, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text(item.second, color = Muted, fontSize = 10.sp)
+                }
+                if (index != items.lastIndex) Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF252A43)))
+            }
+        }
     }
 }
 
@@ -258,7 +316,7 @@ private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit)
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        GalaxyTab.values().forEach { tab ->
+        listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.MEMORY, GalaxyTab.PROFILE).forEach { tab ->
             val active = tab == selected
             Column(
                 Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
