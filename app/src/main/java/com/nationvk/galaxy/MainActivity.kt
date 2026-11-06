@@ -382,7 +382,7 @@ private fun ChatScreen() {
         }
         if (attachmentOpen) {
             Row(Modifier.fillMaxWidth().padding(bottom = 8.dp).clip(RoundedCornerShape(13.dp)).background(Panel2).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("＋", color = Cyan, fontSize = 18.sp)
+                Text("＋", color = Cyan, fontSize = 18.sp, modifier = Modifier.semantics { contentDescription = "Attachment options" })
                 Spacer(Modifier.width(8.dp))
                 Text("Attachments will be enabled with file and vision services.", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
                 Text("CLOSE", color = Cyan, fontSize = 9.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { attachmentOpen = false })
@@ -392,7 +392,7 @@ private fun ChatScreen() {
             Text(notice, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(start = 5.dp, bottom = 6.dp))
         }
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel2).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(38.dp).clip(CircleShape).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { attachmentOpen = !attachmentOpen }, contentAlignment = Alignment.Center) {
+            Box(Modifier.size(48.dp).clip(CircleShape).background(Panel).semantics { contentDescription = if (attachmentOpen) "Close attachment options" else "Open attachment options"; role = Role.Button }.clickable { attachmentOpen = !attachmentOpen }, contentAlignment = Alignment.Center) {
                 Text("＋", color = Cyan, fontSize = 21.sp)
             }
             Spacer(Modifier.width(8.dp))
@@ -410,7 +410,7 @@ private fun ChatScreen() {
                 }
             )
             Spacer(Modifier.width(7.dp))
-            Box(Modifier.size(40.dp).clip(CircleShape).background(if (draft.isBlank()) Panel else Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+            Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) Panel else Violet).semantics { contentDescription = "Send message"; role = Role.Button }.clickable {
                 val value = draft.trim()
                 if (value.isNotEmpty()) {
                     messages = messages + (true to value)
@@ -418,7 +418,7 @@ private fun ChatScreen() {
                     notice = "Saved locally in this screen — AI response unavailable in demo mode."
                 }
             }, contentAlignment = Alignment.Center) {
-                Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { contentDescription = "Send message" })
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -573,7 +573,7 @@ private fun MemoryVaultScreen() {
                     }
                 }
             )
-            if (search.isNotEmpty()) Text("×", color = Muted, fontSize = 18.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { search = "" })
+            if (search.isNotEmpty()) Text("×", color = Muted, fontSize = 18.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Clear memory search"; role = Role.Button }.clickable { search = "" })
         }
         Spacer(Modifier.height(13.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
