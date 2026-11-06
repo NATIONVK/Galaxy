@@ -74,7 +74,7 @@ fun GalaxyApp() {
                             GalaxyTab.RESEARCH -> ResearchHubScreen()
                             GalaxyTab.CAMERA -> VisionStudioScreen()
                             GalaxyTab.MODELS -> ModelControlScreen()
-                            GalaxyTab.NOTIFICATIONS -> FeatureScreen("NOTIFICATION CENTER", "Your universe updates", "Important activity in one place.", "Notification inbox layout for assistant updates, reminders, system messages and security events. Push notifications are not configured.", "Notification preferences", "Notifications are not enabled")
+                            GalaxyTab.NOTIFICATIONS -> NotificationCenterScreen()
                             GalaxyTab.SETTINGS -> SettingsScreen()
                         }
                     }
@@ -1215,6 +1215,114 @@ private fun VisionStateCard(title: String, detail: String, state: String) {
             Text(title, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             Text(detail, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
         }
+    }
+}
+
+@Composable
+private fun NotificationCenterScreen() {
+    data class Notice(val id:Int,val type:String,val title:String,val body:String,val time:String,val unread:Boolean)
+    val seed=listOf(Notice(1,"SYSTEM","Galaxy UI updated","New workspace screens are ready to explore.","Just now",true),Notice(2,"RESEARCH","Research Hub ready","Dataset workspace and report preview are available.","12 min ago",true),Notice(3,"SECURITY","Learning reminder","Continue your defensive security learning path.","1 hour ago",true),Notice(4,"VISION","Vision Studio preview","Camera and image analysis UI is available.","Yesterday",false),Notice(5,"SYSTEM","Welcome to Galaxy","Your cosmic workspace is ready.","2 days ago",false))
+    var items by remember { mutableStateOf(seed) }
+    var filter by remember { mutableStateOf("ALL") }
+    var selected by remember { mutableStateOf<Int?>(null) }
+    var settings by remember { mutableStateOf(false) }
+    var emptyDemo by remember { mutableStateOf(false) }
+    var system by remember { mutableStateOf(true) }
+    var research by remember { mutableStateOf(true) }
+    var security by remember { mutableStateOf(true) }
+    var vision by remember { mutableStateOf(true) }
+    var push by remember { mutableStateOf(false) }
+    val unread=items.count { it.unread }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=18.dp, vertical=10.dp)) {
+        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("GALAXY ACTIVITY • UPDATES",color=Cyan,fontSize=9.sp,letterSpacing=1.5.sp,fontWeight=FontWeight.Bold)
+                Text("Notification Center",color=Color.White,fontSize=25.sp,fontWeight=FontWeight.Bold)
+                Text("Your workspace updates, organized.",color=Muted,fontSize=10.sp)
+            }
+            Box(Modifier.size(46.dp).clip(CircleShape).background(Panel2),contentAlignment=Alignment.Center) {
+                Text("♢",color=Cyan,fontSize=25.sp)
+                if(unread>0) Box(Modifier.align(Alignment.TopEnd).size(9.dp).clip(CircleShape).background(Color(0xFFFF718C)))
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Brush.linearGradient(listOf(Color(0xFF203858),Panel))).padding(14.dp),verticalAlignment=Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("INBOX OVERVIEW",color=Cyan,fontSize=9.sp,letterSpacing=1.3.sp,fontWeight=FontWeight.Bold)
+                Text("$unread unread notifications",color=Color.White,fontSize=16.sp,fontWeight=FontWeight.Bold)
+                Text("${items.size} total • local demo inbox",color=Muted,fontSize=9.sp)
+            }
+            Text("$unread",color=Cyan,fontSize=25.sp,fontWeight=FontWeight.Bold)
+        }
+        Spacer(Modifier.height(11.dp))
+        Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
+            Text(if(settings) "← INBOX" else "⚙ SETTINGS",color=Color.White,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { settings=!settings;selected=null }.padding(10.dp))
+            Text("MARK ALL READ",color=Cyan,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel).clickable { items=items.map { it.copy(unread=false) } }.padding(10.dp))
+            Text("CLEAR ALL",color=Color(0xFFFF9AA9),fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel).clickable { items=emptyList();selected=null }.padding(10.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        if(settings) {
+            Text("NOTIFICATION PREFERENCES",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold)
+            listOf("System updates" to system,"Research updates" to research,"Security reminders" to security,"Vision updates" to vision,"Push notifications" to push).forEachIndexed { i,p ->
+                Row(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(12.dp)).background(Panel).clickable { when(i){0->system=!system;1->research=!research;2->security=!security;3->vision=!vision;4->push=!push} }.padding(13.dp),verticalAlignment=Alignment.CenterVertically) {
+                    Text(p.first,color=Color.White,fontSize=10.sp,modifier=Modifier.weight(1f))
+                    Text(if(p.second) "ON" else "OFF",color=if(p.second) Cyan else Muted,fontSize=9.sp,fontWeight=FontWeight.Bold)
+                }
+            }
+            Text("Preferences are local UI state. Push delivery and Android notification permissions are not connected.",color=Muted,fontSize=9.sp,lineHeight=14.sp,modifier=Modifier.padding(top=10.dp))
+        } else if(selected!=null) {
+            val n=items.firstOrNull { it.id==selected }
+            if(n!=null) {
+                Text("NOTIFICATION DETAIL",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold)
+                Column(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(15.dp)) {
+                    Text(n.type,color=Cyan,fontSize=8.sp,fontWeight=FontWeight.Bold)
+                    Text(n.title,color=Color.White,fontSize=17.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp))
+                    Text(n.time,color=Muted,fontSize=9.sp)
+                    Text(n.body,color=Color(0xFFD5DCEF),fontSize=11.sp,lineHeight=18.sp,modifier=Modifier.padding(top=14.dp))
+                    Text(if(n.unread) "MARK AS READ" else "MARK AS UNREAD",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clickable { items=items.map { if(it.id==n.id) it.copy(unread=!it.unread) else it } }.padding(top=16.dp))
+                    Text("DELETE NOTIFICATION",color=Color(0xFFFF9AA9),fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clickable { items=items.filterNot { it.id==n.id };selected=null }.padding(top=12.dp))
+                }
+            } else selected=null
+        } else {
+            Text("FILTER BY CATEGORY",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top=7.dp),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+                listOf("ALL","SYSTEM","RESEARCH","SECURITY","VISION").forEach { f ->
+                    Text(f,color=if(filter==f) Color.White else Muted,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(if(filter==f) Color(0xFF302A5B) else Panel).clickable { filter=f }.padding(horizontal=12.dp,vertical=10.dp))
+                }
+            }
+            Row(Modifier.fillMaxWidth().padding(top=12.dp),verticalAlignment=Alignment.CenterVertically) {
+                Text(if(filter=="ALL") "RECENT ACTIVITY" else "$filter NOTIFICATIONS",color=Color.White,fontSize=10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
+                Text(if(emptyDemo) "SHOW ITEMS" else "EMPTY PREVIEW",color=Muted,fontSize=8.sp,modifier=Modifier.clickable { emptyDemo=!emptyDemo }.padding(6.dp))
+            }
+            val visible=if(emptyDemo) emptyList() else items.filter { filter=="ALL" || it.type==filter }
+            if(visible.isEmpty()) {
+                Column(Modifier.fillMaxWidth().padding(top=10.dp).clip(RoundedCornerShape(15.dp)).background(Panel).padding(22.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+                    Text("◇",color=Violet,fontSize=34.sp)
+                    Text("You're all caught up",color=Color.White,fontSize=13.sp,fontWeight=FontWeight.Bold)
+                    Text("No notifications to show in this view.",color=Muted,fontSize=9.sp)
+                    Text("CLEAR FILTERS",color=Cyan,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clickable { filter="ALL";emptyDemo=false }.padding(top=10.dp))
+                }
+            } else visible.forEach { n ->
+                Row(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(14.dp)).background(if(n.unread) Color(0xFF202744) else Panel).clickable { selected=n.id;items=items.map { if(it.id==n.id) it.copy(unread=false) else it } }.padding(12.dp),verticalAlignment=Alignment.Top) {
+                    Box(Modifier.size(36.dp).clip(RoundedCornerShape(11.dp)).background(Panel2),contentAlignment=Alignment.Center) { Text(when(n.type){"RESEARCH"->"⌁";"SECURITY"->"◇";"VISION"->"◉";else->"✦"},color=Cyan,fontSize=18.sp) }
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Row(verticalAlignment=Alignment.CenterVertically) {
+                            Text(n.title,color=Color.White,fontSize=10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
+                            if(n.unread) Box(Modifier.size(7.dp).clip(CircleShape).background(Cyan))
+                        }
+                        Text(n.body,color=Muted,fontSize=9.sp,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=14.sp)
+                        Text("${n.type}  •  ${n.time}",color=Color(0xFF8291B2),fontSize=8.sp,modifier=Modifier.padding(top=5.dp))
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(13.dp))
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF14283A)).padding(11.dp),verticalAlignment=Alignment.CenterVertically) {
+            Text("●",color=Cyan,fontSize=9.sp);Spacer(Modifier.width(8.dp))
+            Text("Local UI demo • sample notifications, no live delivery service.",color=Color(0xFFB8D8E8),fontSize=9.sp,lineHeight=14.sp)
+        }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
