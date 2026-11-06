@@ -651,6 +651,46 @@ private fun VoiceStudioScreen() {
                 status = "Bluetooth settings খোলা হচ্ছে"
                 speak("Bluetooth settings খুলছি")
             }
+            command.contains("camera") || command.contains("ক্যামেরা") -> {
+                try {
+                    context.startActivity(Intent("android.media.action.IMAGE_CAPTURE").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Camera খোলা হচ্ছে"
+                    speak("ক্যামেরা খুলছি")
+                } catch (error: Exception) {
+                    status = "Camera app পাওয়া যায়নি: ${error.message ?: "অজানা সমস্যা"}"
+                    speak("ক্যামেরা খোলা যাচ্ছে না")
+                }
+            }
+            command.contains("dialer") || command.contains("phone") || command.contains("ডায়ালার") || command.contains("ফোন") -> {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_DIAL).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Phone dialer খোলা হচ্ছে"
+                    speak("ফোন ডায়ালার খুলছি")
+                } catch (error: Exception) {
+                    status = "Dialer খোলা যায়নি"
+                    speak("ডায়ালার খোলা যাচ্ছে না")
+                }
+            }
+            command.contains("browser") || command.contains("ইন্টারনেট") || command.contains("ব্রাউজার") -> {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Browser খোলা হচ্ছে"
+                    speak("ব্রাউজার খুলছি")
+                } catch (error: Exception) {
+                    status = "Browser খোলা যায়নি"
+                    speak("ব্রাউজার খোলা যাচ্ছে না")
+                }
+            }
+            command.contains("map") || command.contains("ম্যাপ") || command.contains("মানচিত্র") -> {
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0?q=nearby places")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Maps খোলা হচ্ছে"
+                    speak("ম্যাপ খুলছি")
+                } catch (error: Exception) {
+                    status = "Maps app পাওয়া যায়নি"
+                    speak("ম্যাপ খোলা যাচ্ছে না")
+                }
+            }
             command.contains("settings") || command.contains("সেটিংস") -> {
                 context.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 status = "Settings খোলা হচ্ছে"
@@ -849,7 +889,7 @@ private fun VoiceStudioScreen() {
             Spacer(Modifier.height(8.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel2).padding(12.dp)) {
                 Text("Supported starter commands", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                Text("• Hey Galaxy, open YouTube\n• Hey Galaxy, Wi-Fi settings\n• Hey Galaxy, Bluetooth settings\n• Hey Galaxy, open Settings", color = Muted, fontSize = 11.sp, lineHeight = 18.sp)
+                Text("• Hey Galaxy, open YouTube\n• Hey Galaxy, Wi-Fi settings\n• Hey Galaxy, Bluetooth settings\n• Hey Galaxy, open Settings\n• Hey Galaxy, open Camera\n• Hey Galaxy, open Phone / Dialer\n• Hey Galaxy, open Browser\n• Hey Galaxy, open Maps", color = Muted, fontSize = 11.sp, lineHeight = 18.sp)
             }
         }
         Spacer(Modifier.height(12.dp))
