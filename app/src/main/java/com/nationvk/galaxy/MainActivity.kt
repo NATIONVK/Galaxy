@@ -1473,7 +1473,7 @@ private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit)
     Row(Modifier.fillMaxWidth().background(Color(0xFF090B17)).padding(horizontal = 8.dp, vertical = 9.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
         listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.MEMORY, GalaxyTab.PROFILE).forEach { tab ->
             val active = tab == selected
-            Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab; selected = active }.clickable { onSelect(tab) }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab; this.selected = active }.clickable { onSelect(tab) }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(tab.glyph, color = if (active) Cyan else Muted)
                 Spacer(Modifier.height(3.dp))
                 Text(tab.label, color = if (active) Color.White else Muted, fontSize = 10.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
