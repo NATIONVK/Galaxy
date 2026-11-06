@@ -349,15 +349,6 @@ private fun ChatScreen() {
             Text("DEMO UI", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 12.dp, vertical = 8.dp))
         }
-        if (recoveryAvailable) {
-            Spacer(Modifier.height(10.dp))
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF3A2630)).padding(12.dp)) {
-                Text("RECOVERY COPY AVAILABLE", color = Color(0xFFFFC2A8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                Text("Galaxy একটি damaged memory file শনাক্ত করেছে। মূল raw data overwrite না করে আলাদা recovery copy রাখা হয়েছে। আগে সেটি export করে রাখ।", color = Color.White, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp))
-                Text("EXPORT RECOVERY COPY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFF704052)).clickable { recoveryLauncher.launch("galaxy-memory-recovery.json") }.padding(horizontal = 12.dp, vertical = 9.dp))
-            }
-        }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("✦", color = Cyan, fontSize = 18.sp)
@@ -744,6 +735,15 @@ private fun MemoryVaultScreen() {
             }
             Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
                 Text("◈", color = Violet, fontSize = 23.sp)
+            }
+        }
+        if (recoveryAvailable) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF3A2630)).padding(12.dp)) {
+                Text("RECOVERY COPY AVAILABLE", color = Color(0xFFFFC2A8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("Galaxy একটি damaged memory file শনাক্ত করেছে। মূল raw data overwrite না করে আলাদা recovery copy রাখা হয়েছে। আগে সেটি export করে রাখ।", color = Color.White, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp))
+                Text("EXPORT RECOVERY COPY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFF704052)).clickable { recoveryLauncher.launch("galaxy-memory-recovery.json") }.padding(horizontal = 12.dp, vertical = 9.dp))
             }
         }
         Spacer(Modifier.height(12.dp))
