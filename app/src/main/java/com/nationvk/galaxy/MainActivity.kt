@@ -1585,7 +1585,7 @@ private fun SettingsScreen() {
 private fun PermissionManagerPanel() {
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
-    val micGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+    val micGranted = refresh >= 0 && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
     val notificationDeclared = android.os.Build.VERSION.SDK_INT >= 33
     val notificationGranted = !notificationDeclared || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { refresh++ }
