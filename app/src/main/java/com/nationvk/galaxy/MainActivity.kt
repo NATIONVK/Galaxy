@@ -68,6 +68,7 @@ fun GalaxyApp() {
                             GalaxyTab.MODELS -> FeatureScreen("MODEL CONTROL", "Choose your AI model", "One interface, multiple intelligence engines.", "Model directory layout with provider, model description, connection state and preferred model selection. Provider APIs will be configured in the core phase.", "Manage AI providers", "No AI provider connected")
                             GalaxyTab.NOTIFICATIONS -> FeatureScreen("NOTIFICATION CENTER", "Your universe updates", "Important activity in one place.", "Notification inbox layout for assistant updates, reminders, system messages and security events. Push notifications are not configured.", "Notification preferences", "Notifications are not enabled")
                             GalaxyTab.SETTINGS -> SettingsScreen()
+                        }
                     }
                     BottomNavigation(selected = selected, onSelect = { selected = it })
                 }
