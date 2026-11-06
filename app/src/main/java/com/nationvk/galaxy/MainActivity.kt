@@ -681,6 +681,31 @@ private fun MemoryVaultScreen() {
     var notes by remember { mutableStateOf(GalaxyMemoryStore.getAll(context)) }
     var showEditor by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf("") }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            try {
+                val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: throw IllegalStateException("ফাইলটি পড়া যায়নি।")
+                val result = GalaxyMemoryStore.importJson(context, json)
+                notes = GalaxyMemoryStore.getAll(context)
+                notice = "Import complete: \${result.imported} added, \${result.skippedDuplicates} duplicates skipped, \${result.rejected} invalid skipped."
+            } catch (error: Exception) {
+                notice = "Import failed: \${error.message ?: "Unknown error"}"
+            }
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) {
+            try {
+                val backup = GalaxyMemoryStore.exportJson(context)
+                context.contentResolver.openOutputStream(uri)?.use { it.write(backup.toByteArray(Charsets.UTF_8)) }
+                    ?: throw IllegalStateException("ফাইলে লেখা যায়নি।")
+                notice = "Backup file saved successfully."
+            } catch (error: Exception) {
+                notice = "Export failed: \${error.message ?: "Unknown error"}"
+            }
+        }
+    }
     val categories = listOf("ALL", "PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
     val filtered = notes.filter { item ->
         (selectedCategory == "ALL" || item.category == selectedCategory) &&
@@ -787,17 +812,19 @@ private fun MemoryVaultScreen() {
             }
         }
         Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("EXPORT BACKUP", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            Text("EXPORT FILE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
-                    val backup = GalaxyMemoryStore.exportJson(context)
-                    val send = Intent(Intent.ACTION_SEND).apply { type = "application/json"; putExtra(Intent.EXTRA_SUBJECT, "Galaxy Memory Backup"); putExtra(Intent.EXTRA_TEXT, backup) }
-                    context.startActivity(Intent.createChooser(send, "Export Galaxy Memory"))
-                }.padding(13.dp))
-            Text("CLEAR ALL", color = Color(0xFFFFA7B8), fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    exportLauncher.launch("Galaxy-Memory-Backup.json")
+                }.padding(horizontal = 9.dp, vertical = 13.dp))
+            Text("IMPORT FILE", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
+                    importLauncher.launch(arrayOf("application/json", "text/*", "application/octet-stream"))
+                }.padding(horizontal = 9.dp, vertical = 13.dp))
+            Text("CLEAR ALL", color = Color(0xFFFFA7B8), fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
                     GalaxyMemoryStore.clear(context); notes = emptyList(); notice = "All local memories cleared."
-                }.padding(13.dp))
+                }.padding(horizontal = 9.dp, vertical = 13.dp))
         }
         Spacer(Modifier.height(7.dp))
         Text("Local-only memory: এই build-এ Galaxy নিজে থেকে সব পুরোনো chat পড়তে পারে না। তুই এখানে যোগ করলে তা app বন্ধ করলেও থাকবে। কোনো cloud/Firebase sync নেই।", color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
