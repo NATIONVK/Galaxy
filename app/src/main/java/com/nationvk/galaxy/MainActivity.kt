@@ -116,7 +116,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             }
         }
         Spacer(Modifier.height(12.dp))
-        Box(Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(25.dp))) {
+        Box(Modifier.fillMaxWidth().height(390.dp).clip(RoundedCornerShape(25.dp))) {
             GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
             Box(
                 Modifier.align(Alignment.BottomCenter).fillMaxWidth()
