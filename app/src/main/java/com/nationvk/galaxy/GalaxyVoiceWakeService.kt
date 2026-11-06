@@ -168,7 +168,8 @@ class GalaxyVoiceWakeService : Service() {
 
     private val listener = object : RecognitionListener {
         override fun onReadyForSpeech(params: Bundle?) {
-            updateNotification("Listening in background • say Hey Galaxy")
+            val engine = if (useOnDeviceRecognition == true) "On-device" else "System"
+            updateNotification("$engine recognition • $recognitionLanguage • say Hey Galaxy")
         }
         override fun onBeginningOfSpeech() { }
         override fun onRmsChanged(rmsdB: Float) { }
@@ -184,6 +185,28 @@ class GalaxyVoiceWakeService : Service() {
                 }
                 SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
                     updateNotification("Speech service busy • retrying shortly")
+                    scheduleRestart(2500)
+                }
+                SpeechRecognizer.ERROR_AUDIO -> {
+                    updateNotification("Microphone audio error • checking again")
+                    try { recognizer?.destroy() } catch (_: Exception) { }
+                    recognizer = null
+                    scheduleRestart(1800)
+                }
+                SpeechRecognizer.ERROR_NETWORK,
+                SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
+                    updateNotification("Speech network unavailable • retrying")
+                    scheduleRestart(3500)
+                }
+                SpeechRecognizer.ERROR_NO_MATCH,
+                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                    updateNotification(if (wakeArmed) "Didn't catch that • say your command again" else "Listening in background • say Hey Galaxy")
+                    scheduleRestart(900)
+                }
+                SpeechRecognizer.ERROR_SERVER -> {
+                    updateNotification("Speech server error • reconnecting")
+                    try { recognizer?.destroy() } catch (_: Exception) { }
+                    recognizer = null
                     scheduleRestart(2500)
                 }
                 SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> {
