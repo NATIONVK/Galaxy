@@ -99,10 +99,10 @@ private fun GalaxyTopBar() {
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
             Text("GALAXY", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            Text("PERSONAL AI UNIVERSE", color = Cyan, fontSize = 8.sp, letterSpacing = 2.sp)
+            Text("PERSONAL AI UNIVERSE", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp)
         }
         Box(Modifier.clip(CircleShape).background(Color(0xFF14283A)).padding(horizontal = 11.dp, vertical = 7.dp)) {
-            Text("●  UI FINALIZATION", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text("●  UI FINALIZATION", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -113,7 +113,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("WELCOME TO YOUR UNIVERSE", color = Muted, fontSize = 9.sp, letterSpacing = 1.6.sp)
+                Text("WELCOME TO YOUR UNIVERSE", color = Muted, fontSize = 10.sp, letterSpacing = 1.6.sp)
                 Text("Hello, Explorer.", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
             }
             Box(Modifier.clip(CircleShape).background(Panel2).padding(11.dp)) { Text("✧", color = Violet, fontSize = 21.sp) }
@@ -123,7 +123,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
             Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xDD050611)))).padding(18.dp)) {
                 Column {
-                    Text("SINGULARITY", color = Cyan, fontSize = 9.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+                    Text("SINGULARITY", color = Cyan, fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
                     Text("Explore the unknown.", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
@@ -162,7 +162,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(10.dp))
         StatusPanel()
         Spacer(Modifier.height(18.dp))
-        Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 9.sp, letterSpacing = 1.5.sp)
+        Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
     }
 }
@@ -179,7 +179,7 @@ private fun ModelControlScreen() {
         Text("একটি Galaxy Core, তোমার পছন্দমতো model selection.", color = Muted, fontSize = 12.sp)
         Spacer(Modifier.height(22.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Panel).padding(16.dp)) {
-            Text("SELECTION MODE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Text("SELECTION MODE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SelectionModeCard("AUTO", "Smart routing", "Galaxy chooses by task", mode == "AUTO", Modifier.weight(1f)) { mode = "AUTO" }
@@ -189,7 +189,7 @@ private fun ModelControlScreen() {
             Text(if (mode == "AUTO") "Automatic mode will select an available model based on task type and capability. Routing activates after Core integration." else "Manual mode lets you choose a preferred model. The selection below is currently a UI preference preview.", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
         }
         Spacer(Modifier.height(18.dp))
-        Text("MODEL DIRECTORY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+        Text("MODEL DIRECTORY", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         models.forEachIndexed { index, model ->
             val active = selectedModel == model
@@ -202,7 +202,7 @@ private fun ModelControlScreen() {
                     Text(model, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     Text(if (index == 3) "Image and document tasks" else if (index == 2) "Complex multi-step tasks" else if (index == 1) "Quick everyday responses" else "Default assistant profile", color = Muted, fontSize = 10.sp)
                 }
-                Text(if (active) "SELECTED" else if (mode == "AUTO") "AUTO" else "CHOOSE", color = if (active) Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                Text(if (active) "SELECTED" else if (mode == "AUTO") "AUTO" else "CHOOSE", color = if (active) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -217,10 +217,10 @@ private fun ModelControlScreen() {
 @Composable
 private fun SelectionModeCard(title: String, heading: String, description: String, active: Boolean, modifier: Modifier, onClick: () -> Unit) {
     Column(modifier.clip(RoundedCornerShape(15.dp)).background(if (active) Color(0xFF25294F) else Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable(onClick = onClick).padding(12.dp)) {
-        Text(if (active) "●  $title" else "○  $title", color = if (active) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Text(if (active) "●  $title" else "○  $title", color = if (active) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(heading, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Text(description, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+        Text(description, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
     }
 }
 
@@ -251,11 +251,11 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
                     Text("←  BACK TO GALAXY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.weight(1f))
-                Text("LIVE VISUAL", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp)
+                Text("LIVE VISUAL", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp)
             }
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color(0xCC080B1B)).padding(15.dp)) {
                 Text("THE SINGULARITY", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
-                Text("LIVE VISUAL CONTROLS", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp)
+                Text("LIVE VISUAL CONTROLS", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp)
                 Text("Pinch to zoom · Drag to move", color = Muted, fontSize = 10.sp)
                 Spacer(Modifier.height(8.dp))
                 Text("Zoom  ${String.format("%.1f", zoom)}×", color = Color.White, fontSize = 11.sp)
@@ -295,7 +295,7 @@ private fun ModuleCard(icon: String, title: String, description: String, modifie
         Spacer(Modifier.height(4.dp))
         Text(description, color = Muted, fontSize = 10.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Spacer(Modifier.height(10.dp))
-        Text("OPEN  ↗", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("OPEN  ↗", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
     }
 }
 
@@ -329,10 +329,10 @@ private fun ChatScreen() {
     Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("GALAXY CONVERSATION", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                Text("GALAXY CONVERSATION", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 Text("AI Chat", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             }
-            Text("DEMO UI", color = Violet, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            Text("DEMO UI", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 12.dp, vertical = 8.dp))
         }
         Spacer(Modifier.height(12.dp))
@@ -341,9 +341,9 @@ private fun ChatScreen() {
             Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {
                 Text("Galaxy Assistant", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Text("Conversation interface preview • AI Core not connected", color = Muted, fontSize = 9.sp)
+                Text("Conversation interface preview • AI Core not connected", color = Muted, fontSize = 10.sp)
             }
-            Text("● OFFLINE", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+            Text("● OFFLINE", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(12.dp))
         if (messages.isEmpty()) {
@@ -371,13 +371,13 @@ private fun ChatScreen() {
                 messages.forEach { message ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.first) Arrangement.End else Arrangement.Start) {
                         Column(Modifier.widthIn(max = 290.dp).padding(vertical = 5.dp).clip(RoundedCornerShape(17.dp)).background(if (message.first) Color(0xFF29264F) else Panel).padding(13.dp)) {
-                            Text(if (message.first) "YOU" else "LOCAL NOTE", color = if (message.first) Cyan else Violet, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(if (message.first) "YOU" else "LOCAL NOTE", color = if (message.first) Cyan else Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                             Spacer(Modifier.height(5.dp))
                             Text(message.second, color = Color.White, fontSize = 12.sp, lineHeight = 18.sp)
                         }
                     }
                 }
-                Text("Messages are stored in this screen only. No AI reply is generated in demo mode.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 10.dp))
+                Text("Messages are stored in this screen only. No AI reply is generated in demo mode.", color = Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 10.dp))
             }
         }
         if (attachmentOpen) {
@@ -385,11 +385,11 @@ private fun ChatScreen() {
                 Text("＋", color = Cyan, fontSize = 18.sp, modifier = Modifier.semantics { contentDescription = "Attachment options" })
                 Spacer(Modifier.width(8.dp))
                 Text("Attachments will be enabled with file and vision services.", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
-                Text("CLOSE", color = Cyan, fontSize = 9.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { attachmentOpen = false })
+                Text("CLOSE", color = Cyan, fontSize = 10.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { attachmentOpen = false })
             }
         }
         if (notice.isNotBlank()) {
-            Text(notice, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(start = 5.dp, bottom = 6.dp))
+            Text(notice, color = Muted, fontSize = 10.sp, modifier = Modifier.padding(start = 5.dp, bottom = 6.dp))
         }
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel2).padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(48.dp).clip(CircleShape).background(Panel).semantics { contentDescription = if (attachmentOpen) "Close attachment options" else "Open attachment options"; role = Role.Button }.clickable { attachmentOpen = !attachmentOpen }, contentAlignment = Alignment.Center) {
@@ -422,8 +422,8 @@ private fun ChatScreen() {
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Demo mode • local screen state only", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f))
-            Text("CLEAR CHAT", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+            Text("Demo mode • local screen state only", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+            Text("CLEAR CHAT", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
                 messages = emptyList()
                 notice = "Local conversation cleared."
             }.padding(5.dp))
@@ -441,11 +441,11 @@ private fun VoiceStudioScreen() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("GALAXY AUDIO EXPERIENCE", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+                Text("GALAXY AUDIO EXPERIENCE", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
                 Text("Voice Studio", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 Text("কথা বলার অভিজ্ঞতার জন্য প্রস্তুত workspace", color = Muted, fontSize = 11.sp)
             }
-            Text("UI PREVIEW", color = Violet, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 10.dp, vertical = 8.dp))
+            Text("UI PREVIEW", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(CircleShape).background(Panel2).padding(horizontal = 10.dp, vertical = 8.dp))
         }
         Spacer(Modifier.height(18.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)).background(Brush.radialGradient(listOf(Color(0xFF34306C), Panel, Space))).padding(vertical = 24.dp, horizontal = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -461,7 +461,7 @@ private fun VoiceStudioScreen() {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf("LISTEN", "SPEAK", "PAUSE").forEach { mode ->
                     Column(Modifier.clip(RoundedCornerShape(14.dp)).background(if (voiceMode == mode) Color(0xFF29264F) else Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { voiceMode = mode }.padding(horizontal = 15.dp, vertical = 11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(if (voiceMode == mode) "● $mode" else mode, color = if (voiceMode == mode) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Text(if (voiceMode == mode) "● $mode" else mode, color = if (voiceMode == mode) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -474,9 +474,9 @@ private fun VoiceStudioScreen() {
         }
         Spacer(Modifier.height(18.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("VOICE PROFILE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Text("VOICE PROFILE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.weight(1f))
-            Text("CHANGE", color = Muted, fontSize = 9.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showVoices = !showVoices })
+            Text("CHANGE", color = Muted, fontSize = 10.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showVoices = !showVoices })
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showVoices = !showVoices }.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -492,12 +492,12 @@ private fun VoiceStudioScreen() {
             listOf("Nova", "Orion", "Luna", "Atlas").forEach { voice ->
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(12.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedVoice = voice; showVoices = false }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(voice, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
-                    Text(if (selectedVoice == voice) "SELECTED" else "SELECT", color = if (selectedVoice == voice) Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text(if (selectedVoice == voice) "SELECTED" else "SELECT", color = if (selectedVoice == voice) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
         Spacer(Modifier.height(18.dp))
-        Text("TRANSCRIPT / TEXT INPUT", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+        Text("TRANSCRIPT / TEXT INPUT", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(14.dp)) {
             androidx.compose.foundation.text.BasicTextField(
@@ -515,18 +515,18 @@ private fun VoiceStudioScreen() {
             )
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("LOCAL DRAFT ONLY", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f))
-                Text("CLEAR", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { transcript = "" }.padding(5.dp))
+                Text("LOCAL DRAFT ONLY", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                Text("CLEAR", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { transcript = "" }.padding(5.dp))
             }
         }
         Spacer(Modifier.height(16.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(15.dp)) {
-            Text("AUDIO SETTINGS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Text("AUDIO SETTINGS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             Text("Speech speed", color = Color.White, fontSize = 11.sp)
             var speed by remember { mutableFloatStateOf(1f) }
             Slider(value = speed, onValueChange = { speed = it }, valueRange = 0.5f..2f)
-            Text("Speed preference: ${String.format("%.1f", speed)}× • demo only", color = Muted, fontSize = 9.sp)
+            Text("Speed preference: ${String.format("%.1f", speed)}× • demo only", color = Muted, fontSize = 10.sp)
         }
         Spacer(Modifier.height(12.dp))
     }
@@ -548,7 +548,7 @@ private fun MemoryVaultScreen() {
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("YOUR PERSONAL KNOWLEDGE SPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+                Text("YOUR PERSONAL KNOWLEDGE SPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
                 Text("Memory Vault", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold)
                 Text("Notes, ideas and saved context — organized.", color = Muted, fontSize = 10.sp)
             }
@@ -579,27 +579,27 @@ private fun MemoryVaultScreen() {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             categories.forEach { category ->
                 val active = selectedCategory == category
-                Text(category, color = if (active) Color.White else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                Text(category, color = if (active) Color.White else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clip(RoundedCornerShape(20.dp)).background(if (active) Color(0xFF302A5B) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedCategory = category }.padding(horizontal = 10.dp, vertical = 9.dp))
             }
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("YOUR COLLECTION", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
-                Text("${filtered.size} local item(s)", color = Muted, fontSize = 9.sp)
+                Text("YOUR COLLECTION", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+                Text("${filtered.size} local item(s)", color = Muted, fontSize = 10.sp)
             }
-            Text("+ NEW NOTE", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            Text("+ NEW NOTE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showEditor = !showEditor }.padding(horizontal = 12.dp, vertical = 10.dp))
         }
         if (showEditor) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel2).padding(13.dp)) {
-                Text("CREATE LOCAL NOTE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("CREATE LOCAL NOTE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("NOTES", "IDEAS", "RESEARCH", "LEARNING").forEach { category ->
-                        Text(category, color = if (selectedCategory == category) Cyan else Muted, fontSize = 7.sp,
+                        Text(category, color = if (selectedCategory == category) Cyan else Muted, fontSize = 10.sp,
                             modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedCategory = category }.padding(vertical = 4.dp))
                     }
                 }
@@ -617,8 +617,8 @@ private fun MemoryVaultScreen() {
                     }
                 )
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                    Text("CANCEL", color = Muted, fontSize = 9.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showEditor = false; noteDraft = "" }.padding(8.dp))
-                    Text("SAVE NOTE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+                    Text("CANCEL", color = Muted, fontSize = 10.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showEditor = false; noteDraft = "" }.padding(8.dp))
+                    Text("SAVE NOTE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
                         val body = noteDraft.trim()
                         if (body.isNotEmpty()) {
                             val category = if (selectedCategory in categories.drop(1)) selectedCategory else "NOTES"
@@ -633,7 +633,7 @@ private fun MemoryVaultScreen() {
             }
         }
         if (notice.isNotBlank()) {
-            Text(notice, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 7.dp))
+            Text(notice, color = Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 7.dp))
         }
         Spacer(Modifier.height(10.dp))
         if (filtered.isEmpty()) {
@@ -649,8 +649,8 @@ private fun MemoryVaultScreen() {
                 filtered.forEach { item ->
                     Column(Modifier.fillMaxWidth().padding(bottom = 9.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(item.first, color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
-                            Text("LOCAL", color = Muted, fontSize = 7.sp)
+                            Text(item.first, color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+                            Text("LOCAL", color = Muted, fontSize = 10.sp)
                             Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Delete note: ${item.title}"; role = Role.Button }.clickable { notes = notes - item }.padding(start = 8.dp))
                         }
                         Spacer(Modifier.height(8.dp))
@@ -661,9 +661,9 @@ private fun MemoryVaultScreen() {
         }
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 9.sp)
+            Text("●", color = Cyan, fontSize = 10.sp)
             Spacer(Modifier.width(8.dp))
-            Text("Demo vault: temporary screen state only. Persistent storage, synced memory and AI recall are not connected.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+            Text("Demo vault: temporary screen state only. Persistent storage, synced memory and AI recall are not connected.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(4.dp))
     }
@@ -694,7 +694,7 @@ private fun CyberLabScreen() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("DEFENSIVE SECURITY WORKSPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.Bold)
+                Text("DEFENSIVE SECURITY WORKSPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.Bold)
                 Text("Cyber Lab", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 Text("শেখো, অনুশীলন করো, নিরাপদ থাকো।", color = Muted, fontSize = 11.sp)
             }
@@ -705,9 +705,9 @@ private fun CyberLabScreen() {
         Spacer(Modifier.height(15.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Brush.linearGradient(listOf(Color(0xFF1C3450), Panel))).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("LEARNING PROGRESS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("LEARNING PROGRESS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("${completed.size} / ${paths.size} paths completed", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text("Progress is stored only while this screen remains active.", color = Muted, fontSize = 9.sp)
+                Text("Progress is stored only while this screen remains active.", color = Muted, fontSize = 10.sp)
             }
             Box(Modifier.size(58.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
                 Text("${(completed.size * 100 / paths.size)}%", color = Cyan, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -717,14 +717,14 @@ private fun CyberLabScreen() {
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Panel).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             listOf("OVERVIEW", "PATHS", "SANDBOX", "TOOLS").forEach { section ->
                 val active = activeSection == section
-                Text(section, color = if (active) Color.White else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                Text(section, color = if (active) Color.White else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (active) Color(0xFF302A5B) else Color.Transparent).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { activeSection = section }.padding(vertical = 11.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
         Spacer(Modifier.height(15.dp))
         when (activeSection) {
             "OVERVIEW" -> {
-                Text("WELCOME TO THE LAB", color = Cyan, fontSize = 9.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.Bold)
+                Text("WELCOME TO THE LAB", color = Cyan, fontSize = 10.sp, letterSpacing = 1.7.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(9.dp))
                 Text("Build skills the safe way.", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Text("A guided workspace for defensive security, digital safety and practical fundamentals.", color = Muted, fontSize = 11.sp, lineHeight = 17.sp)
@@ -734,25 +734,25 @@ private fun CyberLabScreen() {
                         Column(Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(Panel).padding(13.dp)) {
                             Text("✧", color = Violet, fontSize = 20.sp)
                             Spacer(Modifier.height(7.dp))
-                            Text(item.first, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                            Text(item.second, color = Muted, fontSize = 9.sp)
+                            Text(item.first, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(item.second, color = Muted, fontSize = 10.sp)
                         }
                     }
                 }
                 Spacer(Modifier.height(16.dp))
-                Text("CONTINUE LEARNING", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Text("CONTINUE LEARNING", color = Cyan, fontSize = 10.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
                 paths.take(3).forEach { path ->
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedPath = path.first; activeSection = "PATHS" }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(path.first, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                            Text(path.second, color = Muted, fontSize = 9.sp)
+                            Text(path.second, color = Muted, fontSize = 10.sp)
                         }
-                        Text(if (completed.contains(path.first)) "DONE" else "OPEN  ›", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        Text(if (completed.contains(path.first)) "DONE" else "OPEN  ›", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
             "PATHS" -> {
-                Text("GUIDED LEARNING PATHS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Text("GUIDED LEARNING PATHS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
                 Text("Choose a track and mark it complete when you finish.", color = Muted, fontSize = 10.sp)
                 paths.forEach { path ->
@@ -763,33 +763,33 @@ private fun CyberLabScreen() {
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(path.first, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                Text(path.second, color = Muted, fontSize = 9.sp)
+                                Text(path.second, color = Muted, fontSize = 10.sp)
                             }
-                            Text(if (done) "DONE" else if (selectedPath == path.first) "SELECTED" else "OPEN", color = if (done) Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            Text(if (done) "DONE" else if (selectedPath == path.first) "SELECTED" else "OPEN", color = if (done) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                         if (selectedPath == path.first) {
                             Spacer(Modifier.height(10.dp))
-                            Text("Suggested lessons: Introduction • Key terms • Safe practice • Knowledge check", color = Color(0xFFD1D8EF), fontSize = 9.sp, lineHeight = 15.sp)
+                            Text("Suggested lessons: Introduction • Key terms • Safe practice • Knowledge check", color = Color(0xFFD1D8EF), fontSize = 10.sp, lineHeight = 15.sp)
                             Spacer(Modifier.height(8.dp))
-                            Text(if (done) "MARKED COMPLETE" else "MARK PATH COMPLETE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                            Text(if (done) "MARKED COMPLETE" else "MARK PATH COMPLETE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                                 modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { completed = if (done) completed - path.first else completed + path.first }.padding(vertical = 6.dp))
                         }
                     }
                 }
             }
             "SANDBOX" -> {
-                Text("SAFE SANDBOX", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Text("SAFE SANDBOX", color = Cyan, fontSize = 10.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
                 Text("Practice without touching real systems.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Text("This is a visual simulator only. It does not run commands, scan networks or connect to external targets.", color = Muted, fontSize = 10.sp, lineHeight = 16.sp)
                 Spacer(Modifier.height(13.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Color(0xFF080D18)).padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("LOCAL LAB CONSOLE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                        Text("● ${sandboxStatus}", color = if (sandboxStatus == "IDLE") Muted else Cyan, fontSize = 8.sp)
+                        Text("LOCAL LAB CONSOLE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                        Text("● ${sandboxStatus}", color = if (sandboxStatus == "IDLE") Muted else Cyan, fontSize = 10.sp)
                     }
                     Spacer(Modifier.height(13.dp))
-                    Text("SELECT PRACTICE MODULE", color = Muted, fontSize = 8.sp)
+                    Text("SELECT PRACTICE MODULE", color = Muted, fontSize = 10.sp)
                     listOf("Local practice environment", "Sample log analysis", "HTTP request walkthrough").forEach { target ->
                         Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(10.dp)).background(if (sandboxTarget == target) Color(0xFF20294A) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { sandboxTarget = target; sandboxStatus = "IDLE" }.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(target, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
@@ -803,15 +803,15 @@ private fun CyberLabScreen() {
                     Text("> status: ${sandboxStatus.lowercase()}", color = Cyan, fontSize = 10.sp)
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("RUN PREVIEW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { sandboxStatus = "PREVIEW" }.padding(horizontal = 13.dp, vertical = 10.dp))
-                        Text("RESET", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { sandboxStatus = "IDLE" }.padding(horizontal = 13.dp, vertical = 10.dp))
+                        Text("RUN PREVIEW", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { sandboxStatus = "PREVIEW" }.padding(horizontal = 13.dp, vertical = 10.dp))
+                        Text("RESET", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { sandboxStatus = "IDLE" }.padding(horizontal = 13.dp, vertical = 10.dp))
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("Safety boundary: no exploit payloads, credential attacks, unauthorized scanning or real target execution.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+                Text("Safety boundary: no exploit payloads, credential attacks, unauthorized scanning or real target execution.", color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
             }
             "TOOLS" -> {
-                Text("DEFENSIVE TOOLS DIRECTORY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Text("DEFENSIVE TOOLS DIRECTORY", color = Cyan, fontSize = 10.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
                 Text("Learning aids and safe sample-data utilities.", color = Muted, fontSize = 10.sp)
                 tools.forEach { tool ->
@@ -820,18 +820,18 @@ private fun CyberLabScreen() {
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
                             Text(tool.first, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                            Text(tool.second, color = Muted, fontSize = 8.sp)
+                            Text(tool.second, color = Muted, fontSize = 10.sp)
                         }
-                        Text("GUIDE", color = Violet, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        Text("GUIDE", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 9.sp)
+            Text("●", color = Cyan, fontSize = 10.sp)
             Spacer(Modifier.width(8.dp))
-            Text("UI preview only • no live cyber operations or external connections.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+            Text("UI preview only • no live cyber operations or external connections.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -856,7 +856,7 @@ private fun ResearchHubScreen() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("DATA • STATISTICS • DISCOVERY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
+                Text("DATA • STATISTICS • DISCOVERY", color = Cyan, fontSize = 10.sp, letterSpacing = 1.6.sp, fontWeight = FontWeight.Bold)
                 Text("Research Hub", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 Text("Explore data and shape your findings.", color = Muted, fontSize = 11.sp)
             }
@@ -867,23 +867,23 @@ private fun ResearchHubScreen() {
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Color(0xFF1D3552), Panel))).padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-                Text("RESEARCH WORKSPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("RESEARCH WORKSPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 Text("3 sample datasets", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Text("1 project draft • demo charts", color = Muted, fontSize = 9.sp)
+                Text("1 project draft • demo charts", color = Muted, fontSize = 10.sp)
             }
             Text("✦", color = Violet, fontSize = 32.sp)
         }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Panel).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
             listOf("OVERVIEW", "DATASETS", "ANALYSIS", "PROJECTS", "REPORT").forEach { tab ->
-                Text(tab, color = if (section == tab) Color.White else Muted, fontSize = 7.sp, fontWeight = FontWeight.Bold,
+                Text(tab, color = if (section == tab) Color.White else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (section == tab) Color(0xFF302A5B) else Color.Transparent).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { section = tab }.padding(vertical = 11.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
         Spacer(Modifier.height(15.dp))
         when (section) {
             "OVERVIEW" -> {
-                Text("YOUR RESEARCH DESK", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("YOUR RESEARCH DESK", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("From raw data to clear insight.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                 Text("A focused workspace for organizing datasets, planning analysis and preparing research reports.", color = Muted, fontSize = 10.sp, lineHeight = 16.sp)
                 Spacer(Modifier.height(13.dp))
@@ -891,32 +891,32 @@ private fun ResearchHubScreen() {
                     listOf("DATASETS" to "03", "PROJECTS" to "01", "REPORTS" to "01").forEach { item ->
                         Column(Modifier.weight(1f).clip(RoundedCornerShape(13.dp)).background(Panel).padding(11.dp)) {
                             Text(item.second, color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-                            Text(item.first, color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            Text(item.first, color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
                 Spacer(Modifier.height(15.dp))
-                Text("RECENT DATASET", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("RECENT DATASET", color = Cyan, fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 Row(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(14.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { section = "DATASETS" }.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(selectedDataset, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        Text("Sample data • 4 observations • 3 variables", color = Muted, fontSize = 9.sp)
+                        Text("Sample data • 4 observations • 3 variables", color = Muted, fontSize = 10.sp)
                     }
-                    Text("OPEN  ›", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("OPEN  ›", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(15.dp))
-                Text("QUICK ANALYSIS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("QUICK ANALYSIS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 listOf("Descriptive statistics", "Correlation overview", "Distribution chart").forEach { label ->
                     Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(12.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { section = "ANALYSIS" }.padding(12.dp)) {
                         Text("◈", color = Violet, fontSize = 15.sp)
                         Spacer(Modifier.width(9.dp))
                         Text(label, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
-                        Text("VIEW", color = Muted, fontSize = 8.sp)
+                        Text("VIEW", color = Muted, fontSize = 10.sp)
                     }
                 }
             }
             "DATASETS" -> {
-                Text("DATASET WORKSPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("DATASET WORKSPACE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("Manage your research data.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 datasets.forEach { dataset ->
@@ -924,44 +924,44 @@ private fun ResearchHubScreen() {
                         Text("▦", color = Cyan, fontSize = 18.sp)
                         Spacer(Modifier.width(9.dp))
                         Text(dataset, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
-                        Text(if (selectedDataset == dataset) "ACTIVE" else "SELECT", color = if (selectedDataset == dataset) Cyan else Muted, fontSize = 8.sp)
+                        Text(if (selectedDataset == dataset) "ACTIVE" else "SELECT", color = if (selectedDataset == dataset) Cyan else Muted, fontSize = 10.sp)
                     }
                 }
                 Spacer(Modifier.height(7.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(13.dp)) {
-                    Text("IMPORT CSV FILE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text("IMPORT CSV FILE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(6.dp))
-                    Text("CSV import interface preview. File picker and parsing will be connected in a later data-engine phase.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+                    Text("CSV import interface preview. File picker and parsing will be connected in a later data-engine phase.", color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
                     Spacer(Modifier.height(10.dp))
-                    Text(if (importedFile.isEmpty()) "＋  CHOOSE CSV FILE" else "✓  $importedFile", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                    Text(if (importedFile.isEmpty()) "＋  CHOOSE CSV FILE" else "✓  $importedFile", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                         modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { importedFile = "sample_research_data.csv (demo)" }.padding(horizontal = 13.dp, vertical = 10.dp))
                 }
                 Spacer(Modifier.height(14.dp))
-                Text("DATA PREVIEW • $selectedDataset", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Text("DATA PREVIEW • $selectedDataset", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(7.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(8.dp)) {
                     sampleRows.forEachIndexed { index, cells ->
                         Row(Modifier.fillMaxWidth().background(if (index == 0) Panel2 else Color.Transparent).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            cells.forEach { cell -> Text(cell, color = if (index == 0) Cyan else Color(0xFFDDE2F2), fontSize = 8.sp, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+                            cells.forEach { cell -> Text(cell, color = if (index == 0) Cyan else Color(0xFFDDE2F2), fontSize = 10.sp, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
                         }
                     }
                 }
             }
             "ANALYSIS" -> {
-                Text("STATISTICAL ANALYSIS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("STATISTICAL ANALYSIS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("Explore the sample indicators.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("Illustrative values only — calculations are not connected to a live dataset yet.", color = Muted, fontSize = 9.sp)
+                Text("Illustrative values only — calculations are not connected to a live dataset yet.", color = Muted, fontSize = 10.sp)
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf("Mean study" to "3.63 h", "Mean GPA" to "3.59", "Mean sleep" to "7.13 h").forEach { item ->
                         Column(Modifier.weight(1f).clip(RoundedCornerShape(13.dp)).background(Panel).padding(10.dp)) {
-                            Text(item.first, color = Muted, fontSize = 8.sp)
+                            Text(item.first, color = Muted, fontSize = 10.sp)
                             Text(item.second, color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
                 Spacer(Modifier.height(14.dp))
-                Text("STUDY HOURS BY SAMPLE STUDENT", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Text("STUDY HOURS BY SAMPLE STUDENT", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(7.dp))
                 Canvas(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(14.dp)).background(Panel).padding(12.dp)) {
                     val values = listOf(3.5f, 2f, 5f, 4f)
@@ -974,73 +974,73 @@ private fun ResearchHubScreen() {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("DESCRIPTIVE SUMMARY", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Text("DESCRIPTIVE SUMMARY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 listOf("Study hours" to "Mean 3.63 • Min 2.0 • Max 5.0", "Sleep hours" to "Mean 7.13 • Min 6.0 • Max 8.0", "GPA" to "Mean 3.59 • Min 3.20 • Max 3.85").forEach { row ->
                     Row(Modifier.fillMaxWidth().padding(top = 7.dp).clip(RoundedCornerShape(11.dp)).background(Panel).padding(11.dp)) {
-                        Text(row.first, color = Color.White, fontSize = 9.sp, modifier = Modifier.weight(1f))
-                        Text(row.second, color = Muted, fontSize = 8.sp)
+                        Text(row.first, color = Color.White, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                        Text(row.second, color = Muted, fontSize = 10.sp)
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("Planned methods: frequency tables • mean/median • standard deviation • correlation • linear regression.", color = Muted, fontSize = 9.sp, lineHeight = 15.sp)
+                Text("Planned methods: frequency tables • mean/median • standard deviation • correlation • linear regression.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
             }
             "PROJECTS" -> {
-                Text("RESEARCH PROJECTS", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("RESEARCH PROJECTS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("Organize your investigations.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(13.dp)) {
-                    Text("NEW PROJECT NAME", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("NEW PROJECT NAME", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(7.dp))
                     Text(projectName, color = Color.White, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Panel2).padding(12.dp))
-                    Text("Tap below to cycle through suggested project titles.", color = Muted, fontSize = 8.sp)
+                    Text("Tap below to cycle through suggested project titles.", color = Muted, fontSize = 10.sp)
                     Spacer(Modifier.height(9.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("EDIT TITLE", color = Color.White, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { projectName = if (projectName.startsWith("Study")) "Campus Attendance & GPA" else "Study Time & GPA Analysis" }.padding(10.dp))
-                        Text("CREATE PROJECT", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { projectCreated = true }.padding(10.dp))
+                        Text("EDIT TITLE", color = Color.White, fontSize = 10.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { projectName = if (projectName.startsWith("Study")) "Campus Attendance & GPA" else "Study Time & GPA Analysis" }.padding(10.dp))
+                        Text("CREATE PROJECT", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { projectCreated = true }.padding(10.dp))
                     }
                 }
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Panel).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(if (projectCreated) projectName else "Study Time & GPA Analysis", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text(if (projectCreated) "Draft created in this screen session" else "Draft workspace • sample project", color = Muted, fontSize = 9.sp)
+                        Text(if (projectCreated) "Draft created in this screen session" else "Draft workspace • sample project", color = Muted, fontSize = 10.sp)
                     }
-                    Text(if (projectCreated) "DRAFT" else "SAMPLE", color = Cyan, fontSize = 8.sp)
+                    Text(if (projectCreated) "DRAFT" else "SAMPLE", color = Cyan, fontSize = 10.sp)
                 }
-                Text("Project state is temporary UI state; cloud/database saving is not active.", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 9.dp))
+                Text("Project state is temporary UI state; cloud/database saving is not active.", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 9.dp))
             }
             "REPORT" -> {
-                Text("REPORT PREVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("REPORT PREVIEW", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("Research summary draft.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFFF0F1F8)).padding(16.dp)) {
-                    Text("RESEARCH REPORT", color = Color(0xFF252A48), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                    Text("RESEARCH REPORT", color = Color(0xFF252A48), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                     Spacer(Modifier.height(8.dp))
                     Text("Study Time, Sleep Duration and GPA", color = Color(0xFF171A2C), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                    Text("Sample analysis • Draft preview", color = Color(0xFF62677D), fontSize = 9.sp)
+                    Text("Sample analysis • Draft preview", color = Color(0xFF62677D), fontSize = 10.sp)
                     Spacer(Modifier.height(12.dp))
                     Text("1. Objective", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Explore illustrative relationships between study habits and academic performance.", color = Color(0xFF44495D), fontSize = 9.sp, lineHeight = 14.sp)
+                    Text("Explore illustrative relationships between study habits and academic performance.", color = Color(0xFF44495D), fontSize = 10.sp, lineHeight = 14.sp)
                     Spacer(Modifier.height(9.dp))
                     Text("2. Dataset", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Four fictional observations with study hours, sleep hours and GPA.", color = Color(0xFF44495D), fontSize = 9.sp)
+                    Text("Four fictional observations with study hours, sleep hours and GPA.", color = Color(0xFF44495D), fontSize = 10.sp)
                     Spacer(Modifier.height(9.dp))
                     Text("3. Preliminary findings", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Descriptive values are shown for interface demonstration only. No inferential conclusion should be drawn.", color = Color(0xFF44495D), fontSize = 9.sp, lineHeight = 14.sp)
+                    Text("Descriptive values are shown for interface demonstration only. No inferential conclusion should be drawn.", color = Color(0xFF44495D), fontSize = 10.sp, lineHeight = 14.sp)
                     Spacer(Modifier.height(9.dp))
                     Text("4. Limitations", color = Color(0xFF252A48), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text("Synthetic sample; not suitable for academic claims or publication.", color = Color(0xFF44495D), fontSize = 9.sp)
+                    Text("Synthetic sample; not suitable for academic claims or publication.", color = Color(0xFF44495D), fontSize = 10.sp)
                 }
                 Spacer(Modifier.height(10.dp))
-                Text(if (reportPreview) "Preview refreshed • no file exported" else "Preview is a visual draft; PDF/export is not connected.", color = Muted, fontSize = 9.sp)
-                Text("REFRESH PREVIEW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { reportPreview = true }.padding(horizontal = 13.dp, vertical = 10.dp))
+                Text(if (reportPreview) "Preview refreshed • no file exported" else "Preview is a visual draft; PDF/export is not connected.", color = Muted, fontSize = 10.sp)
+                Text("REFRESH PREVIEW", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { reportPreview = true }.padding(horizontal = 13.dp, vertical = 10.dp))
             }
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 9.sp)
+            Text("●", color = Cyan, fontSize = 10.sp)
             Spacer(Modifier.width(8.dp))
-            Text("UI preview only • no live data processing, file parsing or AI Core connection.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+            Text("UI preview only • no live data processing, file parsing or AI Core connection.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -1059,7 +1059,7 @@ private fun VisionStudioScreen() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("CAMERA • IMAGES • VISUAL INTELLIGENCE", color = Cyan, fontSize = 8.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("CAMERA • IMAGES • VISUAL INTELLIGENCE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 Text("Vision Studio", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
                 Text("Capture, organize and explore visual content.", color = Muted, fontSize = 10.sp)
             }
@@ -1070,14 +1070,14 @@ private fun VisionStudioScreen() {
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(13.dp)).background(Panel).padding(5.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             listOf("CAMERA", "UPLOAD", "GALLERY", "ANALYSIS").forEach { tab ->
-                Text(tab, color = if (activeTab == tab) Color.White else Muted, fontSize = 7.sp, fontWeight = FontWeight.Bold,
+                Text(tab, color = if (activeTab == tab) Color.White else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if (activeTab == tab) Color(0xFF302A5B) else Color.Transparent).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { activeTab = tab }.padding(vertical = 11.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
         Spacer(Modifier.height(14.dp))
         when (activeTab) {
             "CAMERA" -> {
-                Text("CAMERA PREVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("CAMERA PREVIEW", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Box(Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(19.dp)).background(Brush.radialGradient(listOf(Color(0xFF30366B), Color(0xFF11162A), Color(0xFF070914)))), contentAlignment = Alignment.Center) {
                     Canvas(Modifier.fillMaxSize()) {
@@ -1099,28 +1099,28 @@ private fun VisionStudioScreen() {
                         Text("◉", color = Cyan, fontSize = 42.sp, modifier = Modifier.semantics { contentDescription = "Camera preview placeholder" })
                         Spacer(Modifier.height(8.dp))
                         Text("CAMERA PREVIEW PLACEHOLDER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        Text("Camera permission and hardware preview are not connected.", color = Muted, fontSize = 8.sp)
+                        Text("Camera permission and hardware preview are not connected.", color = Muted, fontSize = 10.sp)
                     }
-                    Text("● ${cameraState}", color = if (cameraState == "READY") Cyan else Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(13.dp))
-                    Text("16:9  •  PREVIEW", color = Muted, fontSize = 8.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(13.dp))
+                    Text("● ${cameraState}", color = if (cameraState == "READY") Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart).padding(13.dp))
+                    Text("16:9  •  PREVIEW", color = Muted, fontSize = 10.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(13.dp))
                 }
                 Spacer(Modifier.height(11.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("START PREVIEW", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { cameraState = "DEMO" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Text("CAPTURE DEMO", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedImage = "New demo capture • preview.png"; uploadState = "Demo capture selected"; activeTab = "ANALYSIS" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("START PREVIEW", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { cameraState = "DEMO" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("CAPTURE DEMO", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selectedImage = "New demo capture • preview.png"; uploadState = "Demo capture selected"; activeTab = "ANALYSIS" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("CAMERA STATES", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Text("CAMERA STATES", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(top = 7.dp)) {
                     listOf("READY", "LOADING", "ERROR").forEach { state ->
-                        Text(state, color = if (cameraState == state) Color.White else Muted, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(if (cameraState == state) Color(0xFF302A5B) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { cameraState = state }.padding(horizontal = 12.dp, vertical = 9.dp))
+                        Text(state, color = if (cameraState == state) Color.White else Muted, fontSize = 10.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(if (cameraState == state) Color(0xFF302A5B) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { cameraState = state }.padding(horizontal = 12.dp, vertical = 9.dp))
                     }
                 }
                 if (cameraState == "ERROR") VisionStateCard("Camera unavailable", "Camera access is not configured in this build. Check permission and device support after integration.", "ERROR")
                 if (cameraState == "LOADING") VisionStateCard("Preparing preview…", "This is a loading-state design preview. No camera service is starting.", "LOADING")
             }
             "UPLOAD" -> {
-                Text("IMAGE UPLOAD", color = Cyan, fontSize = 9.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
+                Text("IMAGE UPLOAD", color = Cyan, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.Bold)
                 Text("Bring an image into your workspace.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1128,30 +1128,30 @@ private fun VisionStudioScreen() {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("⇧", color = Cyan, fontSize = 38.sp)
                             Text("SELECT IMAGE FILE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            Text("JPG • PNG • WEBP", color = Muted, fontSize = 8.sp)
+                            Text("JPG • PNG • WEBP", color = Muted, fontSize = 10.sp)
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("＋  CHOOSE IMAGE", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { uploadState = "Demo image selected"; selectedImage = "Uploaded sample • image.png"; showError = false }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("＋  CHOOSE IMAGE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { uploadState = "Demo image selected"; selectedImage = "Uploaded sample • image.png"; showError = false }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     Spacer(Modifier.height(8.dp))
-                    Text(uploadState, color = if (uploadState.startsWith("No")) Muted else Cyan, fontSize = 9.sp)
-                    Text("File picker and real image decoding will be connected in a later integration phase.", color = Muted, fontSize = 8.sp, lineHeight = 13.sp)
+                    Text(uploadState, color = if (uploadState.startsWith("No")) Muted else Cyan, fontSize = 10.sp)
+                    Text("File picker and real image decoding will be connected in a later integration phase.", color = Muted, fontSize = 10.sp, lineHeight = 13.sp)
                 }
                 Spacer(Modifier.height(11.dp))
-                Text("UPLOAD VALIDATION STATES", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Text("UPLOAD VALIDATION STATES", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 7.dp)) {
-                    Text("SIMULATE ERROR", color = Color.White, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showError = true }.padding(10.dp))
-                    Text("RESET", color = Muted, fontSize = 8.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showError = false; uploadState = "No file selected" }.padding(10.dp))
+                    Text("SIMULATE ERROR", color = Color.White, fontSize = 10.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showError = true }.padding(10.dp))
+                    Text("RESET", color = Muted, fontSize = 10.sp, modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showError = false; uploadState = "No file selected" }.padding(10.dp))
                 }
                 if (showError) VisionStateCard("Unsupported file", "This demo state represents an invalid format or file that could not be read.", "ERROR")
             }
             "GALLERY" -> {
-                Text("IMAGE GALLERY & HISTORY", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("IMAGE GALLERY & HISTORY", color = Cyan, fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 Text("Your recent visual workspace.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("SAMPLE ITEMS", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f).padding(top = 9.dp))
-                    Text(if (showGalleryEmpty) "SHOW ITEMS" else "EMPTY STATE", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showGalleryEmpty = !showGalleryEmpty }.padding(8.dp))
+                    Text("SAMPLE ITEMS", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f).padding(top = 9.dp))
+                    Text(if (showGalleryEmpty) "SHOW ITEMS" else "EMPTY STATE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { showGalleryEmpty = !showGalleryEmpty }.padding(8.dp))
                 }
                 if (showGalleryEmpty) {
                     VisionStateCard("No images yet", "Your uploaded images and captures will appear here once the gallery storage is connected.", "EMPTY")
@@ -1165,35 +1165,35 @@ private fun VisionStudioScreen() {
                                         Text(if ((rowIndex+colIndex)%2==0) "✦" else "◉", color = Cyan, fontSize = 31.sp)
                                     }
                                     Spacer(Modifier.height(7.dp))
-                                    Text(item, color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                    Text("Sample • preview only", color = Muted, fontSize = 8.sp)
+                                    Text(item, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("Sample • preview only", color = Muted, fontSize = 10.sp)
                                 }
                             }
                         }
                     }
                 }
-                Text("Gallery items are illustrative placeholders; no image files are stored.", color = Muted, fontSize = 9.sp)
+                Text("Gallery items are illustrative placeholders; no image files are stored.", color = Muted, fontSize = 10.sp)
             }
             "ANALYSIS" -> {
-                Text("ANALYSIS RESULT PREVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+                Text("ANALYSIS RESULT PREVIEW", color = Cyan, fontSize = 10.sp, letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
                 Text("Visual insight workspace.", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(10.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(13.dp)) {
-                    Text("SELECTED IMAGE", color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("SELECTED IMAGE", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text(selectedImage, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(10.dp))
                     Box(Modifier.fillMaxWidth().height(120.dp).clip(RoundedCornerShape(12.dp)).background(Brush.radialGradient(listOf(Color(0xFF4A4F89), Color(0xFF15203B), Color(0xFF080B17)))), contentAlignment = Alignment.Center) {
                         Text("✦", color = Cyan, fontSize = 50.sp)
                     }
                     Spacer(Modifier.height(10.dp))
-                    Text("DEMO RESULT", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                    Text("DEMO RESULT", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text("Sample cosmic image • bright central region • scattered light points", color = Color(0xFFD7DDF0), fontSize = 10.sp, lineHeight = 15.sp)
-                    Text("Confidence: not calculated • Model: not connected", color = Muted, fontSize = 8.sp)
+                    Text("Confidence: not calculated • Model: not connected", color = Muted, fontSize = 10.sp)
                 }
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("RUN DEMO ANALYSIS", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { analysisState = "LOADING" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Text("SIMULATE ERROR", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { analysisState = "ERROR" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("RUN DEMO ANALYSIS", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Violet).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { analysisState = "LOADING" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("SIMULATE ERROR", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { analysisState = "ERROR" }.padding(vertical = 12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 }
                 if (analysisState == "LOADING") VisionStateCard("Analysis queued (demo)", "Loading state preview only. No image processing or AI request has been executed.", "LOADING")
                 if (analysisState == "ERROR") VisionStateCard("Analysis unavailable", "No vision provider is connected. Try again after the analysis service is configured.", "ERROR")
@@ -1202,9 +1202,9 @@ private fun VisionStudioScreen() {
         }
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF14283A)).padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 9.sp)
+            Text("●", color = Cyan, fontSize = 10.sp)
             Spacer(Modifier.width(8.dp))
-            Text("UI preview only • camera, file picker, gallery storage and vision AI are not connected.", color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp)
+            Text("UI preview only • camera, file picker, gallery storage and vision AI are not connected.", color = Color(0xFFB8D8E8), fontSize = 10.sp, lineHeight = 14.sp)
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -1218,7 +1218,7 @@ private fun VisionStateCard(title: String, detail: String, state: String) {
         Spacer(Modifier.width(10.dp))
         Column {
             Text(title, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Text(detail, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+            Text(detail, color = Muted, fontSize = 10.sp, lineHeight = 14.sp)
         }
     }
 }
@@ -1241,7 +1241,7 @@ private fun NotificationCenterScreen() {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=18.dp, vertical=10.dp)) {
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("GALAXY ACTIVITY • UPDATES",color=Cyan,fontSize=9.sp,letterSpacing=1.5.sp,fontWeight=FontWeight.Bold)
+                Text("GALAXY ACTIVITY • UPDATES",color=Cyan,fontSize = 10.sp,letterSpacing=1.5.sp,fontWeight=FontWeight.Bold)
                 Text("Notification Center",color=Color.White,fontSize=25.sp,fontWeight=FontWeight.Bold)
                 Text("Your workspace updates, organized.",color=Muted,fontSize=10.sp)
             }
@@ -1253,59 +1253,59 @@ private fun NotificationCenterScreen() {
         Spacer(Modifier.height(14.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Brush.linearGradient(listOf(Color(0xFF203858),Panel))).padding(14.dp),verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("INBOX OVERVIEW",color=Cyan,fontSize=9.sp,letterSpacing=1.3.sp,fontWeight=FontWeight.Bold)
+                Text("INBOX OVERVIEW",color=Cyan,fontSize = 10.sp,letterSpacing=1.3.sp,fontWeight=FontWeight.Bold)
                 Text("$unread unread notifications",color=Color.White,fontSize=16.sp,fontWeight=FontWeight.Bold)
-                Text("${items.size} total • local demo inbox",color=Muted,fontSize=9.sp)
+                Text("${items.size} total • local demo inbox",color=Muted,fontSize = 10.sp)
             }
             Text("$unread",color=Cyan,fontSize=25.sp,fontWeight=FontWeight.Bold)
         }
         Spacer(Modifier.height(11.dp))
         Row(horizontalArrangement=Arrangement.spacedBy(7.dp)) {
-            Text(if(settings) "← INBOX" else "⚙ SETTINGS",color=Color.White,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { settings=!settings;selected=null }.padding(10.dp))
-            Text("MARK ALL READ",color=Cyan,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=items.map { it.copy(unread=false) } }.padding(10.dp))
-            Text("CLEAR ALL",color=Color(0xFFFF9AA9),fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=emptyList();selected=null }.padding(10.dp))
+            Text(if(settings) "← INBOX" else "⚙ SETTINGS",color=Color.White,fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { settings=!settings;selected=null }.padding(10.dp))
+            Text("MARK ALL READ",color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=items.map { it.copy(unread=false) } }.padding(10.dp))
+            Text("CLEAR ALL",color=Color(0xFFFF9AA9),fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=emptyList();selected=null }.padding(10.dp))
         }
         Spacer(Modifier.height(12.dp))
         if(settings) {
-            Text("NOTIFICATION PREFERENCES",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold)
+            Text("NOTIFICATION PREFERENCES",color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold)
             listOf("System updates" to system,"Research updates" to research,"Security reminders" to security,"Vision updates" to vision,"Push notifications" to push).forEachIndexed { i,p ->
                 Row(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(12.dp)).background(Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { when(i){0->system=!system;1->research=!research;2->security=!security;3->vision=!vision;4->push=!push} }.padding(13.dp),verticalAlignment=Alignment.CenterVertically) {
                     Text(p.first,color=Color.White,fontSize=10.sp,modifier=Modifier.weight(1f))
-                    Text(if(p.second) "ON" else "OFF",color=if(p.second) Cyan else Muted,fontSize=9.sp,fontWeight=FontWeight.Bold)
+                    Text(if(p.second) "ON" else "OFF",color=if(p.second) Cyan else Muted,fontSize = 10.sp,fontWeight=FontWeight.Bold)
                 }
             }
-            Text("Preferences are local UI state. Push delivery and Android notification permissions are not connected.",color=Muted,fontSize=9.sp,lineHeight=14.sp,modifier=Modifier.padding(top=10.dp))
+            Text("Preferences are local UI state. Push delivery and Android notification permissions are not connected.",color=Muted,fontSize = 10.sp,lineHeight=14.sp,modifier=Modifier.padding(top=10.dp))
         } else if(selected!=null) {
             val n=items.firstOrNull { it.id==selected }
             if(n!=null) {
-                Text("NOTIFICATION DETAIL",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold)
+                Text("NOTIFICATION DETAIL",color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold)
                 Column(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(16.dp)).background(Panel).padding(15.dp)) {
-                    Text(n.type,color=Cyan,fontSize=8.sp,fontWeight=FontWeight.Bold)
+                    Text(n.type,color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold)
                     Text(n.title,color=Color.White,fontSize=17.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp))
-                    Text(n.time,color=Muted,fontSize=9.sp)
+                    Text(n.time,color=Muted,fontSize = 10.sp)
                     Text(n.body,color=Color(0xFFD5DCEF),fontSize=11.sp,lineHeight=18.sp,modifier=Modifier.padding(top=14.dp))
-                    Text(if(n.unread) "MARK AS READ" else "MARK AS UNREAD",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=items.map { if(it.id==n.id) it.copy(unread=!it.unread) else it } }.padding(top=16.dp))
-                    Text("DELETE NOTIFICATION",color=Color(0xFFFF9AA9),fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=items.filterNot { it.id==n.id };selected=null }.padding(top=12.dp))
+                    Text(if(n.unread) "MARK AS READ" else "MARK AS UNREAD",color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=items.map { if(it.id==n.id) it.copy(unread=!it.unread) else it } }.padding(top=16.dp))
+                    Text("DELETE NOTIFICATION",color=Color(0xFFFF9AA9),fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { items=items.filterNot { it.id==n.id };selected=null }.padding(top=12.dp))
                 }
             } else selected=null
         } else {
-            Text("FILTER BY CATEGORY",color=Cyan,fontSize=9.sp,fontWeight=FontWeight.Bold)
+            Text("FILTER BY CATEGORY",color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold)
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top=7.dp),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
                 listOf("ALL","SYSTEM","RESEARCH","SECURITY","VISION").forEach { f ->
-                    Text(f,color=if(filter==f) Color.White else Muted,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(if(filter==f) Color(0xFF302A5B) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { filter=f }.padding(horizontal=12.dp,vertical=10.dp))
+                    Text(f,color=if(filter==f) Color.White else Muted,fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(if(filter==f) Color(0xFF302A5B) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { filter=f }.padding(horizontal=12.dp,vertical=10.dp))
                 }
             }
             Row(Modifier.fillMaxWidth().padding(top=12.dp),verticalAlignment=Alignment.CenterVertically) {
                 Text(if(filter=="ALL") "RECENT ACTIVITY" else "$filter NOTIFICATIONS",color=Color.White,fontSize=10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
-                Text(if(emptyDemo) "SHOW ITEMS" else "EMPTY PREVIEW",color=Muted,fontSize=8.sp,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { emptyDemo=!emptyDemo }.padding(6.dp))
+                Text(if(emptyDemo) "SHOW ITEMS" else "EMPTY PREVIEW",color=Muted,fontSize = 10.sp,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { emptyDemo=!emptyDemo }.padding(6.dp))
             }
             val visible=if(emptyDemo) emptyList() else items.filter { filter=="ALL" || it.type==filter }
             if(visible.isEmpty()) {
                 Column(Modifier.fillMaxWidth().padding(top=10.dp).clip(RoundedCornerShape(15.dp)).background(Panel).padding(22.dp),horizontalAlignment=Alignment.CenterHorizontally) {
                     Text("◇",color=Violet,fontSize=34.sp)
                     Text("You're all caught up",color=Color.White,fontSize=13.sp,fontWeight=FontWeight.Bold)
-                    Text("No notifications to show in this view.",color=Muted,fontSize=9.sp)
-                    Text("CLEAR FILTERS",color=Cyan,fontSize=8.sp,fontWeight=FontWeight.Bold,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { filter="ALL";emptyDemo=false }.padding(top=10.dp))
+                    Text("No notifications to show in this view.",color=Muted,fontSize = 10.sp)
+                    Text("CLEAR FILTERS",color=Cyan,fontSize = 10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { filter="ALL";emptyDemo=false }.padding(top=10.dp))
                 }
             } else visible.forEach { n ->
                 Row(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(14.dp)).background(if(n.unread) Color(0xFF202744) else Panel).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { selected=n.id;items=items.map { if(it.id==n.id) it.copy(unread=false) else it } }.padding(12.dp),verticalAlignment=Alignment.Top) {
@@ -1316,16 +1316,16 @@ private fun NotificationCenterScreen() {
                             Text(n.title,color=Color.White,fontSize=10.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
                             if(n.unread) Box(Modifier.size(7.dp).clip(CircleShape).background(Cyan))
                         }
-                        Text(n.body,color=Muted,fontSize=9.sp,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=14.sp)
-                        Text("${n.type}  •  ${n.time}",color=Color(0xFF8291B2),fontSize=8.sp,modifier=Modifier.padding(top=5.dp))
+                        Text(n.body,color=Muted,fontSize = 10.sp,maxLines=2,overflow=TextOverflow.Ellipsis,lineHeight=14.sp)
+                        Text("${n.type}  •  ${n.time}",color=Color(0xFF8291B2),fontSize = 10.sp,modifier=Modifier.padding(top=5.dp))
                     }
                 }
             }
         }
         Spacer(Modifier.height(13.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF14283A)).padding(11.dp),verticalAlignment=Alignment.CenterVertically) {
-            Text("●",color=Cyan,fontSize=9.sp);Spacer(Modifier.width(8.dp))
-            Text("Local UI demo • sample notifications, no live delivery service.",color=Color(0xFFB8D8E8),fontSize=9.sp,lineHeight=14.sp)
+            Text("●",color=Cyan,fontSize = 10.sp);Spacer(Modifier.width(8.dp))
+            Text("Local UI demo • sample notifications, no live delivery service.",color=Color(0xFFB8D8E8),fontSize = 10.sp,lineHeight=14.sp)
         }
         Spacer(Modifier.height(8.dp))
     }
@@ -1346,7 +1346,7 @@ private fun FeatureScreen(tag: String, title: String, subtitle: String, detail: 
         }
         Spacer(Modifier.height(20.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Panel).padding(18.dp)) {
-            Text("MODULE OVERVIEW", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+            Text("MODULE OVERVIEW", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             Text(detail, color = Color(0xFFD3D8EC), fontSize = 13.sp, lineHeight = 20.sp)
             Spacer(Modifier.height(18.dp))
@@ -1414,7 +1414,7 @@ private fun SettingsScreen() {
                     prefs.edit().putString("language", option).apply()
                 }.padding(horizontal = 10.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(option, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    Text(if (language == option) "● SELECTED" else "○", color = if (language == option) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    Text(if (language == option) "● SELECTED" else "○", color = if (language == option) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Text("Preference saved on this device. Full interface localization will be applied in a later pass.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
@@ -1445,7 +1445,7 @@ private fun SettingsScreen() {
 
 @Composable
 private fun SettingsSectionTitle(title: String) {
-    Text(title, color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+    Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
 }
 
 @Composable
@@ -1476,7 +1476,7 @@ private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit)
             Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable { onSelect(tab) }.semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(tab.glyph, color = if (active) Cyan else Muted, fontSize = 20.sp, modifier = Modifier.semantics { contentDescription = "${tab.label} tab icon" })
                 Spacer(Modifier.height(3.dp))
-                Text(tab.label, color = if (active) Color.White else Muted, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
+                Text(tab.label, color = if (active) Color.White else Muted, fontSize = 10.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Normal)
                 if (active) {
                     Spacer(Modifier.height(3.dp))
                     Box(Modifier.width(15.dp).height(2.dp).clip(CircleShape).background(Cyan))
