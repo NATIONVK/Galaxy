@@ -266,10 +266,12 @@ private fun SelectionModeCard(title: String, heading: String, description: Strin
 
 @Composable
 private fun BlackHoleExperience(onBack: () -> Unit) {
-    var zoom by remember { mutableFloatStateOf(1.0f) }
-    var speed by remember { mutableFloatStateOf(1.0f) }
-    var intensity by remember { mutableFloatStateOf(1.0f) }
-    var particles by remember { mutableFloatStateOf(0.65f) }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
+    var zoom by remember { mutableFloatStateOf(prefs.getFloat("bh_zoom", 1.0f)) }
+    val speed = prefs.getFloat("bh_speed", 1.0f)
+    val intensity = prefs.getFloat("bh_intensity", 1.0f)
+    val particles = prefs.getFloat("bh_particles", 0.65f)
     var glView by remember { mutableStateOf<GalaxyGLSurfaceView?>(null) }
     var panOffset by remember { mutableStateOf(Offset.Zero) }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -285,32 +287,18 @@ private fun BlackHoleExperience(onBack: () -> Unit) {
             factory = { context -> GalaxyGLSurfaceView(context).also { glView = it } },
             update = { it.updateVisuals(zoom, speed, intensity, particles) }
         )
-        Column(Modifier.fillMaxSize().padding(18.dp), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.clip(RoundedCornerShape(30.dp)).background(Color(0xAA101326)).heightIn(min = 48.dp).semantics { role = Role.Button }.clickable(onClick = onBack).padding(horizontal = 16.dp, vertical = 11.dp)) {
-                    Text("←  BACK TO GALAXY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.weight(1f))
-                Text("LIVE VISUAL", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp)
+        Box(Modifier.fillMaxSize().padding(18.dp)) {
+            Box(Modifier.align(Alignment.TopStart).clip(RoundedCornerShape(30.dp)).background(Color(0xAA101326))
+                .heightIn(min = 48.dp).semantics { role = Role.Button }.clickable(onClick = onBack).padding(horizontal = 16.dp, vertical = 11.dp)) {
+                Text("←  BACK TO GALAXY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color(0xCC080B1B)).padding(15.dp)) {
-                Text("THE SINGULARITY", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 1.2.sp)
-                Text("LIVE VISUAL CONTROLS", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp)
-                Text("Pinch to zoom · Drag to move", color = Muted, fontSize = 10.sp)
-                Spacer(Modifier.height(8.dp))
-                Text("Zoom  ${String.format("%.1f", zoom)}×", color = Color.White, fontSize = 11.sp)
-                Slider(value = zoom, onValueChange = { zoom = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.7f..1.8f)
-                Text("Animation speed  ${String.format("%.1f", speed)}×", color = Color.White, fontSize = 11.sp)
-                Slider(value = speed, onValueChange = { speed = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.2f..2.5f)
-                Text("Glow intensity  ${String.format("%.1f", intensity)}×", color = Color.White, fontSize = 11.sp)
-                Slider(value = intensity, onValueChange = { intensity = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.3f..2.0f)
-                Text("Particle density  ${String.format("%.0f", particles * 100)}%", color = Color.White, fontSize = 11.sp)
-                Slider(value = particles, onValueChange = { particles = it; glView?.updateVisuals(zoom, speed, intensity, particles) }, valueRange = 0.1f..1.0f)
-            }
+            Text("LIVE BLACK HOLE", Modifier.align(Alignment.TopEnd).padding(top = 16.dp), color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp)
+            Text("Pinch to zoom · Drag to move", Modifier.align(Alignment.BottomCenter)
+                .clip(RoundedCornerShape(18.dp)).background(Color(0x99080B1B)).padding(horizontal = 14.dp, vertical = 9.dp),
+                color = Muted, fontSize = 10.sp)
         }
     }
 }
-
 @Composable
 private fun GalaxyGLSurfaceViewHost(modifier: Modifier) {
     AndroidView(modifier = modifier, factory = { context -> GalaxyGLSurfaceView(context) })
@@ -526,7 +514,8 @@ private fun ChatScreen() {
 @Composable
 private fun VoiceStudioScreen() {
     val context = LocalContext.current
-    var selectedVoice by remember { mutableStateOf("Male") }
+    val preferences = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
+    var selectedVoice by remember { mutableStateOf(preferences.getString("voice_gender", "Male") ?: "Male") }
     var recognitionLanguage by remember { mutableStateOf("bn-BD") }
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
@@ -853,7 +842,7 @@ private fun VoiceStudioScreen() {
         Text("VOICE TYPE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf("Male", "Female").forEach { voice ->
-                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (selectedVoice == voice) Color(0xFF29264F) else Panel2).heightIn(min = 52.dp).semantics { role = Role.Button }.clickable { selectedVoice = voice; speak(if (voice == "Male") "আমি Galaxy। কীভাবে সাহায্য করতে পারি?" else "আমি Galaxy। কীভাবে সাহায্য করতে পারি?") }.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp)).background(if (selectedVoice == voice) Color(0xFF29264F) else Panel2).heightIn(min = 52.dp).semantics { role = Role.Button }.clickable { selectedVoice = voice; preferences.edit().putString("voice_gender", voice).apply(); speak("আমি Galaxy। কীভাবে সাহায্য করতে পারি?") }.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(if (selectedVoice == voice) "● $voice" else voice, color = if (selectedVoice == voice) Cyan else Color.White, fontWeight = FontWeight.Bold)
                     Text(if (voice == "Male") "পুরুষ কণ্ঠ" else "নারী কণ্ঠ", color = Muted, fontSize = 10.sp)
                 }
@@ -1901,7 +1890,39 @@ private fun SettingsScreen() {
             prefs.edit().putBoolean("web_preference", it).apply()
         }
         SettingsInfoRow("Preferred model", "Choose from AI Models • demo only")
-        SettingsInfoRow("Voice preferences", "Voice service not connected")
+        SettingsSectionTitle("VOICE PREFERENCES")
+        var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+            Text("Galaxy speech voice", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(8.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                listOf("Male", "Female").forEach { option ->
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if (voiceGender == option) Color(0xFF29264F) else Panel2)
+                        .semantics { role = Role.Button }.clickable { voiceGender = option; prefs.edit().putString("voice_gender", option).apply() }.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(if (option == "Male") "♂ Male" else "♀ Female", color = if (voiceGender == option) Cyan else Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            Text("Voice Studio-তে এই পছন্দ ব্যবহার হবে। ডিভাইসের TTS engine-এ নির্দিষ্ট gender voice না থাকলে default voice ব্যবহার হতে পারে.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+        }
+        Spacer(Modifier.height(18.dp))
+        SettingsSectionTitle("BLACK HOLE SETTINGS")
+        var bhZoom by remember { mutableFloatStateOf(prefs.getFloat("bh_zoom", 1.0f)) }
+        var bhSpeed by remember { mutableFloatStateOf(prefs.getFloat("bh_speed", 1.0f)) }
+        var bhGlow by remember { mutableFloatStateOf(prefs.getFloat("bh_intensity", 1.0f)) }
+        var bhParticles by remember { mutableFloatStateOf(prefs.getFloat("bh_particles", 0.65f)) }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+            Text("Zoom  ${String.format("%.1f", bhZoom)}×", color = Color.White, fontSize = 11.sp)
+            Slider(value = bhZoom, onValueChange = { bhZoom = it; prefs.edit().putFloat("bh_zoom", it).apply() }, valueRange = 0.7f..1.8f)
+            Text("Animation speed  ${String.format("%.1f", bhSpeed)}×", color = Color.White, fontSize = 11.sp)
+            Slider(value = bhSpeed, onValueChange = { bhSpeed = it; prefs.edit().putFloat("bh_speed", it).apply() }, valueRange = 0.2f..2.5f)
+            Text("Glow intensity  ${String.format("%.1f", bhGlow)}×", color = Color.White, fontSize = 11.sp)
+            Slider(value = bhGlow, onValueChange = { bhGlow = it; prefs.edit().putFloat("bh_intensity", it).apply() }, valueRange = 0.3f..2.0f)
+            Text("Particle density  ${String.format("%.0f", bhParticles * 100)}%", color = Color.White, fontSize = 11.sp)
+            Slider(value = bhParticles, onValueChange = { bhParticles = it; prefs.edit().putFloat("bh_particles", it).apply() }, valueRange = 0.1f..1.0f)
+            Text("Settings এই ডিভাইসে save হবে এবং Black Hole খুললে প্রয়োগ হবে.", color = Muted, fontSize = 10.sp)
+        }
         Spacer(Modifier.height(18.dp))
         SettingsSectionTitle("ABOUT")
         SettingsInfoRow("App version", "0.1.0")
