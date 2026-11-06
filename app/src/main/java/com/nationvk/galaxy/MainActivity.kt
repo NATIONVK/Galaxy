@@ -651,7 +651,7 @@ private fun MemoryVaultScreen() {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(item.first, color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
                             Text("LOCAL", color = Muted, fontSize = 10.sp)
-                            Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Delete note: ${item.title}"; role = Role.Button }.clickable { notes = notes - item }.padding(start = 8.dp))
+                            Text("  ×", color = Muted, fontSize = 15.sp, modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = "Delete note in category ${item.first}"; role = Role.Button }.clickable { notes = notes - item }.padding(start = 8.dp))
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(item.second, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
