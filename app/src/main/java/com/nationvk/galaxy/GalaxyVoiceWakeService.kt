@@ -156,7 +156,31 @@ class GalaxyVoiceWakeService : Service() {
         override fun onEndOfSpeech() { }
         override fun onError(error: Int) {
             isListening = false
-            if (!stopped) scheduleRestart(if (error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) 1800 else 900)
+            if (stopped) return
+            when (error) {
+                SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
+                    updateNotification("Microphone permission revoked • stop listening")
+                    stopAssistant()
+                }
+                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
+                    updateNotification("Speech service busy • retrying shortly")
+                    scheduleRestart(2500)
+                }
+                SpeechRecognizer.ERROR_SERVER_DISCONNECTED -> {
+                    updateNotification("Speech service disconnected • reconnecting")
+                    try { recognizer?.destroy() } catch (_: Exception) { }
+                    recognizer = null
+                    scheduleRestart(1800)
+                }
+                SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
+                SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE -> {
+                    updateNotification("Bangla speech recognition unavailable • check device speech settings")
+                }
+                else -> {
+                    updateNotification("Voice recognition interrupted • retrying")
+                    scheduleRestart(1600)
+                }
+            }
         }
         override fun onResults(results: Bundle?) {
             isListening = false
