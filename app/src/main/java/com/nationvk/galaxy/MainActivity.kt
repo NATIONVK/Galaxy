@@ -43,7 +43,7 @@ private val Muted = Color(0xFF929AB8)
 private enum class GalaxyTab(val label: String, val glyph: String) {
     HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), PROFILE("Profile", "◎"),
     VOICE("Voice", "♫"), RESEARCH("Research", "⌁"), CAMERA("Camera", "◉"), MODELS("AI Models", "⎇"),
-    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙")
+    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
 }
 
 @Composable
@@ -54,9 +54,10 @@ fun GalaxyApp() {
             Box(Modifier.fillMaxSize()) {
                 StarBackdrop(Modifier.fillMaxSize())
                 Column(Modifier.fillMaxSize()) {
-                    GalaxyTopBar()
+                    if (selected != GalaxyTab.BLACKHOLE) GalaxyTopBar()
                     Box(Modifier.weight(1f)) {
                         when (selected) {
+                            GalaxyTab.BLACKHOLE -> BlackHoleExperience(onBack = { selected = GalaxyTab.HOME })
                             GalaxyTab.HOME -> HomeScreen(onOpen = { selected = it })
                             GalaxyTab.CHAT -> FeatureScreen("AI CHAT", "তোমার ব্যক্তিগত AI কথোপকথন", "A thoughtful assistant, ready when you are.", "Chat interface is being prepared. AI connection will be added in the core phase.", "Start a conversation", "Conversation engine coming next")
                             GalaxyTab.LAB -> FeatureScreen("CYBER LAB", "নিরাপদে শেখো, পরীক্ষা করো", "Your personal learning & security workspace.", "Practice area, learning paths and local sandbox tools will be built here.", "Explore learning paths", "Lab tools are not connected yet")
@@ -70,7 +71,9 @@ fun GalaxyApp() {
                             GalaxyTab.SETTINGS -> SettingsScreen()
                         }
                     }
-                    BottomNavigation(selected = selected, onSelect = { selected = it })
+                    if (selected != GalaxyTab.BLACKHOLE) {
+                        BottomNavigation(selected = selected, onSelect = { selected = it })
+                    }
                 }
             }
         }
@@ -116,7 +119,7 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             }
         }
         Spacer(Modifier.height(12.dp))
-        Box(Modifier.fillMaxWidth().height(390.dp).clip(RoundedCornerShape(25.dp))) {
+        Box(Modifier.fillMaxWidth().height(390.dp).clip(RoundedCornerShape(25.dp)).clickable { onOpen(GalaxyTab.BLACKHOLE) }) {
             GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
             Box(
                 Modifier.align(Alignment.BottomCenter).fillMaxWidth()
@@ -168,6 +171,27 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
     }
 }
 
+@Composable
+private fun BlackHoleExperience(onBack: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(Color.Black)) {
+        GalaxyGLSurfaceViewHost(Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize().padding(22.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.clip(RoundedCornerShape(30.dp)).background(Color(0xAA101326)).clickable(onClick = onBack).padding(horizontal = 16.dp, vertical = 11.dp)) {
+                    Text("←  BACK TO GALAXY", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.weight(1f))
+                Text("LIVE VISUAL", color = Cyan, fontSize = 9.sp, letterSpacing = 1.8.sp)
+            }
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC050611)))).padding(16.dp)) {
+                Text("PROJECT GALAXY  •  DEEP SPACE", color = Cyan, fontSize = 9.sp, letterSpacing = 2.sp)
+                Spacer(Modifier.height(5.dp))
+                Text("THE SINGULARITY", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                Text("Gravitational lensing · Plasma flow · Orbital particles", color = Color(0xFFB7C0DA), fontSize = 10.sp)
+            }
+        }
+    }
+}
 @Composable
 private fun GalaxyGLSurfaceViewHost(modifier: Modifier) {
     AndroidView(modifier = modifier, factory = { context -> GalaxyGLSurfaceView(context) })
