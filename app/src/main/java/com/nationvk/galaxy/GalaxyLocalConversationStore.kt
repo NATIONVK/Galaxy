@@ -34,6 +34,25 @@ object GalaxyLocalConversationStore {
             .putString(KEY_MESSAGES, array.toString()).commit()
     }
 
+    fun search(context: Context, query: String): List<Pair<Boolean, String>> {
+        val needle = query.trim()
+        if (needle.isEmpty()) return load(context)
+        return load(context).filter { it.second.contains(needle, ignoreCase = true) }
+    }
+
+    fun exportJson(context: Context): String {
+        val array = JSONArray()
+        load(context).forEach { (isUser, text) ->
+            array.put(JSONObject().put("user", isUser).put("text", text))
+        }
+        return JSONObject()
+            .put("format", "galaxy-local-chat")
+            .put("version", 1)
+            .put("exportedAt", System.currentTimeMillis())
+            .put("messages", array)
+            .toString(2)
+    }
+
     fun clear(context: Context): Boolean = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
         .remove(KEY_MESSAGES).commit()
 }
