@@ -84,13 +84,12 @@ object GalaxyApiProfiles {
     .put("secret",encrypted).put("enabled",p.optBoolean("enabled",true)).put("priority",p.optInt("priority",i)))
   }
   val old=data(c)
-  val keep=ids
-  for(i in 0 until old.length()) {
-   val oldId=old.optJSONObject(i)?.optString("id").orEmpty()
-   if(oldId.isNotBlank() && oldId !in keep) GalaxyProfileCrypto.delete(GalaxyProfileCrypto.alias(oldId))
-  }
   check(c.getSharedPreferences(PREF,0).edit().putString(KEY,restored.toString()).commit()) {
    "Could not save restored provider profiles."
+  }
+  for(i in 0 until old.length()) {
+   val oldId=old.optJSONObject(i)?.optString("id").orEmpty()
+   if(oldId.isNotBlank() && oldId !in ids) GalaxyProfileCrypto.delete(GalaxyProfileCrypto.alias(oldId))
   }
  }
  fun hasEnabled(c:Context)=list(c).any{it.enabled&&it.hasKey}
