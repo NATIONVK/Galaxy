@@ -465,7 +465,7 @@ private fun ChatScreen() {
                 visibleMessages.forEach { message ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = if (message.first) Arrangement.End else Arrangement.Start) {
                         Column(Modifier.widthIn(max = 290.dp).padding(vertical = 5.dp).clip(RoundedCornerShape(17.dp)).background(if (message.first) Color(0xFF29264F) else Panel).padding(13.dp)) {
-                            Text(if (message.first) "YOU" else "LOCAL NOTE", color = if (message.first) Cyan else Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Text(if (message.first) "YOU" else "GALAXY", color = if (message.first) Cyan else Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                             Spacer(Modifier.height(5.dp))
                             Text(message.second, color = Color.White, fontSize = 12.sp, lineHeight = 18.sp)
                         }
@@ -548,7 +548,7 @@ private fun ChatScreen() {
         }
         Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(if (isSending) "Galaxy is thinking…" else if (providerReady) "Live AI • provider configured" else "Offline • local notes only", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
-            Text("CLEAR CHAT", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
+            Text("CLEAR CHAT", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable(enabled = !isSending) {
                 if (GalaxyLocalConversationStore.clear(context)) {
                     messages = emptyList()
                     contextInfo = GalaxyConversationContext.prepare(context, emptyList(), "")
