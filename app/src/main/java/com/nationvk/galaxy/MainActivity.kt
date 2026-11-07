@@ -1314,7 +1314,7 @@ private fun MemoryVaultScreen() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("SMART BACKUP CENTER", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                    Text("${snapshots.size}/10 local restore points", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("${snapshots.size}/5 local restore points", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
                 Text(if (showBackupCenter) "HIDE" else "OPEN", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { showBackupCenter = !showBackupCenter }.padding(8.dp))
