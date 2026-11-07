@@ -2218,6 +2218,8 @@ private fun SettingsScreen() {
         PersonalizationSettingsPanel()
         SettingsSectionTitle("AI PROVIDER")
         GalaxyMultiApiSettingsPanel()
+        SettingsSectionTitle("SECURE API VAULT")
+        GalaxySecureVaultSettingsPanel()
         SettingsSectionTitle("VOICE PREFERENCES")
         var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
         var settingsTtsReady by remember { mutableStateOf(false) }
