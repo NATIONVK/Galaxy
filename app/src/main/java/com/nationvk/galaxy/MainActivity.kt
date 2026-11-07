@@ -1317,7 +1317,7 @@ private fun MemoryVaultScreen() {
                 }.padding(horizontal = 9.dp, vertical = 13.dp))
             Text("CLEAR ALL", color = Color(0xFFFFA7B8), fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
-                    GalaxyMemoryStore.clear(context); notes = emptyList(); notice = "All local memories cleared."
+                    GalaxyMemoryStore.clear(context); notes = emptyList(); trashItems = emptyList(); historyMemoryId = null; notice = "All local memories, timeline and trash cleared."
                 }.padding(horizontal = 9.dp, vertical = 13.dp))
         }
         Spacer(Modifier.height(7.dp))
