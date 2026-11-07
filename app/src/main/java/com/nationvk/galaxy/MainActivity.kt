@@ -1978,7 +1978,7 @@ private fun SettingsScreen() {
             val chosenVoice = genderBengali ?: anyBengali
             if (chosenVoice != null) {
                 engine.voice = chosenVoice
-                voicePreviewStatus = "Preview: \${chosenVoice.name} (\${chosenVoice.locale.displayName})"
+                voicePreviewStatus = "Preview: ${chosenVoice.name} (${chosenVoice.locale.displayName})"
             } else {
                 engine.setLanguage(Locale("bn", "BD"))
                 voicePreviewStatus = "নির্দিষ্ট gender বাংলা voice পাওয়া যায়নি; default Bengali TTS ব্যবহার হচ্ছে।"
