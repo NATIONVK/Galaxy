@@ -172,6 +172,8 @@ object GalaxyMemoryStore {
     private const val ARCHIVE_PREFS = "galaxy_memory_timeline"
     private const val KEY_VERSIONS = "versions"
     private const val KEY_TRASH = "trash"
+    private const val KEY_SNAPSHOTS = "snapshots"
+    private const val MAX_SNAPSHOTS = 10
     private const val MAX_VERSIONS_PER_MEMORY = 10
     private const val MAX_TRASH_ITEMS = 100
 
@@ -273,10 +275,49 @@ object GalaxyMemoryStore {
         return archivePrefs(context).edit().putString(KEY_TRASH, kept.toString()).commit()
     }
 
+    data class MemorySnapshot(val id: Long, val createdAt: Long, val memoryCount: Int, val json: String)
+
+    /** Saves a point-in-time local backup. The newest ten snapshots are retained. */
+    fun createSnapshot(context: Context): Boolean {
+        val current = getAll(context)
+        val json = exportJson(context)
+        val prefs = archivePrefs(context)
+        val old = try { JSONArray(prefs.getString(KEY_SNAPSHOTS, "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
+        val items = mutableListOf<JSONObject>()
+        for (i in 0 until old.length()) old.optJSONObject(i)?.let { items.add(it) }
+        items.add(JSONObject().put("id", System.currentTimeMillis()).put("createdAt", System.currentTimeMillis())
+            .put("memoryCount", current.size).put("json", json))
+        val bounded = JSONArray()
+        items.takeLast(MAX_SNAPSHOTS).forEach { bounded.put(it) }
+        return prefs.edit().putString(KEY_SNAPSHOTS, bounded.toString()).commit()
+    }
+
+    fun getSnapshots(context: Context): List<MemorySnapshot> {
+        val raw = archivePrefs(context).getString(KEY_SNAPSHOTS, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(raw)
+            (0 until array.length()).mapNotNull { i ->
+                val item = array.optJSONObject(i) ?: return@mapNotNull null
+                val json = item.optString("json", "")
+                if (json.isBlank() || json.length > 5_000_000) return@mapNotNull null
+                MemorySnapshot(item.optLong("id", 0L), item.optLong("createdAt", 0L),
+                    item.optInt("memoryCount", 0).coerceAtLeast(0), json)
+            }.sortedByDescending { it.createdAt }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    /** Restores by safe merge; current records are never overwritten or deleted. */
+    fun restoreSnapshot(context: Context, snapshotId: Long): ImportSummary {
+        val snapshot = getSnapshots(context).firstOrNull { it.id == snapshotId }
+            ?: throw IllegalArgumentException("Backup snapshot পাওয়া যায়নি।")
+        createSnapshot(context)
+        return importJson(context, snapshot.json)
+    }
+
     fun clear(context: Context) {
-        // Explicit Clear All also clears timeline and trash.
+        // Explicit Clear All also clears timeline, trash and local restore points.
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_ENTRIES).remove(KEY_CORRUPT_BACKUP).apply()
-        archivePrefs(context).edit().remove(KEY_VERSIONS).remove(KEY_TRASH).apply()
+        archivePrefs(context).edit().remove(KEY_VERSIONS).remove(KEY_TRASH).remove(KEY_SNAPSHOTS).apply()
     }
 
     fun hasRecoveryBackup(context: Context): Boolean =
