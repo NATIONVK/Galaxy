@@ -28,13 +28,13 @@ fun GalaxyMultiApiSettingsPanel() {
  var url by remember { mutableStateOf("https://api.openai.com") }
  var model by remember { mutableStateOf("gpt-4o-mini") }
  var key by remember { mutableStateOf("") }
- var status by remember { mutableStateOf("সর্বোচ্চ ২৫টি API যোগ করা যাবে। Primary ব্যর্থ হলে পরের enabled profile চেষ্টা হবে।") }
+ var status by remember { mutableStateOf("সর্বোচ্চ ৫০০টি API Profile যোগ করা যাবে। নতুন API যোগ হলেই সেটি Active ও Primary হবে।") }
  var testing by remember { mutableStateOf(false) }
  val card=Color(0xFF101326);val field=Color(0xFF171B33);val cyan=Color(0xFF55DFFF);val violet=Color(0xFF9B69FF);val muted=Color(0xFF929AB8)
  fun reset(){editId=null;name="";url="https://api.openai.com";model="gpt-4o-mini";key=""}
  Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(card).padding(14.dp)) {
   Text("MULTI-API FAILOVER",color=cyan,fontSize=11.sp,fontWeight=FontWeight.Bold)
-  Text("সর্বোচ্চ ২৫টি Provider/API Key যোগ করো। Primary ব্যর্থ হলে পরের সক্রিয় API চেষ্টা হবে। সব profile এই ডিভাইসে encrypted থাকবে।",color=muted,fontSize=10.sp,lineHeight=15.sp,modifier=Modifier.padding(top=6.dp,bottom=12.dp))
+  Text("সর্বোচ্চ ৫০০টি Provider/API Key যোগ করো। Add API চাপলে নতুন API সঙ্গে সঙ্গে Active ও Primary হবে; আগের API-গুলো backup/failover হিসেবে থাকবে। সব profile এই ডিভাইসে encrypted থাকবে।",color=muted,fontSize=10.sp,lineHeight=15.sp,modifier=Modifier.padding(top=6.dp,bottom=12.dp))
   Text("Native Gemini: URL https://generativelanguage.googleapis.com এবং Model ID যেমন gemini-2.5-flash। OpenAI-compatible API-র জন্য provider-এর HTTPS Base URL ও Model ID দাও।",color=cyan,fontSize=9.sp,lineHeight=14.sp,modifier=Modifier.padding(bottom=8.dp))
   @Composable fun field(label:String,value:String,change:(String)->Unit,secret:Boolean=false){
    Text(label,color=muted,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp,bottom=4.dp))
@@ -45,9 +45,9 @@ fun GalaxyMultiApiSettingsPanel() {
   field("MODEL ID",model,{model=it.take(120)})
   field(if(editId!=null)"NEW API KEY (blank keeps saved key)" else "API KEY",key,{key=it.take(500)},true)
   Row(Modifier.fillMaxWidth().padding(top=12.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-   Text(if(editId==null)"ADD API PROFILE" else "SAVE CHANGES",color=Color.White,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(violet).clickable {
+   Text(if(editId==null)"＋ ADD API" else "SAVE CHANGES",color=Color.White,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(violet).clickable {
     val ok=GalaxyApiProfiles.save(context,editId,name,url,model,key)
-    status=if(ok){refresh++;key="";editId=null;"Profile saved. API key encrypted on this device."}else "Save failed. Check HTTPS URL, name, model and API key."
+    status=if(ok){refresh++;key="";editId=null;"নতুন API Active ও Primary হয়েছে। Key এই ডিভাইসে encrypted আছে।" }else "Save failed. Check HTTPS URL, name, model and API key."
    }.padding(12.dp))
    if(editId!=null) Text("CANCEL",color=cyan,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(field).clickable{reset()}.padding(12.dp))
   }
@@ -58,7 +58,7 @@ fun GalaxyMultiApiSettingsPanel() {
    Column(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(12.dp)).background(field).padding(10.dp)) {
     Row(verticalAlignment=Alignment.CenterVertically) {
      Column(Modifier.weight(1f)) {
-      Text((if(index==0)"★ PRIMARY • " else "")+p.name,color=Color.White,fontSize=11.sp,fontWeight=FontWeight.Bold)
+      Text((if(index==0)"● ACTIVE / PRIMARY • " else "")+p.name,color=Color.White,fontSize=11.sp,fontWeight=FontWeight.Bold)
       Text(p.model+" • "+(if(p.hasKey)"Key saved" else "Missing key"),color=muted,fontSize=9.sp)
      }
      Switch(checked=p.enabled,onCheckedChange={GalaxyApiProfiles.enable(context,p.id,it);refresh++})
