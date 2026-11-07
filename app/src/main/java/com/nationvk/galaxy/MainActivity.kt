@@ -1025,6 +1025,7 @@ private fun MemoryVaultScreen() {
     }
     val recoveryAvailable = GalaxyMemoryStore.hasRecoveryBackup(context)
     val memoryInsights = GalaxyMemoryStore.insights(context)
+    val memoryReview = remember(notes) { GalaxyMemoryIntelligence.review(notes) }
     val categories = listOf("ALL", "PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
     val filtered = if (search.isBlank()) {
         notes.filter { selectedCategory == "ALL" || it.category == selectedCategory }
@@ -1063,6 +1064,50 @@ private fun MemoryVaultScreen() {
                 }
             }
             Text("Search now ranks matching memories by relevance, phrase match and recency. Memories stay on this device.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
+        }
+        if (memoryReview.staleMemories.isNotEmpty() || memoryReview.conflicts.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel2).padding(12.dp)) {
+                Text("MEMORY HEALTH REVIEW", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("${memoryReview.staleMemories.size} possibly outdated • ${memoryReview.conflicts.size} possible conflicts", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
+                Text("এগুলো review hint মাত্র। Galaxy নিজে থেকে কোনো memory delete বা merge করবে না। High-priority memories protected.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                memoryReview.conflicts.take(3).forEach { conflict ->
+                    Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(10.dp)).background(Panel).padding(9.dp)) {
+                        Text("POSSIBLE CONTRADICTION • shared: ${conflict.sharedTerms.joinToString(", ")}", color = Color(0xFFFFC28A), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        Text("A: ${conflict.first.content.take(110)}", color = Color.White, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+                        Text("B: ${conflict.second.content.take(110)}", color = Color.White, fontSize = 9.sp, modifier = Modifier.padding(top = 3.dp))
+                        Text("EDIT FIRST MEMORY", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                editingMemoryId = conflict.first.id
+                                selectedCategory = conflict.first.category
+                                noteDraft = conflict.first.content
+                                memoryPriority = conflict.first.priority
+                                showEditor = true
+                            }.padding(top = 6.dp))
+                        Text("EDIT SECOND MEMORY", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                editingMemoryId = conflict.second.id
+                                selectedCategory = conflict.second.category
+                                noteDraft = conflict.second.content
+                                memoryPriority = conflict.second.priority
+                                showEditor = true
+                            }.padding(top = 5.dp))
+                    }
+                }
+                memoryReview.staleMemories.take(3).forEach { stale ->
+                    Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("OUTDATED?  ${stale.category}: ${stale.content.take(65)}", color = Muted, fontSize = 8.sp, modifier = Modifier.weight(1f))
+                        Text("REVIEW", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                editingMemoryId = stale.id
+                                selectedCategory = stale.category
+                                noteDraft = stale.content
+                                memoryPriority = stale.priority
+                                showEditor = true
+                            }.padding(start = 7.dp))
+                    }
+                }
+            }
         }
         if (preferenceSuggestions.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
