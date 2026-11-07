@@ -931,6 +931,19 @@ private fun VoiceStudioScreen() {
                     }
                 }
             }
+            command.contains("read note") || command.contains("read notes") || command.contains("নোট পড়ে") || command.contains("নোট পড়ে") || command.contains("নোট শোনাও") || command.contains("নোট পড়ে শোনাও") -> {
+                val notePrefs = context.getSharedPreferences("galaxy_notepad", android.content.Context.MODE_PRIVATE)
+                val noteTitle = notePrefs.getString("note_title", "") ?: ""
+                val noteBody = notePrefs.getString("note_body", "") ?: ""
+                val noteText = listOf(noteTitle, noteBody).filter { it.isNotBlank() }.joinToString(". ")
+                if (noteText.isBlank()) {
+                    status = "Notepad-এ এখনো কোনো saved note নেই।"
+                    speak("Notepad-এ এখনো কোনো নোট সেভ করা নেই")
+                } else {
+                    status = "তোমার saved note পড়ে শোনাচ্ছি।"
+                    speak(noteText.take(3500))
+                }
+            }
             command.contains("gmail") || command.contains("email") || command.contains("mail") || command.contains("ইমেইল") || command.contains("মেইল") -> {
                 try {
                     val launch = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
