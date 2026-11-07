@@ -1923,19 +1923,99 @@ private fun SettingsScreen() {
         SettingsInfoRow("Preferred model", "Choose from AI Models • demo only")
         SettingsSectionTitle("VOICE PREFERENCES")
         var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
+        var settingsTtsReady by remember { mutableStateOf(false) }
+        var bengaliVoiceCount by remember { mutableIntStateOf(0) }
+        var voicePreviewStatus by remember { mutableStateOf("Voice engine যাচাই হচ্ছে…") }
+        val settingsTts = remember { mutableStateOf<TextToSpeech?>(null) }
+
+        DisposableEffect(context) {
+            val engine = TextToSpeech(context) { result ->
+                settingsTtsReady = result == TextToSpeech.SUCCESS
+                if (result == TextToSpeech.SUCCESS) {
+                    val voices = settingsTts.value?.voices ?: emptySet<Voice>()
+                    bengaliVoiceCount = voices.count { it.locale.language.equals("bn", ignoreCase = true) }
+                    voicePreviewStatus = if (bengaliVoiceCount > 0) {
+                        "$bengaliVoiceCountটি বাংলা voice পাওয়া গেছে।"
+                    } else {
+                        "বাংলা voice পাওয়া যায়নি; preview-তে device default fallback হবে।"
+                    }
+                } else {
+                    voicePreviewStatus = "Text-to-Speech engine চালু হয়নি। Android Settings থেকে TTS engine পরীক্ষা করো।"
+                }
+            }
+            settingsTts.value = engine
+            onDispose {
+                engine.stop()
+                engine.shutdown()
+                settingsTts.value = null
+            }
+        }
+
+        fun previewSelectedVoice() {
+            val engine = settingsTts.value
+            if (!settingsTtsReady || engine == null) {
+                voicePreviewStatus = "Voice engine এখনো প্রস্তুত নয়। একটু পরে আবার চেষ্টা করো।"
+                return
+            }
+            val voices = engine.voices ?: emptySet<Voice>()
+            val genderToken = if (voiceGender == "Female") "female" else "male"
+            val matchingGender = voices.filter { it.name.contains(genderToken, ignoreCase = true) }
+            val genderBengali = matchingGender.firstOrNull {
+                it.locale.language.equals("bn", ignoreCase = true) &&
+                    it.locale.country.equals("BD", ignoreCase = true)
+            } ?: matchingGender.firstOrNull {
+                it.locale.language.equals("bn", ignoreCase = true) &&
+                    it.locale.country.equals("IN", ignoreCase = true)
+            } ?: matchingGender.firstOrNull {
+                it.locale.language.equals("bn", ignoreCase = true)
+            }
+            val anyBengali = voices.firstOrNull {
+                it.locale.language.equals("bn", ignoreCase = true) &&
+                    it.locale.country.equals("BD", ignoreCase = true)
+            } ?: voices.firstOrNull {
+                it.locale.language.equals("bn", ignoreCase = true)
+            }
+            val chosenVoice = genderBengali ?: anyBengali
+            if (chosenVoice != null) {
+                engine.voice = chosenVoice
+                voicePreviewStatus = "Preview: \${chosenVoice.name} (\${chosenVoice.locale.displayName})"
+            } else {
+                engine.setLanguage(Locale("bn", "BD"))
+                voicePreviewStatus = "নির্দিষ্ট gender বাংলা voice পাওয়া যায়নি; default Bengali TTS ব্যবহার হচ্ছে।"
+            }
+            engine.setSpeechRate(0.95f)
+            engine.speak(
+                "আমি Galaxy। তোমার নির্বাচিত " + (if (voiceGender == "Female") "নারী" else "পুরুষ") + " কণ্ঠ পরীক্ষা করছি।",
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                "galaxy-settings-voice-preview"
+            )
+        }
+
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
             Text("Galaxy speech voice", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf("Male", "Female").forEach { option ->
                     Column(Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(if (voiceGender == option) Color(0xFF29264F) else Panel2)
-                        .semantics { role = Role.Button }.clickable { voiceGender = option; prefs.edit().putString("voice_gender", option).apply() }.padding(12.dp),
+                        .semantics { role = Role.Button }.clickable {
+                            voiceGender = option
+                            prefs.edit().putString("voice_gender", option).apply()
+                            voicePreviewStatus = "$option voice preference save হয়েছে। Preview চাপ দিয়ে পরীক্ষা করো।"
+                        }.padding(12.dp),
                         horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(if (option == "Male") "♂ Male" else "♀ Female", color = if (voiceGender == option) Cyan else Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
-            Text("Voice Studio-তে এই পছন্দ ব্যবহার হবে। ডিভাইসের TTS engine-এ নির্দিষ্ট gender voice না থাকলে default voice ব্যবহার হতে পারে.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+            Spacer(Modifier.height(10.dp))
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(11.dp)).background(Panel2)
+                .semantics { role = Role.Button }.clickable { previewSelectedVoice() }
+                .padding(horizontal = 13.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("▶  TEST SELECTED VOICE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            }
+            Text(voicePreviewStatus, color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 8.dp))
+            Text("বাংলা voice availability Android-এর installed TTS engine-এর ওপর নির্ভর করে। Gender tag না থাকলে app নিশ্চিতভাবে কণ্ঠের gender শনাক্ত করতে পারে না; তখন Bengali default voice fallback হবে.", color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp))
         }
         Spacer(Modifier.height(18.dp))
         SettingsSectionTitle("BLACK HOLE SETTINGS")
