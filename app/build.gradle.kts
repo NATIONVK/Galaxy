@@ -1,17 +1,17 @@
 import java.util.Properties
 
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
 val galaxyLocalProperties = Properties().apply {
     val secretsFile = rootProject.file("local.properties")
     if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
 }
 val galaxyApiKey = galaxyLocalProperties.getProperty("GALAXY_API_KEY") ?: System.getenv("GALAXY_API_KEY").orEmpty()
 val escapedGalaxyApiKey = galaxyApiKey.replace("\\", "\\\\").replace("\"", "\\\"")
-
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-}
 
 android {
     namespace = "com.nationvk.galaxy"
