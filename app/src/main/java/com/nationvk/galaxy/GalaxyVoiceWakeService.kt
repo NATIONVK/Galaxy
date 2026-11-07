@@ -407,9 +407,35 @@ class GalaxyVoiceWakeService : Service() {
         ).any { q.contains(it) }
         if (!asksAboutMessages) return false
 
-        val recent = GalaxyMessageStore.read(this)
-        if (recent.isEmpty()) {
+        val allRecent = GalaxyMessageStore.read(this)
+        if (allRecent.isEmpty()) {
             speakMemory("এখনো কোনো নতুন সমর্থিত মেসেজ পাওয়া যায়নি। Notification Access চালু আছে কি না দেখে নাও।")
+            return true
+        }
+        val appAliases = mapOf(
+            "whatsapp" to listOf("whatsapp"),
+            "messenger" to listOf("messenger"),
+            "telegram" to listOf("telegram"),
+            "instagram" to listOf("instagram"),
+            "gmail" to listOf("gmail"),
+            "ইমো" to listOf("imo"),
+            "imo" to listOf("imo"),
+            "viber" to listOf("viber"),
+            "line" to listOf("line"),
+            "discord" to listOf("discord"),
+            "sms" to listOf("messages", "messaging", "sms"),
+            "মেসেঞ্জার" to listOf("messenger"),
+            "হোয়াটসঅ্যাপ" to listOf("whatsapp"),
+            "হোয়াটসঅ্যাপ" to listOf("whatsapp"),
+            "টেলিগ্রাম" to listOf("telegram"),
+            "ইনস্টাগ্রাম" to listOf("instagram")
+        )
+        val requestedApp = appAliases.entries.firstOrNull { (alias, _) -> q.contains(alias) }
+        val recent = if (requestedApp == null) allRecent else allRecent.filter { item ->
+            requestedApp.value.any { item.appName.lowercase(Locale.ROOT).contains(it) }
+        }
+        if (recent.isEmpty()) {
+            speakMemory("${requestedApp?.key ?: "এই অ্যাপ"} থেকে কোনো সংরক্ষিত নতুন মেসেজ পাওয়া যায়নি।")
             return true
         }
         val asksCount = listOf("কয়টা", "কতগুলো", "কতটি", "how many", "count message").any { q.contains(it) }
