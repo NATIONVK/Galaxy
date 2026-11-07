@@ -351,6 +351,8 @@ private fun StatusRow(name: String, status: String, tint: Color) {
 @Composable
 private fun ChatScreen() {
     val context = LocalContext.current
+    var providerReady by remember { mutableStateOf(GalaxyAiProviderStore.load(context).isConfigured) }
+    var isSending by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(GalaxyLocalConversationStore.load(context)) }
     var attachmentOpen by remember { mutableStateOf(false) }
@@ -381,7 +383,7 @@ private fun ChatScreen() {
                 Text("AI Chat", color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Bold)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("DEMO UI", color = Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(if (providerReady) "AI CORE READY" else "OFFLINE MODE", color = if (providerReady) Cyan else Violet, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
                 Text("EXPORT JSON", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Panel2).clickable {
@@ -415,7 +417,7 @@ private fun ChatScreen() {
                 val personalization = GalaxyPersonalizationStore.load(context)
                 Text("Preview • ${personalization.assistantMode} mode • ${personalization.responseStyle} • ${personalization.tone}", color = Muted, fontSize = 10.sp)
             }
-            Text("● OFFLINE", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(if (providerReady) "● READY" else "● OFFLINE", color = if (providerReady) Cyan else Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(9.dp))
         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Panel).clickable { showContextDetails = !showContextDetails }.padding(12.dp)) {
@@ -502,7 +504,7 @@ private fun ChatScreen() {
                 }
             )
             Spacer(Modifier.width(7.dp))
-            Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) Panel else Violet).semantics { contentDescription = "Send message"; role = Role.Button }.clickable {
+            Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank() || isSending) Panel else Violet).semantics { contentDescription = "Send message"; role = Role.Button }.clickable(enabled = draft.isNotBlank() && !isSending) {
                 val value = draft.trim()
                 if (value.isNotEmpty()) {
                     contextInfo = GalaxyConversationContext.prepare(context, messages, value)
@@ -511,17 +513,41 @@ private fun ChatScreen() {
                     if (GalaxyLocalConversationStore.save(context, updated)) {
                         messages = updated
                         draft = ""
-                        notice = if (detectedFollowUp) "Message saved. Follow-up context detected and prepared locally; AI provider is not connected." else "Message saved. Conversation context prepared locally; AI provider is not connected."
+                        providerReady = GalaxyAiProviderStore.load(context).isConfigured
+                        if (providerReady) {
+                            isSending = true
+                            notice = "Galaxy is preparing a secure AI request…"
+                            GalaxyAiClient.send(context, contextInfo.promptContext) { result ->
+                                isSending = false
+                                result.fold(
+                                    { answer ->
+                                        val completed = messages + (false to answer)
+                                        if (GalaxyLocalConversationStore.save(context, completed)) {
+                                            messages = completed
+                                            contextInfo = GalaxyConversationContext.prepare(context, completed, "")
+                                            notice = "AI response received and saved locally."
+                                        } else {
+                                            notice = "AI response received, but saving the reply failed."
+                                        }
+                                    },
+                                    { error ->
+                                        notice = "AI request failed: ${error.message ?: "Unknown error"}. Your message is still saved."
+                                    }
+                                )
+                            }
+                        } else {
+                            notice = if (detectedFollowUp) "Message saved. Follow-up context prepared locally. Configure a provider in Settings for live AI replies." else "Message saved locally. Configure an AI provider in Settings to receive live replies."
+                        }
                     } else {
                         notice = "Could not save this message. Please try again."
                     }
                 }
             }, contentAlignment = Alignment.Center) {
-                Text("↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                Text(if (isSending) "…" else "↑", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
             }
         }
         Row(Modifier.fillMaxWidth().padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Demo mode • local screen state only", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+            Text(if (isSending) "Galaxy is thinking…" else if (providerReady) "Live AI • provider configured" else "Offline • local notes only", color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
             Text("CLEAR CHAT", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
                 if (GalaxyLocalConversationStore.clear(context)) {
                     messages = emptyList()
