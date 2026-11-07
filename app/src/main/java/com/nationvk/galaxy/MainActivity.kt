@@ -361,6 +361,10 @@ private data class GalaxyDeviceSnapshot(
     val device: String,
     val android: String,
     val battery: String,
+    val charging: String,
+    val temperature: String,
+    val batteryHealth: String,
+    val powerMode: String,
     val memory: String,
     val storage: String,
     val network: String
@@ -368,13 +372,42 @@ private data class GalaxyDeviceSnapshot(
 
 private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDeviceSnapshot {
     val batteryManager = context.getSystemService(android.content.Context.BATTERY_SERVICE) as android.os.BatteryManager
+    val batteryIntent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
     val reportedBattery = batteryManager.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
     val battery = if (reportedBattery in 0..100) "$reportedBattery%" else {
-        val intent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
-        val level = intent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = intent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
         if (level >= 0 && scale > 0) "${(level * 100) / scale}%" else "Unavailable"
     }
+    val batteryStatus = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
+    val charging = when (batteryStatus) {
+        android.os.BatteryManager.BATTERY_STATUS_CHARGING -> "Charging"
+        android.os.BatteryManager.BATTERY_STATUS_FULL -> "Full"
+        android.os.BatteryManager.BATTERY_STATUS_DISCHARGING -> "Discharging"
+        android.os.BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "Not charging"
+        else -> "Unknown"
+    }
+    val plugged = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+    val powerSource = when {
+        plugged and android.os.BatteryManager.BATTERY_PLUGGED_AC != 0 -> "AC adapter"
+        plugged and android.os.BatteryManager.BATTERY_PLUGGED_USB != 0 -> "USB"
+        plugged and android.os.BatteryManager.BATTERY_PLUGGED_WIRELESS != 0 -> "Wireless"
+        else -> "No external power"
+    }
+    val tempTenths = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
+    val temperature = if (tempTenths >= 0) String.format(Locale.US, "%.1f °C", tempTenths / 10.0) else "Unavailable"
+    val healthCode = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_HEALTH, -1) ?: -1
+    val batteryHealth = when (healthCode) {
+        android.os.BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
+        android.os.BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheating"
+        android.os.BatteryManager.BATTERY_HEALTH_COLD -> "Cold"
+        android.os.BatteryManager.BATTERY_HEALTH_DEAD -> "Dead"
+        android.os.BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Over voltage"
+        android.os.BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "System-reported issue"
+        else -> "Unknown"
+    }
+    val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
+    val powerMode = if (powerManager.isPowerSaveMode) "Battery Saver ON" else "Normal mode"
 
     val activityManager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
     val memoryInfo = android.app.ActivityManager.MemoryInfo()
@@ -406,6 +439,10 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
         device = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}".trim(),
         android = "Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})",
         battery = battery,
+        charging = "$charging • $powerSource",
+        temperature = temperature,
+        batteryHealth = batteryHealth,
+        powerMode = powerMode,
         memory = "${size(usedRam)} / ${size(totalRam)} used",
         storage = "${size(usedStorage)} / ${size(totalStorage)} used",
         network = network
@@ -428,11 +465,15 @@ private fun DeviceMonitorPanel() {
                     .padding(horizontal = 12.dp, vertical = 9.dp))
         }
         Spacer(Modifier.height(12.dp))
-        DeviceMetricRow("Battery", snapshot.battery, "▰")
+        DeviceMetricRow("Battery level", snapshot.battery, "▰")
+        DeviceMetricRow("Charge state", snapshot.charging, "⚡")
+        DeviceMetricRow("Battery temperature", snapshot.temperature, "♨")
+        DeviceMetricRow("Battery health", snapshot.batteryHealth, "♥")
+        DeviceMetricRow("Power profile", snapshot.powerMode, "◉")
         DeviceMetricRow("Memory (RAM)", snapshot.memory, "▦")
         DeviceMetricRow("Internal storage", snapshot.storage, "▤")
         DeviceMetricRow("Network", snapshot.network, "⌁")
-        Text("ডিভাইসের তথ্য ফোন থেকেই পড়া হয়; এই panel কোনো তথ্য cloud-এ পাঠায় না। Refresh চাপলে নতুন snapshot নেওয়া হবে।",
+        Text("Battery Intelligence: Android-এর battery status, power source, reported temperature/health এবং Battery Saver mode দেখায়। এটি battery capacity বা battery health percentage অনুমান করে না। তথ্য ফোনেই থাকে; এই panel cloud-এ পাঠায় না। Refresh চাপলে নতুন snapshot নেওয়া হবে।",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
