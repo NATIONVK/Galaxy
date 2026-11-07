@@ -2,6 +2,7 @@ package com.nationvk.galaxy
 
 import android.os.Bundle
 import java.util.Locale
+import kotlinx.coroutines.delay
 import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
@@ -484,18 +485,64 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
 private fun DeviceMonitorPanel() {
     val context = LocalContext.current
     var snapshot by remember(context) { mutableStateOf(readGalaxyDeviceSnapshot(context)) }
+    var lastUpdated by remember { mutableStateOf("Just now") }
+
+    fun refreshSnapshot() {
+        snapshot = readGalaxyDeviceSnapshot(context)
+        lastUpdated = java.text.SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(java.util.Date())
+    }
+
+    // Poll only while this monitor is composed/visible; no background polling service is started.
+    LaunchedEffect(context) {
+        while (true) {
+            delay(30_000L)
+            refreshSnapshot()
+        }
+    }
+
+    val batteryPercent = snapshot.battery.removeSuffix("%").toIntOrNull()
+    val ramPercent = Regex("\\((\\d+)%\\)").find(snapshot.memoryPressure)?.groupValues?.getOrNull(1)?.toIntOrNull()
+    val freeStorageMb = Regex("([0-9.]+) MB free").find(snapshot.storageSpace)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
+    val batteryTemp = snapshot.temperature.removeSuffix(" °C").toDoubleOrNull()
+    val warnings = buildList {
+        if (snapshot.thermalState in setOf("Severe", "Critical", "Emergency", "Shutdown risk")) {
+            add("Phone thermal state: ${snapshot.thermalState}. Heavy use বন্ধ করে ফোন ঠান্ডা হতে দাও।")
+        }
+        if (batteryTemp != null && batteryTemp >= 45.0) add("Battery temperature high: ${snapshot.temperature}. Charging/use কমিয়ে ঠান্ডা হতে দাও।")
+        if (batteryPercent != null && batteryPercent <= 15) add("Battery low: ${snapshot.battery}. Charger লাগানোর কথা বিবেচনা করো।")
+        if (ramPercent != null && ramPercent >= 90) add("Memory pressure high: ${ramPercent}% RAM used.")
+        if (snapshot.memoryPressure.contains("low-memory", ignoreCase = true)) add("Android system low-memory warning reported.")
+        if (snapshot.storageSpace.startsWith("Low free space")) add("Storage space low: ${snapshot.storageSpace}.")
+    }
+
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(snapshot.device, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Text(snapshot.android, color = Muted, fontSize = 9.sp)
+                Text("LIVE SNAPSHOT • Updated ${lastUpdated}", color = Cyan, fontSize = 8.sp)
             }
             Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet)
-                    .clickable { snapshot = readGalaxyDeviceSnapshot(context) }
+                    .clickable { refreshSnapshot() }
                     .padding(horizontal = 12.dp, vertical = 9.dp))
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(10.dp))
+        if (warnings.isNotEmpty()) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF39251E)).padding(10.dp)) {
+                Text("PHONE BRAIN ALERTS", color = Color(0xFFFFC078), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                warnings.forEach { warning ->
+                    Text("• $warning", color = Color(0xFFFFE0BD), fontSize = 10.sp, lineHeight = 15.sp,
+                        modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        } else {
+            Text("No critical device warnings detected in the latest snapshot.",
+                color = Color(0xFF8DE5B0), fontSize = 9.sp)
+            Spacer(Modifier.height(8.dp))
+        }
         DeviceMetricRow("Battery level", snapshot.battery, "▰")
         DeviceMetricRow("Charge state", snapshot.charging, "⚡")
         DeviceMetricRow("Battery temperature", snapshot.temperature, "♨")
@@ -508,7 +555,7 @@ private fun DeviceMonitorPanel() {
         DeviceMetricRow("Free storage", snapshot.storageSpace, "▤")
         DeviceMetricRow("Network", snapshot.network, "⌁")
         DeviceMetricRow("Network usage type", snapshot.networkCost, "⇅")
-        Text("Phone Brain: Android reports battery, charging, temperature, thermal state, memory pressure, storage space and network cost type. Thermal data is unavailable on some devices. These are device-level indicators, not exact app-by-app usage or battery health percentage. Snapshot stays on this phone; Refresh reads current values.",
+        Text("Phone Brain refreshes every 30 seconds while this screen is visible. Alerts are on-screen only; no background monitoring or notification is enabled. Android may hide or approximate some device metrics. Snapshot stays on this phone.",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
