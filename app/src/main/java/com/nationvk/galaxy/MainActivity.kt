@@ -58,6 +58,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        GalaxyApiProfiles.configureFromBuildConfig(this)
         val requestedTab = intent?.getStringExtra("galaxy_widget_tab")
         setContent { GalaxyApp(initialTab = requestedTab) }
     }
