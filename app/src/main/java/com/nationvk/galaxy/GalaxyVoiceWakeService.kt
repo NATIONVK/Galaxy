@@ -28,6 +28,10 @@ class GalaxyVoiceWakeService : Service() {
         const val ACTION_CANCEL_PENDING = "com.nationvk.galaxy.voice.CANCEL_PENDING"
         const val ACTION_CONFIRM_MEMORY_DELETE = "com.nationvk.galaxy.voice.CONFIRM_MEMORY_DELETE"
         const val ACTION_CANCEL_MEMORY_DELETE = "com.nationvk.galaxy.voice.CANCEL_MEMORY_DELETE"
+        const val ACTION_CONFIRM_PLAN_STEP = "com.nationvk.galaxy.voice.CONFIRM_PLAN_STEP"
+        const val ACTION_CANCEL_PLAN = "com.nationvk.galaxy.voice.CANCEL_PLAN"
+        private const val PREF_PLAN_STEPS = "pending_plan_steps"
+        private const val PREF_PLAN_INDEX = "pending_plan_index"
         private const val PREF_PENDING_DELETE = "pending_memory_delete_id"
         private const val CHANNEL_ID = "galaxy_voice_assistant"
         private const val NOTIFICATION_ID = 4107
@@ -59,6 +63,16 @@ class GalaxyVoiceWakeService : Service() {
         }
         if (intent?.action == ACTION_CANCEL_PENDING) {
             updateNotification("Request cancelled • say Hey Galaxy")
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_CONFIRM_PLAN_STEP) {
+            runNextPlannedStep()
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_CANCEL_PLAN) {
+            clearPendingPlan()
+            updateNotification("Multi-step plan cancelled • say Hey Galaxy")
+            speak("পরিকল্পনাটি বাতিল করা হয়েছে।", "plan-cancelled")
             return START_STICKY
         }
         if (intent?.action == ACTION_CONFIRM_MEMORY_DELETE) {
@@ -339,6 +353,20 @@ class GalaxyVoiceWakeService : Service() {
         if (handleMemoryCommand(command)) return
         if (handleMessageCommand(command)) return
 
+        val multiStepPlan = GalaxyTaskPlanner.createPlan(command)
+        if (multiStepPlan != null && multiStepPlan.steps.size > 1) {
+            if (multiStepPlan.hasUnknownSteps) {
+                speak("পরিকল্পনার কিছু ধাপ এখনো সমর্থিত নয়। কোনো কাজ চালানো হবে না।", "plan-unsupported")
+                GalaxyVoiceHistory.add(this, command, "Plan rejected: unsupported step")
+            } else {
+                savePendingPlan(multiStepPlan.steps.map { it.action.name })
+                showNextPlanConfirmation()
+                speak("একাধিক ধাপের পরিকল্পনা তৈরি করেছি। প্রতিটি ধাপ চালাতে notification থেকে confirm করতে হবে।", "plan-ready")
+                GalaxyVoiceHistory.add(this, command, "Multi-step plan waiting for step-by-step confirmation")
+            }
+            return
+        }
+
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
                 requestSettingsConfirmation("Wi-Fi", Intent("android.settings.panel.action.WIFI"))
@@ -387,9 +415,22 @@ class GalaxyVoiceWakeService : Service() {
                 speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", "galaxy-maps")
             }
             else -> {
-                GalaxyVoiceHistory.add(this, command, "Unsupported command")
-                updateNotification("Command not supported yet • $command".take(180))
-                speak("এই কমান্ডটি এখনো সমর্থিত নয়। Voice Studio-তে supported command দেখে আবার বলো।", "galaxy-unsupported")
+                val planned = GalaxyTaskPlanner.createPlan(command)
+                if (planned != null && planned.steps.size == 1 && planned.steps.first().supported) {
+                    offerPlannedAction(planned.steps.first())
+                } else {
+                    val brainReply = GalaxyBrainEngine.respond(this, command)
+                    if (brainReply != null) {
+                        GalaxyConversationMemory.saveTurn(this, command, brainReply.spokenText)
+                        GalaxyVoiceHistory.add(this, command, brainReply.status)
+                        updateNotification(brainReply.status.take(180))
+                        speak(brainReply.spokenText, "galaxy-brain")
+                    } else {
+                        GalaxyVoiceHistory.add(this, command, "Needs clarification")
+                        updateNotification("Galaxy needs more details • $command".take(180))
+                        speak("কাজটি বুঝতে আরও একটু বিস্তারিত বলো।", "galaxy-clarify")
+                    }
+                }
             }
         }
     }
@@ -608,6 +649,120 @@ class GalaxyVoiceWakeService : Service() {
             .build()
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
         speak("এই মেমোরিটি মুছতে notification থেকে confirm করো, না হলে cancel করো।", "memory-delete-confirm")
+    }
+
+    private fun savePendingPlan(actions: List<String>) {
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit()
+            .putString(PREF_PLAN_STEPS, actions.joinToString("|"))
+            .putInt(PREF_PLAN_INDEX, 0)
+            .apply()
+    }
+
+    private fun clearPendingPlan() {
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit()
+            .remove(PREF_PLAN_STEPS)
+            .remove(PREF_PLAN_INDEX)
+            .apply()
+    }
+
+    private fun showNextPlanConfirmation() {
+        val prefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+        val actions = prefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
+        val index = prefs.getInt(PREF_PLAN_INDEX, 0)
+        if (actions.isEmpty() || index !in actions.indices) {
+            clearPendingPlan()
+            updateNotification("Plan completed • say Hey Galaxy")
+            speak("পরিকল্পনার সব ধাপ শেষ হয়েছে।", "plan-complete")
+            return
+        }
+        val label = actions[index].replace("OPEN_", "").replace("_", " ").lowercase(Locale.ROOT)
+        val confirm = PendingIntent.getService(this, 4310 + index,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CONFIRM_PLAN_STEP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val cancel = PendingIntent.getService(this, 4390,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CANCEL_PLAN),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Galaxy plan • Step " + (index + 1) + "/" + actions.size)
+            .setContentText("পরবর্তী ধাপ: " + label + " — চালাতে Confirm চাপো")
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_view, "Confirm step", confirm)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel plan", cancel)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun runNextPlannedStep() {
+        val prefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+        val actions = prefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
+        val index = prefs.getInt(PREF_PLAN_INDEX, 0)
+        val actionName = actions.getOrNull(index)
+        if (actionName == null) {
+            clearPendingPlan()
+            speak("চালানোর মতো কোনো ধাপ বাকি নেই।", "plan-empty")
+            return
+        }
+        val intent = when (runCatching { GalaxyTaskPlanner.ActionType.valueOf(actionName) }.getOrNull()) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS -> Intent(android.provider.Settings.ACTION_SETTINGS)
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE -> packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER -> Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA -> Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER -> Intent(Intent.ACTION_DIAL)
+            else -> null
+        }
+        if (intent == null) {
+            clearPendingPlan()
+            speak("এই ধাপটি চালানো যাচ্ছে না। পরিকল্পনা বন্ধ করেছি।", "plan-failed")
+            return
+        }
+        try {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            prefs.edit().putInt(PREF_PLAN_INDEX, index + 1).apply()
+            handler.postDelayed({ showNextPlanConfirmation() }, 1200)
+        } catch (_: Exception) {
+            clearPendingPlan()
+            updateNotification("Could not launch step • plan cancelled")
+            speak("এই ধাপটি চালু করা যায়নি। নিরাপত্তার জন্য পরিকল্পনা বন্ধ করেছি।", "plan-launch-failed")
+        }
+    }
+
+    /**
+     * Presents one allow-listed app launch for explicit notification confirmation.
+     * This method only prepares a PendingIntent; the app is not launched until Run action is tapped.
+     */
+    private fun offerPlannedAction(step: GalaxyTaskPlanner.PlannedStep) {
+        val action = when (step.action) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS ->
+                Intent(android.provider.Settings.ACTION_SETTINGS)
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE ->
+                packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                    ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER ->
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA ->
+                Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER ->
+                Intent(Intent.ACTION_DIAL)
+            GalaxyTaskPlanner.ActionType.UNKNOWN -> return
+        }
+        val label = when (step.action) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS -> "Android Settings"
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE -> "YouTube"
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER -> "Browser"
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA -> "Camera"
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER -> "Phone dialer"
+            GalaxyTaskPlanner.ActionType.UNKNOWN -> return
+        }
+        if (step.action == GalaxyTaskPlanner.ActionType.OPEN_SETTINGS) {
+            requestSettingsConfirmation(label, action)
+        } else {
+            showActionNotification("$label খুলতে notification থেকে Run action চাপো", action)
+            speak("$label খুলতে notification থেকে Run action চাপো।", "galaxy-planned-action")
+        }
+        GalaxyVoiceHistory.add(this, step.originalInstruction, "Waiting for explicit action confirmation")
     }
 
     /** Voice requests never change protected system settings directly. */

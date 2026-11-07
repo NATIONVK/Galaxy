@@ -526,11 +526,10 @@ private fun ModelControlScreen() {
             }
         }
         Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF14283A)).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 10.sp)
-            Spacer(Modifier.width(9.dp))
-            Text("Demo interface only — no model provider is connected yet.", color = Color(0xFFB8D8E8), fontSize = 10.sp)
-        }
+        Spacer(Modifier.height(18.dp))
+        Text("LIVE API PROVIDERS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+        Text("Gemini Primary → OpenAI Backup • automatic failover", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp, bottom = 10.dp))
+        GalaxyMultiApiSettingsPanel()
     }
 }
 
@@ -712,7 +711,7 @@ private fun ChatScreen() {
             if (showContextDetails) {
                 Spacer(Modifier.height(8.dp))
                 Text(contextInfo.preview, color = Color(0xFFD8DDF0), fontSize = 10.sp, lineHeight = 15.sp)
-                Text("Context is prepared locally for a future connected AI provider. No AI reply is generated in this build.", color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 7.dp))
+                Text("এই context live provider configured থাকলে request-এর সঙ্গে পাঠানো হয়। Provider না থাকলে chat শুধু local-এ সংরক্ষিত হয়।", color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 7.dp))
             }
         }
         Spacer(Modifier.height(12.dp))
