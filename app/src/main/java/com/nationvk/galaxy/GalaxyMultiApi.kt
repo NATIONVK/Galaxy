@@ -35,18 +35,25 @@ private object GalaxyProfileCrypto {
 object GalaxyApiProfiles {
  private const val PREF="galaxy_api_profiles"
  private const val KEY="items"
+ private const val MAX_PROFILES=500
  private fun data(c:Context)=runCatching{JSONArray(c.getSharedPreferences(PREF,0).getString(KEY,"[]")?:"[]")}.getOrDefault(JSONArray())
  fun list(c:Context):List<GalaxyApiProfile>{val a=data(c);val out=mutableListOf<GalaxyApiProfile>();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;out.add(GalaxyApiProfile(o.optString("id"),o.optString("name"),o.optString("url"),o.optString("model"),o.optBoolean("enabled",true),o.optInt("priority",i),o.optString("secret").isNotBlank()))};return out.sortedBy{it.priority}}
  @Synchronized fun save(c:Context,id:String?,name:String,url:String,model:String,key:String):Boolean{
   val n=name.trim().take(50);val u=url.trim().trimEnd('/');val m=model.trim()
   if(n.isBlank()||!GalaxyAiProviderStore.isSafeHttpsBaseUrl(u)||m.isBlank()||m.length>120)return false
   val a=data(c);val ix=if(id==null)-1 else (0 until a.length()).firstOrNull{a.optJSONObject(it)?.optString("id")==id}?:-1
-  if(ix<0 && a.length()>=25)return false
+  if(ix<0 && a.length()>=MAX_PROFILES)return false
   val pid=id?:UUID.randomUUID().toString();val old=if(ix>=0)a.optJSONObject(ix)else null
   val secret=if(key.isNotBlank())GalaxyProfileCrypto.encrypt(key.trim(),GalaxyProfileCrypto.alias(pid))else old?.optString("secret").orEmpty()
   if(secret.isBlank())return false
-  val item=JSONObject().put("id",pid).put("name",n).put("url",u).put("model",m).put("secret",secret).put("enabled",old?.optBoolean("enabled",true)?:true).put("priority",old?.optInt("priority",a.length())?:a.length())
-  if(ix>=0)a.put(ix,item)else a.put(item)
+  val item=JSONObject().put("id",pid).put("name",n).put("url",u).put("model",m).put("secret",secret)
+   .put("enabled",old?.optBoolean("enabled",true)?:true)
+   .put("priority",if(ix>=0)old?.optInt("priority",ix)?:ix else 0)
+  if(ix>=0) a.put(ix,item) else {
+   // A newly added API is enabled and becomes the primary provider immediately.
+   for(i in 0 until a.length()) a.optJSONObject(i)?.put("priority",a.optJSONObject(i)?.optInt("priority",i)?.plus(1)?:i+1)
+   a.put(item)
+  }
   return c.getSharedPreferences(PREF,0).edit().putString(KEY,a.toString()).commit()
  }
  @Synchronized fun enable(c:Context,id:String,on:Boolean){val a=data(c);for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("id")==id){o.put("enabled",on);break}};c.getSharedPreferences(PREF,0).edit().putString(KEY,a.toString()).apply()}
@@ -66,7 +73,7 @@ object GalaxyApiProfiles {
   val root=JSONObject(json)
   require(root.optString("schema")=="galaxy-api-profiles-v1") { "Unsupported provider backup format." }
   val items=root.optJSONArray("profiles")?:throw IllegalArgumentException("Provider list missing.")
-  require(items.length()<=25) { "Backup contains too many provider profiles." }
+  require(items.length()<=MAX_PROFILES) { "Backup contains too many provider profiles." }
   val restored=JSONArray()
   val ids=mutableSetOf<String>()
   for(i in 0 until items.length()) {
