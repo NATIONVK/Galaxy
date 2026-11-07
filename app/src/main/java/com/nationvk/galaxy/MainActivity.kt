@@ -504,12 +504,12 @@ private fun ChatScreen() {
                 val value = draft.trim()
                 if (value.isNotEmpty()) {
                     contextInfo = GalaxyConversationContext.prepare(context, messages, value)
+                    val detectedFollowUp = contextInfo.isFollowUp
                     val updated = messages + (true to value)
                     if (GalaxyLocalConversationStore.save(context, updated)) {
                         messages = updated
-                        contextInfo = GalaxyConversationContext.prepare(context, updated, "")
                         draft = ""
-                        notice = if (contextInfo.isFollowUp) "Message saved. Follow-up context detected and prepared locally; AI provider is not connected." else "Message saved. Conversation context prepared locally; AI provider is not connected."
+                        notice = if (detectedFollowUp) "Message saved. Follow-up context detected and prepared locally; AI provider is not connected." else "Message saved. Conversation context prepared locally; AI provider is not connected."
                     } else {
                         notice = "Could not save this message. Please try again."
                     }
