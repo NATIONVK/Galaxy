@@ -33,8 +33,6 @@ jobs:
           gradle-version: '8.11.1'
 
       - name: Build debug APK
-        env:
-          GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
         run: gradle --no-daemon :app:assembleDebug
 
       - name: Upload APK preview
