@@ -52,6 +52,47 @@ object GalaxyApiProfiles {
  @Synchronized fun primary(c:Context,id:String){val a=data(c);val ix=(0 until a.length()).firstOrNull{a.optJSONObject(it)?.optString("id")==id}?:return;val b=JSONArray();b.put(a.getJSONObject(ix).put("priority",0));var p=1;for(i in 0 until a.length())if(i!=ix)b.put(a.getJSONObject(i).put("priority",p++));c.getSharedPreferences(PREF,0).edit().putString(KEY,b.toString()).apply()}
  @Synchronized fun delete(c:Context,id:String){val a=data(c);val b=JSONArray();for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("id")!=id)b.put(o)};GalaxyProfileCrypto.delete(GalaxyProfileCrypto.alias(id));c.getSharedPreferences(PREF,0).edit().putString(KEY,b.toString()).apply()}
  internal fun key(c:Context,id:String):String?{val a=data(c);for(i in 0 until a.length()){val o=a.optJSONObject(i)?:continue;if(o.optString("id")==id)return runCatching{GalaxyProfileCrypto.decrypt(o.optString("secret"),GalaxyProfileCrypto.alias(id))}.getOrNull()};return null}
+ internal fun exportForVault(c:Context):String {
+  val out=JSONArray()
+  list(c).forEach { p ->
+   val secret=key(c,p.id)?:throw IllegalStateException("Provider key unavailable: "+p.name)
+   out.put(JSONObject().put("id",p.id).put("name",p.name).put("url",p.baseUrl)
+    .put("model",p.model).put("apiKey",secret).put("enabled",p.enabled).put("priority",p.priority))
+  }
+  return JSONObject().put("schema","galaxy-api-profiles-v1").put("profiles",out).toString()
+ }
+ @Synchronized internal fun importFromVault(c:Context,json:String) {
+  val root=JSONObject(json)
+  require(root.optString("schema")=="galaxy-api-profiles-v1") { "Unsupported provider backup format." }
+  val items=root.optJSONArray("profiles")?:throw IllegalArgumentException("Provider list missing.")
+  require(items.length()<=25) { "Backup contains too many provider profiles." }
+  val restored=JSONArray()
+  val ids=mutableSetOf<String>()
+  for(i in 0 until items.length()) {
+   val p=items.optJSONObject(i)?:throw IllegalArgumentException("Invalid provider item.")
+   val id=p.optString("id").take(80)
+   val name=p.optString("name").trim().take(50)
+   val url=p.optString("url").trim().trimEnd('/')
+   val model=p.optString("model").trim().take(120)
+   val secret=p.optString("apiKey")
+   require(id.isNotBlank() && ids.add(id) && name.isNotBlank() && model.isNotBlank() &&
+    GalaxyAiProviderStore.isSafeHttpsBaseUrl(url) && secret.isNotBlank() && secret.length<=500) {
+    "Invalid provider profile in backup."
+   }
+   val encrypted=GalaxyProfileCrypto.encrypt(secret,GalaxyProfileCrypto.alias(id))
+   restored.put(JSONObject().put("id",id).put("name",name).put("url",url).put("model",model)
+    .put("secret",encrypted).put("enabled",p.optBoolean("enabled",true)).put("priority",p.optInt("priority",i)))
+  }
+  val old=data(c)
+  val keep=ids
+  for(i in 0 until old.length()) {
+   val oldId=old.optJSONObject(i)?.optString("id").orEmpty()
+   if(oldId.isNotBlank() && oldId !in keep) GalaxyProfileCrypto.delete(GalaxyProfileCrypto.alias(oldId))
+  }
+  check(c.getSharedPreferences(PREF,0).edit().putString(KEY,restored.toString()).commit()) {
+   "Could not save restored provider profiles."
+  }
+ }
  fun hasEnabled(c:Context)=list(c).any{it.enabled&&it.hasKey}
 }
 object GalaxyMultiApiClient {
