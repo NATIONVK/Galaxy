@@ -48,7 +48,7 @@ class GalaxyVoiceWakeService : Service() {
         super.onCreate()
         createChannel()
         tts = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) tts?.language = Locale("bn", "BD")
+            if (status == TextToSpeech.SUCCESS) configureSpeechVoice()
         }
     }
 
@@ -65,7 +65,7 @@ class GalaxyVoiceWakeService : Service() {
             val id = getSharedPreferences("galaxy_runtime", MODE_PRIVATE).getLong(PREF_PENDING_DELETE, -1L)
             if (id > 0L && GalaxyMemoryStore.delete(this, id)) {
                 updateNotification("Memory deleted • say Hey Galaxy")
-                tts?.speak("মেমোরিটি মুছে ফেলা হয়েছে।", TextToSpeech.QUEUE_FLUSH, null, "memory-deleted")
+                speak("মেমোরিটি মুছে ফেলা হয়েছে।", "memory-deleted")
                 GalaxyVoiceHistory.add(this, "Delete memory", "Deleted after confirmation")
             } else updateNotification("Memory could not be deleted")
             getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().remove(PREF_PENDING_DELETE).apply()
@@ -74,7 +74,7 @@ class GalaxyVoiceWakeService : Service() {
         if (intent?.action == ACTION_CANCEL_MEMORY_DELETE) {
             getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit().remove(PREF_PENDING_DELETE).apply()
             updateNotification("Memory deletion cancelled")
-            tts?.speak("মেমোরি মুছে ফেলা বাতিল করা হয়েছে।", TextToSpeech.QUEUE_FLUSH, null, "memory-delete-cancelled")
+            speak("মেমোরি মুছে ফেলা বাতিল করা হয়েছে।", "memory-delete-cancelled")
             return START_STICKY
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -90,6 +90,31 @@ class GalaxyVoiceWakeService : Service() {
         startForeground(NOTIFICATION_ID, buildNotification("Galaxy is active • say Hey Galaxy"))
         startRecognition()
         return START_STICKY
+    }
+
+    /**
+     * Applies the user's saved voice preference to foreground and background speech.
+     * Voice availability depends on the Android TTS engine installed on the device.
+     */
+    private fun configureSpeechVoice() {
+        val engine = tts ?: return
+        val preferred = getSharedPreferences("galaxy_preferences", MODE_PRIVATE)
+            .getString("voice_gender", "Male") ?: "Male"
+        engine.setLanguage(Locale("bn", "BD"))
+        val voices = engine.voices ?: emptySet()
+        val genderToken = if (preferred.equals("Female", ignoreCase = true)) "female" else "male"
+        val matchingGender = voices.filter { it.name.contains(genderToken, ignoreCase = true) }
+        val bengaliVoice = matchingGender.firstOrNull { it.locale.language.equals("bn", ignoreCase = true) }
+        val indianBengaliFallback = if (preferred.equals("Female", ignoreCase = true)) {
+            matchingGender.firstOrNull { it.locale.language.equals("hi", ignoreCase = true) }
+        } else null
+        val selected = bengaliVoice ?: indianBengaliFallback
+        if (selected != null) engine.voice = selected
+    }
+
+    private fun speak(message: String, utteranceId: String) {
+        configureSpeechVoice()
+        tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
     private fun createChannel() {
@@ -282,7 +307,7 @@ class GalaxyVoiceWakeService : Service() {
         if (hasWakePhrase && command.isBlank()) {
             wakeArmed = true
             updateNotification("Galaxy is ready • বলো, কী করতে হবে?")
-            tts?.speak("জি, বলো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-ready")
+            speak("জি, বলো।", "galaxy-ready")
             handler.removeCallbacks(wakeTimeout)
             handler.postDelayed(wakeTimeout, 8000)
             return
@@ -336,27 +361,27 @@ class GalaxyVoiceWakeService : Service() {
             command.contains("camera", true) || command.contains("ক্যামেরা") -> {
                 val launch = Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
                 showActionNotification("Camera খুলতে notification থেকে Run action চাপো", launch)
-                tts?.speak("ক্যামেরা খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-camera")
+                speak("ক্যামেরা খুলতে notification থেকে Run action চাপো।", "galaxy-camera")
             }
             command.contains("phone", true) || command.contains("dialer", true) || command.contains("ফোন", true) || command.contains("কল", true) -> {
                 val launch = Intent(Intent.ACTION_DIAL)
                 showActionNotification("Phone dialer খুলতে Run action চাপো", launch)
-                tts?.speak("Phone dialer খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-dialer")
+                speak("Phone dialer খুলতে notification থেকে Run action চাপো।", "galaxy-dialer")
             }
             command.contains("browser", true) || command.contains("ব্রাউজার") -> {
                 val launch = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
                 showActionNotification("Browser খুলতে Run action চাপো", launch)
-                tts?.speak("Browser খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-browser")
+                speak("Browser খুলতে notification থেকে Run action চাপো।", "galaxy-browser")
             }
             command.contains("maps", true) || command.contains("map", true) || command.contains("ম্যাপ") -> {
                 val launch = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0?q=nearby places"))
                 showActionNotification("Nearby Maps খুলতে Run action চাপো", launch)
-                tts?.speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-maps")
+                speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", "galaxy-maps")
             }
             else -> {
                 GalaxyVoiceHistory.add(this, command, "Unsupported command")
                 updateNotification("Command not supported yet • $command".take(180))
-                tts?.speak("এই কমান্ডটি এখনো সমর্থিত নয়। Voice Studio-তে supported command দেখে আবার বলো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-unsupported")
+                speak("এই কমান্ডটি এখনো সমর্থিত নয়। Voice Studio-তে supported command দেখে আবার বলো।", "galaxy-unsupported")
             }
         }
     }
@@ -364,7 +389,7 @@ class GalaxyVoiceWakeService : Service() {
 
     private fun speakMemory(message: String, notification: String = message) {
         updateNotification(notification.take(180))
-        tts?.speak(message.take(3500), TextToSpeech.QUEUE_FLUSH, null, "galaxy-memory")
+        speak(message.take(3500), "galaxy-memory")
     }
 
     private fun handleMemoryCommand(rawCommand: String): Boolean {
@@ -408,7 +433,7 @@ class GalaxyVoiceWakeService : Service() {
         if (lower == "remember this" || lower == "মনে রাখ" || lower == "এটা মনে রাখ" || lower == "মনে রেখো") {
             wakeArmed = true
             updateNotification("বল, কী মনে রাখব? এখন বলো…")
-            tts?.speak("কী মনে রাখব? এখন বলো।", TextToSpeech.QUEUE_FLUSH, null, "memory-capture")
+            speak("কী মনে রাখব? এখন বলো।", "memory-capture")
             handler.removeCallbacks(wakeTimeout)
             handler.postDelayed(wakeTimeout, 10000)
             return true
@@ -502,7 +527,7 @@ class GalaxyVoiceWakeService : Service() {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancel)
             .build()
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
-        tts?.speak("এই মেমোরিটি মুছতে notification থেকে confirm করো, না হলে cancel করো।", TextToSpeech.QUEUE_FLUSH, null, "memory-delete-confirm")
+        speak("এই মেমোরিটি মুছতে notification থেকে confirm করো, না হলে cancel করো।", "memory-delete-confirm")
     }
 
     /** Voice requests never change protected system settings directly. */
@@ -532,7 +557,7 @@ class GalaxyVoiceWakeService : Service() {
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelIntent)
             .build()
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
-        tts?.speak("$label settings খুলতে notification থেকে confirm করো।", TextToSpeech.QUEUE_FLUSH, null, "galaxy-confirm")
+        speak("$label settings খুলতে notification থেকে confirm করো।", "galaxy-confirm")
     }
 
     private val wakeTimeout = Runnable {
