@@ -131,11 +131,7 @@ object GalaxyAiClient {
         promptContext: String,
         onResult: (Result<String>) -> Unit
     ) {
-        val appContext = context.applicationContext
-        executor.execute {
-            val result = runCatching { performRequest(appContext, promptContext) }
-            mainHandler.post { onResult(result) }
-        }
+        GalaxyMultiApiClient.send(context, promptContext, onResult)
     }
 
     private fun performRequest(context: Context, promptContext: String): String {
