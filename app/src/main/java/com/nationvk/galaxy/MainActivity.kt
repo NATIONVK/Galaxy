@@ -2185,6 +2185,9 @@ private fun SettingsScreen() {
             prefs.edit().putBoolean("web_preference", it).apply()
         }
         SettingsInfoRow("Preferred model", "Choose from AI Models • demo only")
+        Spacer(Modifier.height(12.dp))
+        SettingsSectionTitle("PERSONALIZATION INTELLIGENCE")
+        PersonalizationSettingsPanel()
         SettingsSectionTitle("VOICE PREFERENCES")
         var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
         var settingsTtsReady by remember { mutableStateOf(false) }
@@ -2493,6 +2496,61 @@ private fun PermissionStatusRow(title: String, description: String, granted: Boo
 }
 
 @Composable
+@Composable
+private fun PersonalizationSettingsPanel() {
+    val context = LocalContext.current
+    var settings by remember { mutableStateOf(GalaxyPersonalizationStore.load(context)) }
+    fun update(next: GalaxyPersonalization) {
+        if (GalaxyPersonalizationStore.save(context, next)) settings = next
+    }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Text("RESPONSE STYLE", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            GalaxyPersonalizationStore.responseStyles.forEach { option ->
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (settings.responseStyle == option) Color(0xFF29264F) else Panel2)
+                    .semantics { role = Role.Button }.clickable { update(settings.copy(responseStyle = option)) }.padding(vertical = 11.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (settings.responseStyle == option) "●" else "○", color = if (settings.responseStyle == option) Cyan else Muted, fontSize = 9.sp)
+                    Text(option, color = if (settings.responseStyle == option) Cyan else Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("CONVERSATION TONE", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            GalaxyPersonalizationStore.tones.forEach { option ->
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (settings.tone == option) Color(0xFF29264F) else Panel2)
+                    .semantics { role = Role.Button }.clickable { update(settings.copy(tone = option)) }.padding(vertical = 11.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (settings.tone == option) "●" else "○", color = if (settings.tone == option) Cyan else Muted, fontSize = 9.sp)
+                    Text(option, color = if (settings.tone == option) Cyan else Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("ASSISTANT MODE", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            GalaxyPersonalizationStore.modes.chunked(2).forEach { group ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    group.forEach { option ->
+                        val descriptions = mapOf("General" to "Everyday help", "Study" to "Learn step by step", "Coding" to "Build and debug", "Research" to "Evidence and methods")
+                        Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (settings.assistantMode == option) Color(0xFF29264F) else Panel2)
+                            .semantics { role = Role.Button }.clickable { update(settings.copy(assistantMode = option)) }.padding(10.dp)) {
+                            Text(if (settings.assistantMode == option) "● $option" else "○ $option", color = if (settings.assistantMode == option) Cyan else Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text(descriptions[option] ?: "", color = Muted, fontSize = 8.sp)
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        SettingsToggleRow("Preference learning", "Off by default. Galaxy must ask before saving a new preference.", settings.learningEnabled) {
+            update(settings.copy(learningEnabled = it))
+        }
+        Text("সব সেটিংস এই ডিভাইসে সংরক্ষিত। এগুলো ভবিষ্যৎ AI Core-এর prompt guidance তৈরি করে; এই build-এ বাস্তব AI response বদলায় না, কারণ AI provider এখনো connected নয়।", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
+    }
+}
+
 private fun SettingsSectionTitle(title: String) {
     Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
 }
