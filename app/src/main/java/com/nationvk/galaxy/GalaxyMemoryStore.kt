@@ -95,7 +95,9 @@ object GalaxyMemoryStore {
                 val prefixBonus = if (contentTerms.any { word -> terms.any { it.length >= 3 && word.startsWith(it) } }) 1.0 else 0.0
                 val ageDays = ((System.currentTimeMillis() - entry.createdAt).coerceAtLeast(0L) / 86_400_000L).toDouble()
                 val recencyBonus = (1.0 / (1.0 + ageDays / 30.0))
-                val score = matched * 3.0 + coverage * 5.0 + phraseBonus + categoryBonus + prefixBonus + recencyBonus
+                val priorityBonus = entry.priority * 1.5
+                val confidenceBonus = entry.confidence * 2.0
+                val score = matched * 3.0 + coverage * 5.0 + phraseBonus + categoryBonus + prefixBonus + recencyBonus + priorityBonus + confidenceBonus
                 Triple(entry, score, matched)
             }
             .sortedWith(
