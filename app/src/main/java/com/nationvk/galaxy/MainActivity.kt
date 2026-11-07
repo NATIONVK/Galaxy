@@ -2551,6 +2551,7 @@ private fun PersonalizationSettingsPanel() {
     }
 }
 
+@Composable
 private fun SettingsSectionTitle(title: String) {
     Text(title, color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
 }
