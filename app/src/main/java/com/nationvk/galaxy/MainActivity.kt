@@ -2536,6 +2536,7 @@ private fun SettingsScreen() {
     val prefs = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
     var visualEffects by remember { mutableStateOf(prefs.getBoolean("visual_effects", true)) }
     var webPreference by remember { mutableStateOf(prefs.getBoolean("web_preference", false)) }
+    var shareDeviceContext by remember { mutableStateOf(prefs.getBoolean("share_device_context_with_ai", false)) }
     var language by remember { mutableStateOf(prefs.getString("language", "বাংলা + English") ?: "বাংলা + English") }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
@@ -2584,6 +2585,11 @@ private fun SettingsScreen() {
             webPreference = it
             prefs.edit().putBoolean("web_preference", it).apply()
         }
+        SettingsToggleRow("Share device status with AI", "Allow Galaxy to include battery, RAM, storage, network and device model in AI requests", shareDeviceContext) {
+            shareDeviceContext = it
+            prefs.edit().putBoolean("share_device_context_with_ai", it).apply()
+        }
+        Text("Privacy: OFF by default. When enabled, this limited status snapshot is sent to your selected AI provider with chat requests. No contacts, messages, location or app contents are included.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 4.dp))
         SettingsInfoRow("Preferred model", "Choose from AI Models • demo only")
         Spacer(Modifier.height(12.dp))
         SettingsSectionTitle("PERSONALIZATION INTELLIGENCE")
