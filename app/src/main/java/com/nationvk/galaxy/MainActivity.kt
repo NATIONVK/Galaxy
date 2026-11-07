@@ -2042,7 +2042,7 @@ private fun SettingsScreen() {
                     val voices = settingsTts.value?.voices ?: emptySet<Voice>()
                     bengaliVoiceCount = voices.count { it.locale.language.equals("bn", ignoreCase = true) }
                     voicePreviewStatus = if (bengaliVoiceCount > 0) {
-                        "$bengaliVoiceCountটি বাংলা voice পাওয়া গেছে।"
+                        "${bengaliVoiceCount}টি বাংলা voice পাওয়া গেছে।"
                     } else {
                         "বাংলা voice পাওয়া যায়নি; preview-তে device default fallback হবে।"
                     }
