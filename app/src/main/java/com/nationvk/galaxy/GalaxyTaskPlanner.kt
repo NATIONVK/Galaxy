@@ -46,7 +46,7 @@ object GalaxyTaskPlanner {
         if (cleaned.isEmpty()) return null
 
         val parts = cleaned.split(
-            Regex("\\\\s+(?:and then|then|তারপর|এরপর|এবং তারপর)\\\\s+|[,;]", RegexOption.IGNORE_CASE)
+            Regex("\\s+(?:and then|then|তারপর|এরপর|এবং তারপর)\\s+|[,;]", RegexOption.IGNORE_CASE)
         ).map { it.trim() }.filter { it.isNotEmpty() }
 
         val steps = parts.mapIndexed { index, part ->
