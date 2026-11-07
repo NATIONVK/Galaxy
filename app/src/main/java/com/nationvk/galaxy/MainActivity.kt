@@ -72,7 +72,7 @@ private val Cyan = Color(0xFF55DFFF)
 private val Muted = Color(0xFF929AB8)
 
 private enum class GalaxyTab(val label: String, val glyph: String) {
-    HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), PROFILE("Profile", "◎"),
+    HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), NOTES("Notepad", "▤"), PROFILE("Profile", "◎"),
     VOICE("Voice", "♫"), RESEARCH("Research", "⌁"), CAMERA("Camera", "◉"), MODELS("AI Models", "⎇"),
     NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
 }
@@ -119,6 +119,7 @@ fun GalaxyApp(initialTab: String? = null) {
                             GalaxyTab.CHAT -> ChatScreen()
                             GalaxyTab.LAB -> CyberLabScreen()
                             GalaxyTab.MEMORY -> MemoryVaultScreen()
+                            GalaxyTab.NOTES -> GalaxyNotepadScreen()
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { navigate(GalaxyTab.SETTINGS) })
                             GalaxyTab.VOICE -> VoiceStudioScreen()
                             GalaxyTab.RESEARCH -> ResearchHubScreen()
@@ -155,7 +156,7 @@ private fun GalaxyTopBar() {
 }
 
 @Composable
-private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
+private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {\n    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -191,6 +192,19 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         }
         Spacer(Modifier.height(11.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            ModuleCard("▤", "NOTEPAD", "Write & save notes", Modifier.weight(1f)) { onOpen(GalaxyTab.NOTES) }
+            ModuleCard("✉", "EMAIL", "Open Gmail inbox", Modifier.weight(1f)) {
+                try {
+                    val launch = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
+                    if (launch != null) context.startActivity(launch)
+                    else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://mail.google.com")))
+                } catch (_: Exception) {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://mail.google.com")))
+                }
+            }
+        }
+        Spacer(Modifier.height(11.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
             ModuleCard("⎇", "AI MODELS", "Provider control", Modifier.weight(1f)) { onOpen(GalaxyTab.MODELS) }
             ModuleCard("♢", "NOTIFICATIONS", "Activity inbox", Modifier.weight(1f)) { onOpen(GalaxyTab.NOTIFICATIONS) }
         }
@@ -214,6 +228,55 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(18.dp))
         Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
+    }
+}
+
+@Composable
+private fun GalaxyNotepadScreen() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("galaxy_notepad", android.content.Context.MODE_PRIVATE) }
+    var title by remember { mutableStateOf(prefs.getString("note_title", "") ?: "") }
+    var body by remember { mutableStateOf(prefs.getString("note_body", "") ?: "") }
+    var saved by remember { mutableStateOf("এই ডিভাইসে নোট সংরক্ষিত হবে।") }
+
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
+        Text("GALAXY NOTEPAD", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        Text("তোমার নোট", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+        Text("লিখে রাখো, Save করো—অ্যাপ বন্ধ হলেও নোট থাকবে।", color = Muted, fontSize = 11.sp)
+        Spacer(Modifier.height(18.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+            Text("TITLE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            BasicTextField(value = title, onValueChange = { title = it }, modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 16.sp), decorationBox = { inner ->
+                    if (title.isBlank()) Text("নোটের শিরোনাম…", color = Muted, fontSize = 14.sp)
+                    inner()
+                })
+            Spacer(Modifier.height(8.dp))
+            Text("NOTE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            BasicTextField(value = body, onValueChange = { body = it }, modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp).padding(top = 10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 13.sp, lineHeight = 21.sp), decorationBox = { inner ->
+                    if (body.isBlank()) Text("এখানে লিখতে শুরু করো…", color = Muted, fontSize = 13.sp)
+                    inner()
+                })
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text("SAVE NOTE", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Violet).clickable {
+                        prefs.edit().putString("note_title", title).putString("note_body", body).apply()
+                        saved = "নোট এই ডিভাইসে Save হয়েছে।"
+                    }.padding(horizontal = 16.dp, vertical = 12.dp))
+                Text("CLEAR", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Panel2).clickable {
+                        title = ""; body = ""
+                        prefs.edit().remove("note_title").remove("note_body").apply()
+                        saved = "নোট মুছে ফেলা হয়েছে।"
+                    }.padding(horizontal = 16.dp, vertical = 12.dp))
+            }
+            Text(saved, color = Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 10.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        Text("Privacy: নোট বর্তমানে শুধু এই ফোনের local app storage-এ থাকে; cloud-এ upload হয় না।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
     }
 }
 
@@ -841,7 +904,7 @@ private fun VoiceStudioScreen() {
         engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "galaxy_reply")
     }
 
-    fun runCommand(raw: String) {
+    fun runSingleCommand(raw: String) {
         val command = raw.lowercase(Locale.ROOT)
             .replace("hey galaxy", "").replace("hey, galaxy", "")
             .replace("হেই গ্যালাক্সি", "").replace("হে গ্যালাক্সি", "")
@@ -865,6 +928,18 @@ private fun VoiceStudioScreen() {
                         status = "Browser দিয়ে search করা যায়নি।"
                         speak("সার্চ করা যাচ্ছে না")
                     }
+                }
+            }
+            command.contains("gmail") || command.contains("email") || command.contains("mail") || command.contains("ইমেইল") || command.contains("মেইল") -> {
+                try {
+                    val launch = context.packageManager.getLaunchIntentForPackage("com.google.android.gm")
+                    if (launch != null) context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    else context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://mail.google.com")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Gmail inbox খোলা হচ্ছে। Galaxy এখনো নিজে inbox message পড়তে পারে না; secure mail connection প্রয়োজন।"
+                    speak("Gmail খুলছি")
+                } catch (_: Exception) {
+                    status = "Gmail খোলা যায়নি।"
+                    speak("Gmail খোলা যাচ্ছে না")
                 }
             }
             command.contains("calculator") || command.contains("ক্যালকুলেটর") -> {
@@ -966,6 +1041,24 @@ private fun VoiceStudioScreen() {
                 status = "Command চিনেছি: $command — এই action এখনো যোগ করা হয়নি"
                 speak("তোমার নির্দেশটি বুঝেছি। এই কাজটি এখনো শেখানো হয়নি।")
             }
+        }
+    }
+
+    fun runCommand(raw: String) {
+        val parts = raw.trim().split(Regex("\\s*(?:,|;|\\band then\\b|\\bthen\\b|\\band\\b|এবং|তারপর|এরপর)\\s*", RegexOption.IGNORE_CASE))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .take(5)
+        if (parts.size > 1) {
+            status = "একসাথে ${parts.size}টি কাজ চালানো হচ্ছে…"
+            parts.forEachIndexed { index, part ->
+                runSingleCommand(part)
+                if (index < parts.lastIndex) status = "কাজ ${index + 1}/${parts.size} সম্পন্ন করার নির্দেশ পাঠানো হয়েছে"
+            }
+            status = "${parts.size}টি কাজের নির্দেশ পাঠানো হয়েছে।"
+            speak("${parts.size}টি কাজ একসাথে করছি")
+        } else {
+            runSingleCommand(raw)
         }
     }
 
@@ -2847,7 +2940,7 @@ private fun SettingsToggleRow(title: String, description: String, checked: Boole
 @Composable
 private fun BottomNavigation(selected: GalaxyTab, onSelect: (GalaxyTab) -> Unit) {
     Row(Modifier.fillMaxWidth().background(Color(0xFF090B17)).padding(horizontal = 8.dp, vertical = 9.dp), horizontalArrangement = Arrangement.SpaceAround, verticalAlignment = Alignment.CenterVertically) {
-        listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.MEMORY, GalaxyTab.PROFILE).forEach { tab ->
+        listOf(GalaxyTab.HOME, GalaxyTab.CHAT, GalaxyTab.LAB, GalaxyTab.NOTES, GalaxyTab.PROFILE).forEach { tab ->
             val active = tab == selected
             Column(Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(14.dp)).heightIn(min = 48.dp).semantics { contentDescription = "${tab.label} navigation tab"; role = Role.Tab; this.selected = active }.clickable { onSelect(tab) }.padding(vertical = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(tab.glyph, color = if (active) Cyan else Muted)
