@@ -337,6 +337,7 @@ class GalaxyVoiceWakeService : Service() {
             return
         }
         if (handleMemoryCommand(command)) return
+        if (handleMessageCommand(command)) return
 
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
@@ -393,6 +394,32 @@ class GalaxyVoiceWakeService : Service() {
         }
     }
 
+
+    private fun handleMessageCommand(rawCommand: String): Boolean {
+        val q = rawCommand.lowercase(Locale.ROOT)
+        val asksAboutMessages = listOf(
+            "message", "মেসেজ", "মেসেজটা", "মেসেজগুলো", "কি লিখেছে", "কী লিখেছে",
+            "কি মেসেজ", "কী মেসেজ", "পড়ে শোনাও", "পড়ে শোনাও", "read message",
+            "read my messages", "new message", "নতুন মেসেজ"
+        ).any { q.contains(it) }
+        if (!asksAboutMessages) return false
+
+        val latest = GalaxyMessageStore.latest(this)
+        if (latest == null) {
+            speakMemory("এখনো কোনো নতুন সমর্থিত মেসেজ পাওয়া যায়নি। Notification Access চালু আছে কি না দেখে নাও।")
+            return true
+        }
+        val source = if (latest.sender.isNotBlank()) latest.sender else latest.appName
+        if (latest.isVoiceMessage || latest.content.isBlank()) {
+            speakMemory("$source, ${latest.appName} থেকে একটি Voice Message এসেছে। এটি ভয়েস মেসেজ, লিখিত মেসেজ নয়।")
+            return true
+        }
+        val content = latest.content.replace("\\n", " ").take(1800)
+        val answer = "$source, ${latest.appName} থেকে মেসেজ এসেছে। মেসেজে লেখা: $content"
+        speakMemory(answer, "Reading latest message from $source")
+        GalaxyVoiceHistory.add(this, rawCommand, "Read latest message from $source")
+        return true
+    }
 
     private fun speakMemory(message: String, notification: String = message) {
         updateNotification(notification.take(180))
