@@ -59,7 +59,14 @@ object GalaxyAiProviderStore {
     }
 
     fun clear(context: Context): Boolean {
-        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().commit()
+        val cleared = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().commit()
+        return try {
+            val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            if (store.containsAlias(KEY_ALIAS)) store.deleteEntry(KEY_ALIAS)
+            cleared
+        } catch (_: Exception) {
+            cleared
+        }
     }
 
     internal fun readApiKey(context: Context): String? {
