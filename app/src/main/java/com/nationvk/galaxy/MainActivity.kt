@@ -204,8 +204,101 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(10.dp))
         StatusPanel()
         Spacer(Modifier.height(18.dp))
+        SectionHeading("PHONE BRAIN", "Live device health snapshot")
+        Spacer(Modifier.height(10.dp))
+        DeviceMonitorPanel()
+        Spacer(Modifier.height(18.dp))
         Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
+    }
+}
+
+private data class GalaxyDeviceSnapshot(
+    val device: String,
+    val android: String,
+    val battery: String,
+    val memory: String,
+    val storage: String,
+    val network: String
+)
+
+private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDeviceSnapshot {
+    val batteryManager = context.getSystemService(android.content.Context.BATTERY_SERVICE) as android.os.BatteryManager
+    val reportedBattery = batteryManager.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+    val battery = if (reportedBattery in 0..100) "$reportedBattery%" else {
+        val intent = context.registerReceiver(null, android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+        val level = intent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = intent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        if (level >= 0 && scale > 0) "${(level * 100) / scale}%" else "Unavailable"
+    }
+
+    val activityManager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+    val memoryInfo = android.app.ActivityManager.MemoryInfo()
+    activityManager.getMemoryInfo(memoryInfo)
+    val totalRam = memoryInfo.totalMem.coerceAtLeast(1L)
+    val usedRam = (totalRam - memoryInfo.availMem).coerceAtLeast(0L)
+    fun size(bytes: Long): String = when {
+        bytes >= 1024L * 1024L * 1024L -> String.format(Locale.US, "%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+        else -> String.format(Locale.US, "%.0f MB", bytes / (1024.0 * 1024.0))
+    }
+
+    val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
+    val totalStorage = stat.totalBytes.coerceAtLeast(1L)
+    val usedStorage = (totalStorage - stat.availableBytes).coerceAtLeast(0L)
+    val connectivity = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
+    val network = if (android.os.Build.VERSION.SDK_INT >= 23) {
+        val active = connectivity.activeNetwork
+        val caps = active?.let { connectivity.getNetworkCapabilities(it) }
+        when {
+            caps == null -> "Offline"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi connected"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> "Mobile data connected"
+            caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_ETHERNET) -> "Ethernet connected"
+            else -> "Connected"
+        }
+    } else if (connectivity.activeNetworkInfo?.isConnected == true) "Connected" else "Offline"
+
+    return GalaxyDeviceSnapshot(
+        device = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}".trim(),
+        android = "Android ${android.os.Build.VERSION.RELEASE} (API ${android.os.Build.VERSION.SDK_INT})",
+        battery = battery,
+        memory = "${size(usedRam)} / ${size(totalRam)} used",
+        storage = "${size(usedStorage)} / ${size(totalStorage)} used",
+        network = network
+    )
+}
+
+@Composable
+private fun DeviceMonitorPanel() {
+    val context = LocalContext.current
+    var snapshot by remember(context) { mutableStateOf(readGalaxyDeviceSnapshot(context)) }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(snapshot.device, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text(snapshot.android, color = Muted, fontSize = 9.sp)
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet)
+                    .clickable { snapshot = readGalaxyDeviceSnapshot(context) }
+                    .padding(horizontal = 12.dp, vertical = 9.dp))
+        }
+        Spacer(Modifier.height(12.dp))
+        DeviceMetricRow("Battery", snapshot.battery, "▰")
+        DeviceMetricRow("Memory (RAM)", snapshot.memory, "▦")
+        DeviceMetricRow("Internal storage", snapshot.storage, "▤")
+        DeviceMetricRow("Network", snapshot.network, "⌁")
+        Text("ডিভাইসের তথ্য ফোন থেকেই পড়া হয়; এই panel কোনো তথ্য cloud-এ পাঠায় না। Refresh চাপলে নতুন snapshot নেওয়া হবে।",
+            color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
+private fun DeviceMetricRow(label: String, value: String, glyph: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(glyph, color = Cyan, fontSize = 14.sp, modifier = Modifier.width(26.dp))
+        Text(label, color = Muted, fontSize = 10.sp, modifier = Modifier.weight(1f))
+        Text(value, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
