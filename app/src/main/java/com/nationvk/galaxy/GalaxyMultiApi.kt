@@ -41,6 +41,7 @@ object GalaxyApiProfiles {
   val n=name.trim().take(50);val u=url.trim().trimEnd('/');val m=model.trim()
   if(n.isBlank()||!GalaxyAiProviderStore.isSafeHttpsBaseUrl(u)||m.isBlank()||m.length>120)return false
   val a=data(c);val ix=if(id==null)-1 else (0 until a.length()).firstOrNull{a.optJSONObject(it)?.optString("id")==id}?:-1
+  if(ix<0 && a.length()>=25)return false
   val pid=id?:UUID.randomUUID().toString();val old=if(ix>=0)a.optJSONObject(ix)else null
   val secret=if(key.isNotBlank())GalaxyProfileCrypto.encrypt(key.trim(),GalaxyProfileCrypto.alias(pid))else old?.optString("secret").orEmpty()
   if(secret.isBlank())return false
@@ -92,11 +93,7 @@ object GalaxyApiProfiles {
    if(oldId.isNotBlank() && oldId !in ids) GalaxyProfileCrypto.delete(GalaxyProfileCrypto.alias(oldId))
   }
  }
- fun configureFromBuildConfig(c:Context) {
-  val key=BuildConfig.GALAXY_API_KEY.trim()
-  if(key.isBlank()) return
-  save(c,"build-config-gemini","Gemini (Build Config)",BuildConfig.GALAXY_API_BASE_URL,BuildConfig.GALAXY_API_MODEL,key)
- }
+ fun configureFromBuildConfig(c:Context) { /* Keys are added in-app and encrypted with Android Keystore. */ }
  fun hasEnabled(c:Context)=list(c).any{it.enabled&&it.hasKey}
 }
 object GalaxyMultiApiClient {
