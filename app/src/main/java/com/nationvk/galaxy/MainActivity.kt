@@ -2497,7 +2497,6 @@ private fun PermissionStatusRow(title: String, description: String, granted: Boo
 }
 
 @Composable
-@Composable
 private fun PersonalizationSettingsPanel() {
     val context = LocalContext.current
     var settings by remember { mutableStateOf(GalaxyPersonalizationStore.load(context)) }
