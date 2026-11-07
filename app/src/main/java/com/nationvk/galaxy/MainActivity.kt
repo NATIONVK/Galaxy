@@ -1133,18 +1133,17 @@ private fun MemoryVaultScreen() {
                         val editingId = editingMemoryId
                         if (body.isNotEmpty()) {
                             val duplicate = GalaxyMemoryStore.isDuplicate(context, category, body, editingId)
-                            if (duplicate) {
-                                notice = "এই category-তে একই memory আগে থেকেই আছে। Duplicate save করা হয়নি।"
+                            val saved = if (editingId == null) GalaxyMemoryStore.addOrRefresh(context, category, body)
+                                else if (duplicate) false else GalaxyMemoryStore.update(context, editingId, category, body)
+                            if (saved) {
+                                notes = GalaxyMemoryStore.getAll(context)
+                                noteDraft = ""; showEditor = false; editingMemoryId = null; selectedCategory = "ALL"
+                                notice = if (editingId != null) "Memory updated successfully."
+                                    else if (duplicate) "Existing memory refreshed instead of creating a duplicate."
+                                    else "Memory saved on this device."
                             } else {
-                                val saved = if (editingId == null) GalaxyMemoryStore.add(context, category, body)
-                                    else GalaxyMemoryStore.update(context, editingId, category, body)
-                                if (saved) {
-                                    notes = GalaxyMemoryStore.getAll(context)
-                                    noteDraft = ""; showEditor = false; editingMemoryId = null; selectedCategory = "ALL"
-                                    notice = if (editingId == null) "Memory saved on this device." else "Memory updated successfully."
-                                } else {
-                                    notice = "Memory save করা যায়নি। আবার চেষ্টা কর।"
-                                }
+                                notice = if (duplicate) "এই category-তে একই memory আগে থেকেই আছে। Duplicate update করা হয়নি।"
+                                    else "Memory save করা যায়নি। আবার চেষ্টা কর।"
                             }
                         } else {
                             notice = "Memory খালি রাখা যাবে না।"
