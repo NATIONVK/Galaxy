@@ -931,6 +931,22 @@ private fun VoiceStudioScreen() {
                     }
                 }
             }
+            command.startsWith("remember ") || command.startsWith("note ") || command.startsWith("নোট করো ") || command.startsWith("মনে রাখো ") || command.startsWith("এটা লিখে রাখো ") -> {
+                val prefixes = listOf("remember ", "note ", "নোট করো ", "মনে রাখো ", "এটা লিখে রাখো ")
+                val captured = prefixes.firstOrNull { command.startsWith(it) }?.let { command.removePrefix(it).trim() }.orEmpty()
+                if (captured.isBlank()) {
+                    status = "কী নোট করে রাখব বলো।"
+                    speak("কী নোট করে রাখব বলো")
+                } else {
+                    val notePrefs = context.getSharedPreferences("galaxy_notepad", android.content.Context.MODE_PRIVATE)
+                    val previous = notePrefs.getString("note_body", "").orEmpty()
+                    val updated = listOf(previous, captured).filter { it.isNotBlank() }.joinToString("\\n")
+                    val title = notePrefs.getString("note_title", "").orEmpty().ifBlank { "Voice Notes" }
+                    notePrefs.edit().putString("note_title", title).putString("note_body", updated).apply()
+                    status = "তোমার কথা Notepad-এ সংরক্ষণ করেছি।"
+                    speak("নোট করে রাখলাম")
+                }
+            }
             command.contains("read mail") || command.contains("read emails") || command.contains("read email") || command.contains("মেইল পড়ে") || command.contains("মেইল পড়ে") || command.contains("মেইল শোনাও") || command.contains("ইমেইল পড়ে") || command.contains("ইমেইল পড়ে") -> {
                 val latest = GalaxyMailStore.read(context).take(5)
                 if (latest.isEmpty()) {
