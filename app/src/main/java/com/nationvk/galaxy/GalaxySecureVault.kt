@@ -271,6 +271,8 @@ fun GalaxySecureVaultSettingsPanel() {
     }
 
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(card).padding(14.dp)) {
+        GalaxyMultiApiSettingsPanel()
+        Spacer(Modifier.height(12.dp))
         Text("SECURE API VAULT • ENCRYPTED CLOUD BACKUP", color = cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         Text(
             "API profile ও secret AES-256-GCM দিয়ে encrypt করে শুধু তোমার Private GitHub repository-তে রাখা হবে। Master Password কোথাও save হয় না।",
