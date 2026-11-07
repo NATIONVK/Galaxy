@@ -979,7 +979,9 @@ private fun MemoryVaultScreen() {
     var selectedCategory by remember { mutableStateOf("ALL") }
     var search by remember { mutableStateOf("") }
     var noteDraft by remember { mutableStateOf("") }
+    var memoryPriority by remember { mutableIntStateOf(2) }
     var notes by remember { mutableStateOf(GalaxyMemoryStore.getAll(context)) }
+    var preferenceSuggestions by remember { mutableStateOf(GalaxyPreferenceLearner.suggestions(context)) }
     var showEditor by remember { mutableStateOf(false) }
     var editingMemoryId by remember { mutableStateOf<Long?>(null) }
     var notice by remember { mutableStateOf("") }
@@ -1062,6 +1064,26 @@ private fun MemoryVaultScreen() {
             }
             Text("Search now ranks matching memories by relevance, phrase match and recency. Memories stay on this device.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
         }
+        if (preferenceSuggestions.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel2).padding(12.dp)) {
+                Text("PREFERENCE LEARNING • REVIEW REQUIRED", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("Saved PERSONAL memories থেকে সম্ভাব্য পছন্দ শনাক্ত হয়েছে। অনুমোদন না দিলে এগুলো profile-এ যোগ হবে না।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp))
+                preferenceSuggestions.forEach { suggestion ->
+                    Column(Modifier.fillMaxWidth().padding(top = 9.dp).clip(RoundedCornerShape(10.dp)).background(Panel).padding(9.dp)) {
+                        Text(suggestion.statement, color = Color.White, fontSize = 10.sp, lineHeight = 15.sp)
+                        Text("Confidence estimate: ${(suggestion.confidence * 100).toInt()}% • heuristic, not verified", color = Muted, fontSize = 8.sp, modifier = Modifier.padding(top = 4.dp))
+                        Text("APPROVE & SAVE AS PREFERENCE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                val approved = GalaxyPreferenceLearner.approve(context, suggestion)
+                                notes = GalaxyMemoryStore.getAll(context)
+                                preferenceSuggestions = GalaxyPreferenceLearner.suggestions(context).filterNot { it.sourceMemoryId == suggestion.sourceMemoryId }
+                                notice = if (approved) "Preference approved and saved locally." else "Preference already exists or could not be saved."
+                            }.padding(top = 7.dp))
+                    }
+                }
+            }
+        }
         if (recoveryAvailable) {
             Spacer(Modifier.height(10.dp))
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF3A2630)).padding(12.dp)) {
@@ -1116,6 +1138,13 @@ private fun MemoryVaultScreen() {
                             modifier = Modifier.clickable { selectedCategory = category }.padding(vertical = 7.dp))
                     }
                 }
+                Text("IMPORTANCE", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), modifier = Modifier.padding(vertical = 7.dp)) {
+                    listOf(1 to "LOW", 2 to "NORMAL", 3 to "HIGH").forEach { (value, label) ->
+                        Text(label, color = if (memoryPriority == value) Cyan else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(if (memoryPriority == value) Color(0xFF302A5B) else Panel).clickable { memoryPriority = value }.padding(horizontal = 11.dp, vertical = 8.dp))
+                    }
+                }
                 androidx.compose.foundation.text.BasicTextField(
                     value = noteDraft, onValueChange = { noteDraft = it },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).padding(vertical = 8.dp),
@@ -1133,8 +1162,8 @@ private fun MemoryVaultScreen() {
                         val editingId = editingMemoryId
                         if (body.isNotEmpty()) {
                             val duplicate = GalaxyMemoryStore.isDuplicate(context, category, body, editingId)
-                            val saved = if (editingId == null) GalaxyMemoryStore.addOrRefresh(context, category, body)
-                                else if (duplicate) false else GalaxyMemoryStore.update(context, editingId, category, body)
+                            val saved = if (editingId == null) GalaxyMemoryStore.addOrRefresh(context, category, body, priority = memoryPriority)
+                                else if (duplicate) false else GalaxyMemoryStore.update(context, editingId, category, body, priority = memoryPriority)
                             if (saved) {
                                 notes = GalaxyMemoryStore.getAll(context)
                                 noteDraft = ""; showEditor = false; editingMemoryId = null; selectedCategory = "ALL"
@@ -1171,6 +1200,7 @@ private fun MemoryVaultScreen() {
                                 editingMemoryId = item.id
                                 selectedCategory = item.category
                                 noteDraft = item.content
+                                memoryPriority = item.priority
                                 showEditor = true
                             }.padding(start = 8.dp))
                         Text("  ×", color = Color(0xFFFFA7B8), fontSize = 16.sp,
@@ -1183,6 +1213,7 @@ private fun MemoryVaultScreen() {
                             }.padding(start = 8.dp))
                     }
                     Spacer(Modifier.height(6.dp))
+                    Text("IMPORTANCE: " + when (item.priority) { 3 -> "HIGH"; 1 -> "LOW"; else -> "NORMAL" } + "  •  CONFIDENCE: ${(item.confidence * 100).toInt()}%", color = Muted, fontSize = 8.sp, modifier = Modifier.padding(top = 4.dp))
                     Text(item.content, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
                     Text(java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(item.createdAt)), color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 7.dp))
                 }
