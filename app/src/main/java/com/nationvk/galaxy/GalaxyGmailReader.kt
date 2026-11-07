@@ -108,7 +108,9 @@ class GalaxyGmailNotificationListener : NotificationListenerService() {
             "org.telegram.messenger", "com.google.android.apps.messaging",
             "com.samsung.android.messaging", "com.android.messaging",
             "com.instagram.android", "com.viber.voip", "jp.naver.line.android",
-            "com.discord", "com.skype.raider"
+            "com.discord", "com.skype.raider", "org.thoughtcrime.securesms",
+            "com.snapchat.android", "com.microsoft.teams", "com.google.android.apps.chat",
+            "com.tencent.mm", "com.imo.android.imoim"
         )
         if (sbn.packageName !in supportedApps) return
         val extras = notification.extras ?: return
