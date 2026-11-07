@@ -28,13 +28,13 @@ fun GalaxyMultiApiSettingsPanel() {
  var url by remember { mutableStateOf("https://api.openai.com") }
  var model by remember { mutableStateOf("gpt-4o-mini") }
  var key by remember { mutableStateOf("") }
- var status by remember { mutableStateOf("একাধিক API যোগ করো। Primary ব্যর্থ হলে পরের enabled profile চেষ্টা হবে।") }
+ var status by remember { mutableStateOf("সর্বোচ্চ ২৫টি API যোগ করা যাবে। Primary ব্যর্থ হলে পরের enabled profile চেষ্টা হবে।") }
  var testing by remember { mutableStateOf(false) }
  val card=Color(0xFF101326);val field=Color(0xFF171B33);val cyan=Color(0xFF55DFFF);val violet=Color(0xFF9B69FF);val muted=Color(0xFF929AB8)
  fun reset(){editId=null;name="";url="https://api.openai.com";model="gpt-4o-mini";key=""}
  Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(card).padding(14.dp)) {
   Text("MULTI-API FAILOVER",color=cyan,fontSize=11.sp,fontWeight=FontWeight.Bold)
-  Text("একাধিক Provider/API Key রাখো। প্রথমটি ব্যর্থ হলে পরের সক্রিয় API চেষ্টা হবে। সব profile এই ডিভাইসে encrypted key হিসেবে থাকবে।",color=muted,fontSize=10.sp,lineHeight=15.sp,modifier=Modifier.padding(top=6.dp,bottom=12.dp))
+  Text("সর্বোচ্চ ২৫টি Provider/API Key যোগ করো। Primary ব্যর্থ হলে পরের সক্রিয় API চেষ্টা হবে। সব profile এই ডিভাইসে encrypted থাকবে।",color=muted,fontSize=10.sp,lineHeight=15.sp,modifier=Modifier.padding(top=6.dp,bottom=12.dp))
   Text("Native Gemini: URL https://generativelanguage.googleapis.com এবং Model ID যেমন gemini-2.5-flash। OpenAI-compatible API-র জন্য provider-এর HTTPS Base URL ও Model ID দাও।",color=cyan,fontSize=9.sp,lineHeight=14.sp,modifier=Modifier.padding(bottom=8.dp))
   @Composable fun field(label:String,value:String,change:(String)->Unit,secret:Boolean=false){
    Text(label,color=muted,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp,bottom=4.dp))
