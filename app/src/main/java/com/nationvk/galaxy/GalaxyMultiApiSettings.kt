@@ -35,6 +35,7 @@ fun GalaxyMultiApiSettingsPanel() {
  Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(card).padding(14.dp)) {
   Text("MULTI-API FAILOVER",color=cyan,fontSize=11.sp,fontWeight=FontWeight.Bold)
   Text("একাধিক Provider/API Key রাখো। প্রথমটি ব্যর্থ হলে পরের সক্রিয় API চেষ্টা হবে। সব profile এই ডিভাইসে encrypted key হিসেবে থাকবে।",color=muted,fontSize=10.sp,lineHeight=15.sp,modifier=Modifier.padding(top=6.dp,bottom=12.dp))
+  Text("Native Gemini: URL https://generativelanguage.googleapis.com এবং Model ID যেমন gemini-2.5-flash। OpenAI-compatible API-র জন্য provider-এর HTTPS Base URL ও Model ID দাও।",color=cyan,fontSize=9.sp,lineHeight=14.sp,modifier=Modifier.padding(bottom=8.dp))
   @Composable fun field(label:String,value:String,change:(String)->Unit,secret:Boolean=false){
    Text(label,color=muted,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp,bottom=4.dp))
    BasicTextField(value=value,onValueChange=change,singleLine=true,visualTransformation=if(secret)PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,textStyle=androidx.compose.ui.text.TextStyle(color=Color.White,fontSize=11.sp),modifier=Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(field).padding(11.dp),decorationBox={inner->Box{if(value.isEmpty())Text(if(secret)"API key" else label,color=muted,fontSize=11.sp);inner()}})
