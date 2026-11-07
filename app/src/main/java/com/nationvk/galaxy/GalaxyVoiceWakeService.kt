@@ -400,24 +400,39 @@ class GalaxyVoiceWakeService : Service() {
         val asksAboutMessages = listOf(
             "message", "মেসেজ", "মেসেজটা", "মেসেজগুলো", "কি লিখেছে", "কী লিখেছে",
             "কি মেসেজ", "কী মেসেজ", "পড়ে শোনাও", "পড়ে শোনাও", "read message",
-            "read my messages", "new message", "নতুন মেসেজ"
+            "read my messages", "new message", "নতুন মেসেজ", "সব মেসেজ", "সাম্প্রতিক মেসেজ",
+            "শেষের মেসেজগুলো", "কয়টা মেসেজ", "কতগুলো মেসেজ", "কতটি মেসেজ", "কে মেসেজ দিয়েছে",
+            "কে মেসেজ পাঠিয়েছে", "who messaged me", "who sent message", "last 3", "last three",
+            "recent messages", "all messages", "how many"
         ).any { q.contains(it) }
         if (!asksAboutMessages) return false
 
-        val latest = GalaxyMessageStore.latest(this)
-        if (latest == null) {
+        val recent = GalaxyMessageStore.read(this)
+        if (recent.isEmpty()) {
             speakMemory("এখনো কোনো নতুন সমর্থিত মেসেজ পাওয়া যায়নি। Notification Access চালু আছে কি না দেখে নাও।")
             return true
         }
-        val source = if (latest.sender.isNotBlank()) latest.sender else latest.appName
-        if (latest.isVoiceMessage || latest.content.isBlank()) {
-            speakMemory("$source, ${latest.appName} থেকে একটি Voice Message এসেছে। এটি ভয়েস মেসেজ, লিখিত মেসেজ নয়।")
+        val asksCount = listOf("কয়টা", "কতগুলো", "কতটি", "how many", "count message").any { q.contains(it) }
+        val asksMultiple = listOf("সব মেসেজ", "সবগুলো মেসেজ", "শেষের মেসেজগুলো", "সাম্প্রতিক মেসেজ",
+            "last 3", "last three", "recent messages", "all messages", "একাধিক মেসেজ").any { q.contains(it) }
+        if (asksCount) {
+            val senders = recent.map { it.sender.ifBlank { it.appName } }.distinct().take(4)
+            val who = if (senders.isEmpty()) "" else " সাম্প্রতিক প্রেরক: " + senders.joinToString(", ")
+            speakMemory("সংরক্ষিত সাম্প্রতিক মেসেজের সংখ্যা ${recent.size}টি.$who")
             return true
         }
-        val content = latest.content.replace("\\n", " ").take(1800)
-        val answer = "$source, ${latest.appName} থেকে মেসেজ এসেছে। মেসেজে লেখা: $content"
-        speakMemory(answer, "Reading latest message from $source")
-        GalaxyVoiceHistory.add(this, rawCommand, "Read latest message from $source")
+        val selected = if (asksMultiple) recent.take(3) else recent.take(1)
+        val answer = selected.mapIndexed { index, item ->
+            val sender = item.sender.ifBlank { item.appName }
+            if (item.isVoiceMessage || item.content.isBlank()) {
+                "${index + 1}. $sender, ${item.appName} থেকে একটি Voice Message এসেছে।"
+            } else {
+                val content = item.content.replace("\\n", " ").take(900)
+                "${index + 1}. $sender, ${item.appName} থেকে মেসেজ। লেখা: $content"
+            }
+        }.joinToString(" ")
+        speakMemory(answer, if (asksMultiple) "Reading latest ${selected.size} messages" else "Reading latest message")
+        GalaxyVoiceHistory.add(this, rawCommand, "Read ${selected.size} recent message(s)")
         return true
     }
 
