@@ -355,6 +355,8 @@ private fun ChatScreen() {
     var attachmentOpen by remember { mutableStateOf(false) }
     var notice by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
+    var contextInfo by remember { mutableStateOf(GalaxyConversationContext.prepare(context, messages, "")) }
+    var showContextDetails by remember { mutableStateOf(false) }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) {
             try {
@@ -412,6 +414,23 @@ private fun ChatScreen() {
                 Text("Conversation interface preview • AI Core not connected", color = Muted, fontSize = 10.sp)
             }
             Text("● OFFLINE", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(9.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Panel).clickable { showContextDetails = !showContextDetails }.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("◈", color = Cyan, fontSize = 15.sp)
+                Spacer(Modifier.width(8.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("CONVERSATION CONTEXT", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                    Text("${contextInfo.turnCount} recent turns • ${contextInfo.memoryCount} relevant memories • ${if (contextInfo.isFollowUp) "follow-up detected" else "context ready"}", color = Muted, fontSize = 10.sp)
+                }
+                Text(if (showContextDetails) "HIDE" else "DETAILS", color = Violet, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+            if (showContextDetails) {
+                Spacer(Modifier.height(8.dp))
+                Text(contextInfo.preview, color = Color(0xFFD8DDF0), fontSize = 10.sp, lineHeight = 15.sp)
+                Text("Context is prepared locally for a future connected AI provider. No AI reply is generated in this build.", color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 7.dp))
+            }
         }
         Spacer(Modifier.height(12.dp))
         if (messages.isEmpty()) {
@@ -484,11 +503,13 @@ private fun ChatScreen() {
             Box(Modifier.size(48.dp).clip(CircleShape).background(if (draft.isBlank()) Panel else Violet).semantics { contentDescription = "Send message"; role = Role.Button }.clickable {
                 val value = draft.trim()
                 if (value.isNotEmpty()) {
+                    contextInfo = GalaxyConversationContext.prepare(context, messages, value)
                     val updated = messages + (true to value)
                     if (GalaxyLocalConversationStore.save(context, updated)) {
                         messages = updated
+                        contextInfo = GalaxyConversationContext.prepare(context, updated, "")
                         draft = ""
-                        notice = "Saved securely on this device. AI response unavailable in offline demo mode."
+                        notice = if (contextInfo.isFollowUp) "Message saved. Follow-up context detected and prepared locally; AI provider is not connected." else "Message saved. Conversation context prepared locally; AI provider is not connected."
                     } else {
                         notice = "Could not save this message. Please try again."
                     }
@@ -502,6 +523,7 @@ private fun ChatScreen() {
             Text("CLEAR CHAT", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.heightIn(min = 48.dp).semantics { role = Role.Button }.clickable {
                 if (GalaxyLocalConversationStore.clear(context)) {
                     messages = emptyList()
+                    contextInfo = GalaxyConversationContext.prepare(context, emptyList(), "")
                     notice = "Local conversation cleared."
                 } else {
                     notice = "Could not clear local conversation."
