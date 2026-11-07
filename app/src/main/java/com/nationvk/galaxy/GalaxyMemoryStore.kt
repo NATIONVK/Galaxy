@@ -8,7 +8,9 @@ data class GalaxyMemoryEntry(
     val id: Long,
     val category: String,
     val content: String,
-    val createdAt: Long
+    val createdAt: Long,
+    val priority: Int = 2,
+    val confidence: Float = 1f
 )
 
 object GalaxyMemoryStore {
@@ -31,7 +33,9 @@ object GalaxyMemoryStore {
                     id = item.optLong("id", 0L).coerceAtLeast(0L),
                     category = category,
                     content = content,
-                    createdAt = item.optLong("createdAt", 0L).coerceIn(0L, System.currentTimeMillis() + 86_400_000L)
+                    createdAt = item.optLong("createdAt", 0L).coerceIn(0L, System.currentTimeMillis() + 86_400_000L),
+                    priority = item.optInt("priority", 2).coerceIn(1, 3),
+                    confidence = item.optDouble("confidence", 1.0).toFloat().coerceIn(0f, 1f)
                 )
             }.distinctBy { it.id }.sortedByDescending { it.createdAt }.take(MAX_ENTRIES)
         } catch (_: Exception) {
@@ -43,13 +47,13 @@ object GalaxyMemoryStore {
         }
     }
 
-    fun add(context: Context, category: String, content: String): Boolean {
+    fun add(context: Context, category: String, content: String, priority: Int = 2, confidence: Float = 1f): Boolean {
         val clean = content.trim().take(10000)
         val cleanCategory = category.trim().uppercase().take(24)
         if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES || isDuplicate(context, cleanCategory, clean)) return false
         val entries = getAll(context).toMutableList()
         val nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
-        entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis()))
+        entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis(), priority.coerceIn(1, 3), confidence.coerceIn(0f, 1f)))
         return save(context, entries.take(MAX_ENTRIES))
     }
 
@@ -58,14 +62,14 @@ object GalaxyMemoryStore {
         return getAll(context).any { it.id != excludingId && dedupeKey(it.category, it.content) == key }
     }
 
-    fun update(context: Context, id: Long, category: String, content: String): Boolean {
+    fun update(context: Context, id: Long, category: String, content: String, priority: Int? = null): Boolean {
         val clean = content.trim().take(10000)
         val cleanCategory = category.trim().uppercase().take(24)
         if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES || isDuplicate(context, cleanCategory, clean, id)) return false
         val entries = getAll(context).toMutableList()
         val index = entries.indexOfFirst { it.id == id }
         if (index < 0) return false
-        entries[index] = entries[index].copy(category = cleanCategory, content = clean)
+        entries[index] = entries[index].copy(category = cleanCategory, content = clean, priority = priority?.coerceIn(1, 3) ?: entries[index].priority)
         return save(context, entries)
     }
 
@@ -105,7 +109,7 @@ object GalaxyMemoryStore {
     }
 
     /** Add a memory, or refresh an existing normalized exact match instead of duplicating it. */
-    fun addOrRefresh(context: Context, category: String, content: String): Boolean {
+    fun addOrRefresh(context: Context, category: String, content: String, priority: Int = 2, confidence: Float = 1f): Boolean {
         val clean = content.trim().take(10000)
         val cleanCategory = category.trim().uppercase().take(24)
         if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES) return false
@@ -115,11 +119,11 @@ object GalaxyMemoryStore {
             it.category == cleanCategory && dedupeKey(it.category, it.content) == key
         }
         if (existingIndex >= 0) {
-            entries[existingIndex] = entries[existingIndex].copy(createdAt = System.currentTimeMillis())
+            entries[existingIndex] = entries[existingIndex].copy(createdAt = System.currentTimeMillis(), priority = priority.coerceIn(1, 3), confidence = confidence.coerceIn(0f, 1f))
             return save(context, entries.sortedByDescending { it.createdAt })
         }
         val nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
-        entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis()))
+        entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis(), priority.coerceIn(1, 3), confidence.coerceIn(0f, 1f)))
         return save(context, entries.take(MAX_ENTRIES))
     }
 
@@ -181,7 +185,8 @@ object GalaxyMemoryStore {
         val array = JSONArray()
         getAll(context).forEach { entry ->
             array.put(JSONObject().put("id", entry.id).put("category", entry.category)
-                .put("content", entry.content).put("createdAt", entry.createdAt))
+                .put("content", entry.content).put("createdAt", entry.createdAt)
+                .put("priority", entry.priority).put("confidence", entry.confidence.toDouble()))
         }
         root.put("memories", array)
         return root.toString(2)
@@ -216,7 +221,8 @@ object GalaxyMemoryStore {
             val key = dedupeKey(category, content)
             if (!known.add(key)) { duplicates++; continue }
             val timestamp = item.optLong("createdAt", System.currentTimeMillis()).coerceIn(0L, System.currentTimeMillis() + 86_400_000L)
-            existing.add(GalaxyMemoryEntry(nextId++, category, content, timestamp))
+            existing.add(GalaxyMemoryEntry(nextId++, category, content, timestamp,
+                item.optInt("priority", 2).coerceIn(1, 3), item.optDouble("confidence", 1.0).toFloat().coerceIn(0f, 1f)))
             imported++
         }
         if (imported > 0 && !save(context, existing.sortedByDescending { it.createdAt }.take(MAX_ENTRIES))) {
