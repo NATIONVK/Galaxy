@@ -208,8 +208,88 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(10.dp))
         DeviceMonitorPanel()
         Spacer(Modifier.height(18.dp))
+        SectionHeading("PHONE CONTROL CENTER", "Quick actions • Android-safe shortcuts")
+        Spacer(Modifier.height(10.dp))
+        PhoneQuickActionsPanel()
+        Spacer(Modifier.height(18.dp))
         Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
+    }
+}
+
+private data class PhoneQuickAction(
+    val title: String,
+    val subtitle: String,
+    val glyph: String,
+    val action: () -> Intent
+)
+
+@Composable
+private fun PhoneQuickActionsPanel() {
+    val context = LocalContext.current
+    var lastAction by remember { mutableStateOf("কোনো action চালানো হয়নি।") }
+    val actions = listOf(
+        PhoneQuickAction("Calculator", "ক্যালকুলেটর খুলবে", "＋") {
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALCULATOR)
+        },
+        PhoneQuickAction("Camera", "Camera app খুলবে", "◉") {
+            Intent("android.media.action.IMAGE_CAPTURE")
+        },
+        PhoneQuickAction("Dialer", "কল করার আগে Dialer খুলবে", "☎") {
+            Intent(Intent.ACTION_DIAL)
+        },
+        PhoneQuickAction("Wi-Fi", "Wi-Fi settings খুলবে", "⌁") {
+            Intent(Settings.ACTION_WIFI_SETTINGS)
+        },
+        PhoneQuickAction("Bluetooth", "Bluetooth settings খুলবে", "ᛒ") {
+            Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+        },
+        PhoneQuickAction("Display", "Display settings খুলবে", "☼") {
+            Intent(Settings.ACTION_DISPLAY_SETTINGS)
+        },
+        PhoneQuickAction("Location", "Location settings খুলবে", "⌖") {
+            Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+        },
+        PhoneQuickAction("All Settings", "Android Settings খুলবে", "⚙") {
+            Intent(Settings.ACTION_SETTINGS)
+        }
+    )
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(12.dp)) {
+        Text("QUICK LAUNCH", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(9.dp))
+        actions.chunked(2).forEach { pair ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                pair.forEach { action ->
+                    Column(
+                        Modifier.weight(1f).padding(bottom = 9.dp)
+                            .clip(RoundedCornerShape(13.dp))
+                            .background(Panel2)
+                            .semantics { contentDescription = "${action.title}: ${action.subtitle}"; role = Role.Button }
+                            .clickable {
+                                try {
+                                    context.startActivity(action.action().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                                    lastAction = "${action.title} খোলার নির্দেশ পাঠানো হয়েছে।"
+                                } catch (_: Exception) {
+                                    lastAction = "${action.title} খোলা যায়নি; ফোনে উপযুক্ত app আছে কি না পরীক্ষা কর।"
+                                }
+                            }
+                            .padding(horizontal = 10.dp, vertical = 12.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Text(action.glyph, color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.height(5.dp))
+                        Text(action.title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                        Text(action.subtitle, color = Muted, fontSize = 9.sp, lineHeight = 13.sp)
+                    }
+                }
+                if (pair.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+        Text(lastAction, color = Color(0xFFB8D8E8), fontSize = 9.sp, lineHeight = 14.sp,
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp))
+        Text("নোট: Dialer শুধু খোলে—কোনো কল নিজে থেকে করা হয় না। Wi-Fi/Bluetooth/Display action শুধু Android-এর Settings page খোলে; সরাসরি system toggle করে না।",
+            color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 7.dp))
     }
 }
 
