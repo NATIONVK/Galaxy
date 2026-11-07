@@ -982,6 +982,8 @@ private fun MemoryVaultScreen() {
     var memoryPriority by remember { mutableIntStateOf(2) }
     var notes by remember { mutableStateOf(GalaxyMemoryStore.getAll(context)) }
     var trashItems by remember { mutableStateOf(GalaxyMemoryStore.getTrash(context)) }
+    var snapshots by remember { mutableStateOf(GalaxyMemoryStore.getSnapshots(context)) }
+    var showBackupCenter by remember { mutableStateOf(false) }
     var historyMemoryId by remember { mutableStateOf<Long?>(null) }
     var preferenceSuggestions by remember { mutableStateOf(GalaxyPreferenceLearner.suggestions(context)) }
     var showEditor by remember { mutableStateOf(false) }
@@ -992,9 +994,11 @@ private fun MemoryVaultScreen() {
             try {
                 val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
                     ?: throw IllegalStateException("ফাইলটি পড়া যায়নি।")
+                if (notes.isNotEmpty()) GalaxyMemoryStore.createSnapshot(context)
                 val result = GalaxyMemoryStore.importJson(context, json)
                 notes = GalaxyMemoryStore.getAll(context)
-                notice = "Import complete: ${result.imported} added, ${result.skippedDuplicates} duplicates skipped, ${result.rejected} invalid skipped."
+                snapshots = GalaxyMemoryStore.getSnapshots(context)
+                notice = "Import complete: ${result.imported} added, ${result.skippedDuplicates} duplicates skipped, ${result.rejected} invalid skipped. A pre-import restore point was saved when possible."
             } catch (error: Exception) {
                 notice = "Import failed: " + (error.message ?: "Unknown error")
             }
@@ -1306,6 +1310,42 @@ private fun MemoryVaultScreen() {
             }
         }
         Spacer(Modifier.height(8.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Panel).padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("SMART BACKUP CENTER", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    Text("${snapshots.size}/10 local restore points", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+                Text(if (showBackupCenter) "HIDE" else "OPEN", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { showBackupCenter = !showBackupCenter }.padding(8.dp))
+            }
+            Text("Snapshots এই ডিভাইসেই থাকে। Export করে আলাদা ফাইল রাখলে device হারালেও backup থাকবে। Restore নিরাপদ merge করে; বর্তমান memory overwrite বা delete করে না।", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 5.dp))
+            Text("＋ CREATE RESTORE POINT", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 9.dp).clip(RoundedCornerShape(9.dp)).background(Panel2).clickable {
+                    val saved = GalaxyMemoryStore.createSnapshot(context)
+                    snapshots = GalaxyMemoryStore.getSnapshots(context)
+                    notice = if (saved) "Local restore point created." else "Could not save restore point. Check device storage."
+                }.padding(horizontal = 12.dp, vertical = 10.dp))
+            if (showBackupCenter) {
+                if (snapshots.isEmpty()) Text("এখনো কোনো restore point নেই। Create Restore Point চাপ।", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 8.dp))
+                snapshots.forEach { snapshot ->
+                    Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Panel2).padding(9.dp)) {
+                        Text(java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(snapshot.createdAt)), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("${snapshot.memoryCount} memories • Local snapshot", color = Muted, fontSize = 8.sp, modifier = Modifier.padding(top = 3.dp))
+                        Text("RESTORE (SAFE MERGE)", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                try {
+                                    val result = GalaxyMemoryStore.restoreSnapshot(context, snapshot.id)
+                                    notes = GalaxyMemoryStore.getAll(context)
+                                    snapshots = GalaxyMemoryStore.getSnapshots(context)
+                                    notice = "Snapshot restored by merge: ${result.imported} added, ${result.skippedDuplicates} duplicates skipped."
+                                } catch (error: Exception) { notice = "Snapshot restore failed: ${error.message ?: "Unknown error"}" }
+                            }.padding(top = 7.dp))
+                    }
+                }
+            }
+        }
+        Spacer(Modifier.height(9.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
             Text("EXPORT FILE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
@@ -1317,7 +1357,7 @@ private fun MemoryVaultScreen() {
                 }.padding(horizontal = 9.dp, vertical = 13.dp))
             Text("CLEAR ALL", color = Color(0xFFFFA7B8), fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Panel2).clickable {
-                    GalaxyMemoryStore.clear(context); notes = emptyList(); trashItems = emptyList(); historyMemoryId = null; notice = "All local memories, timeline and trash cleared."
+                    GalaxyMemoryStore.clear(context); notes = emptyList(); trashItems = emptyList(); snapshots = emptyList(); historyMemoryId = null; notice = "All local memories, timeline, trash and restore points cleared."
                 }.padding(horizontal = 9.dp, vertical = 13.dp))
         }
         Spacer(Modifier.height(7.dp))
