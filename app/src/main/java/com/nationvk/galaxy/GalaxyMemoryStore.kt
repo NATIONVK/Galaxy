@@ -238,7 +238,8 @@ object GalaxyMemoryStore {
         val array = JSONArray()
         entries.forEach { entry ->
             array.put(JSONObject().put("id", entry.id).put("category", entry.category)
-                .put("content", entry.content).put("createdAt", entry.createdAt))
+                .put("content", entry.content).put("createdAt", entry.createdAt)
+                .put("priority", entry.priority).put("confidence", entry.confidence.toDouble()))
         }
         return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(KEY_ENTRIES, array.toString()).commit()
