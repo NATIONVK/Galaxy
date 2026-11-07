@@ -389,6 +389,7 @@ class GalaxyVoiceWakeService : Service() {
             else -> {
                 val brainReply = GalaxyBrainEngine.respond(this, command)
                 if (brainReply != null) {
+                    GalaxyConversationMemory.saveTurn(this, command, brainReply.spokenText)
                     GalaxyVoiceHistory.add(this, command, brainReply.status)
                     updateNotification(brainReply.status.take(180))
                     speak(brainReply.spokenText, "galaxy-brain")
