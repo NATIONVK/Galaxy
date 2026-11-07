@@ -2216,9 +2216,7 @@ private fun SettingsScreen() {
         Spacer(Modifier.height(12.dp))
         SettingsSectionTitle("PERSONALIZATION INTELLIGENCE")
         PersonalizationSettingsPanel()
-        SettingsSectionTitle("AI PROVIDER")
-        GalaxyMultiApiSettingsPanel()
-        SettingsSectionTitle("SECURE API VAULT")
+        SettingsSectionTitle("API KEY MANAGER & SECURE VAULT")
         GalaxySecureVaultSettingsPanel()
         SettingsSectionTitle("VOICE PREFERENCES")
         var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
