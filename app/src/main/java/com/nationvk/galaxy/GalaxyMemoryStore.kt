@@ -173,7 +173,7 @@ object GalaxyMemoryStore {
     private const val KEY_VERSIONS = "versions"
     private const val KEY_TRASH = "trash"
     private const val KEY_SNAPSHOTS = "snapshots"
-    private const val MAX_SNAPSHOTS = 10
+    private const val MAX_SNAPSHOTS = 5
     private const val MAX_VERSIONS_PER_MEMORY = 10
     private const val MAX_TRASH_ITEMS = 100
 
@@ -281,6 +281,7 @@ object GalaxyMemoryStore {
     fun createSnapshot(context: Context): Boolean {
         val current = getAll(context)
         val json = exportJson(context)
+        if (json.toByteArray(Charsets.UTF_8).size > 2_000_000) return false
         val prefs = archivePrefs(context)
         val old = try { JSONArray(prefs.getString(KEY_SNAPSHOTS, "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
         val items = mutableListOf<JSONObject>()
@@ -299,7 +300,7 @@ object GalaxyMemoryStore {
             (0 until array.length()).mapNotNull { i ->
                 val item = array.optJSONObject(i) ?: return@mapNotNull null
                 val json = item.optString("json", "")
-                if (json.isBlank() || json.length > 5_000_000) return@mapNotNull null
+                if (json.isBlank() || json.toByteArray(Charsets.UTF_8).size > 2_000_000) return@mapNotNull null
                 MemorySnapshot(item.optLong("id", 0L), item.optLong("createdAt", 0L),
                     item.optInt("memoryCount", 0).coerceAtLeast(0), json)
             }.sortedByDescending { it.createdAt }
