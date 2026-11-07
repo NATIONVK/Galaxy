@@ -1022,10 +1022,12 @@ private fun MemoryVaultScreen() {
         }
     }
     val recoveryAvailable = GalaxyMemoryStore.hasRecoveryBackup(context)
+    val memoryInsights = GalaxyMemoryStore.insights(context)
     val categories = listOf("ALL", "PERSONAL", "PROJECT", "TASK", "CONVERSATION", "IDEAS", "RESEARCH", "LEARNING", "NOTES")
-    val filtered = notes.filter { item ->
-        (selectedCategory == "ALL" || item.category == selectedCategory) &&
-            (item.content.contains(search, ignoreCase = true) || item.category.contains(search, ignoreCase = true))
+    val filtered = if (search.isBlank()) {
+        notes.filter { selectedCategory == "ALL" || it.category == selectedCategory }
+    } else {
+        GalaxyMemoryStore.search(context, search, category = selectedCategory.takeIf { it != "ALL" }, limit = 1000)
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 10.dp)) {
@@ -1038,6 +1040,27 @@ private fun MemoryVaultScreen() {
             Box(Modifier.size(44.dp).clip(CircleShape).background(Panel2), contentAlignment = Alignment.Center) {
                 Text("◈", color = Violet, fontSize = 23.sp)
             }
+        }
+        Spacer(Modifier.height(12.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(13.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("MEMORY INTELLIGENCE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                    Text("${memoryInsights.total} stored memories", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Text("LOCAL ONLY", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(9.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("PERSONAL", "PROJECT", "LEARNING", "RESEARCH").forEach { category ->
+                    val count = memoryInsights.categoryCounts[category] ?: 0
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(Panel2).padding(7.dp)) {
+                        Text(count.toString(), color = Cyan, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        Text(category, color = Muted, fontSize = 7.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+            Text("Search now ranks matching memories by relevance, phrase match and recency. Memories stay on this device.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
         }
         if (recoveryAvailable) {
             Spacer(Modifier.height(10.dp))
