@@ -40,6 +40,7 @@ object GalaxyConversationContext {
             if (historyBlock.isNotBlank()) appendLine("Recent conversation:\n$historyBlock")
             if (memoryBlock.isNotBlank()) appendLine("Relevant user-approved local memories:\n$memoryBlock")
             if (resolved.isNotBlank()) appendLine("Current user message:\n$resolved")
+            appendLine(GalaxyPersonalizationStore.promptGuidance(context))
             append("Use the conversation and memories only when relevant. Do not invent missing facts.")
         }.take(MAX_CONTEXT_CHARS)
         val preview = buildString {
