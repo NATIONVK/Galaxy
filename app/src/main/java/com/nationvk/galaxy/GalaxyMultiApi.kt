@@ -97,20 +97,62 @@ object GalaxyApiProfiles {
 object GalaxyMultiApiClient {
  private val worker=Executors.newSingleThreadExecutor()
  private val main=Handler(Looper.getMainLooper())
- fun send(c:Context,prompt:String,done:(Result<String>)->Unit){val app=c.applicationContext;worker.execute{val r=runCatching{run(app,prompt)};main.post{done(r)}}}
- private fun run(c:Context,prompt:String):String{
-  require(prompt.isNotBlank()&&prompt.length<=24000){"Conversation context is empty or too large."}
+ fun send(c:Context,systemContext:String,done:(Result<String>)->Unit)=send(c,systemContext,"Please respond to the current request.",done)
+ fun send(c:Context,systemContext:String,userMessage:String,done:(Result<String>)->Unit) {
+  worker.execute { val result=runCatching { run(c.applicationContext,systemContext,userMessage) }; main.post { done(result) } }
+ }
+ private fun run(c:Context,system:String,user:String):String {
+  require(user.isNotBlank()&&user.length<=12000) { "User message is empty or too large." }
+  require(system.length<=24000) { "Conversation context is too large." }
   val profiles=GalaxyApiProfiles.list(c).filter{it.enabled&&it.hasKey};val errors=mutableListOf<String>()
-  for(p in profiles){try{val k=GalaxyApiProfiles.key(c,p.id)?:throw IllegalStateException("Saved key unavailable");return request(p,k,prompt)}catch(e:Exception){errors.add(p.name+": "+(e.message?:"failed"))}}
-  if(profiles.isEmpty()&&GalaxyAiProviderStore.load(c).isConfigured){val old=GalaxyAiProviderStore.load(c);val k=GalaxyAiProviderStore.readApiKey(c)?:throw IllegalStateException("Saved API key unavailable");return request(old.baseUrl,old.model,k,prompt)}
-  if(errors.isEmpty())throw IllegalStateException("No enabled API profile. Add and enable a provider in Settings.")
+  for(p in profiles) try { val k=GalaxyApiProfiles.key(c,p.id)?:throw IllegalStateException("Saved key unavailable");return request(p.baseUrl,p.model,k,system,user) }
+  catch(e:Exception){errors.add(p.name+": "+(e.message?:"failed"))}
+  if(profiles.isEmpty()&&GalaxyAiProviderStore.load(c).isConfigured) {
+   val old=GalaxyAiProviderStore.load(c);val k=GalaxyAiProviderStore.readApiKey(c)?:throw IllegalStateException("Saved API key unavailable")
+   return request(old.baseUrl,old.model,k,system,user)
+  }
+  if(errors.isEmpty()) throw IllegalStateException("No enabled API profile. Add and enable a provider in Settings.")
   throw IllegalStateException("All API profiles failed: "+errors.joinToString(" | ").take(700))
  }
- private fun request(p:GalaxyApiProfile,k:String,prompt:String)=request(p.baseUrl,p.model,k,prompt)
- private fun request(url:String,model:String,key:String,prompt:String):String{
-  val b=url.trimEnd('/');val endpoint=if(b.endsWith("/v1",true))b+"/chat/completions" else b+"/v1/chat/completions"
-  val body=JSONObject().put("model",model).put("temperature",0.7).put("max_tokens",1200).put("messages",JSONArray().put(JSONObject().put("role","system").put("content",prompt)).put(JSONObject().put("role","user").put("content","Answer the current user request in the user's language.")))
-  val c=URL(endpoint).openConnection() as HttpURLConnection;c.requestMethod="POST";c.connectTimeout=15000;c.readTimeout=45000;c.doOutput=true;c.instanceFollowRedirects=false;c.setRequestProperty("Authorization","Bearer "+key);c.setRequestProperty("Content-Type","application/json; charset=utf-8");c.setRequestProperty("Accept","application/json")
-  return try{c.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))};val status=c.responseCode;val stream=if(status in 200..299)c.inputStream else c.errorStream;val raw=stream?.bufferedReader(Charsets.UTF_8)?.use{it.readText().take(1000000)}.orEmpty();if(status !in 200..299){val msg=runCatching{JSONObject(raw).optJSONObject("error")?.optString("message")}.getOrNull();throw IllegalStateException("HTTP "+status+(if(msg.isNullOrBlank())"" else ": "+msg.take(160)))};val choices=JSONObject(raw).optJSONArray("choices")?:throw IllegalStateException("No response choices");val answer=choices.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty().trim();if(answer.isBlank())throw IllegalStateException("Empty response");answer.take(30000)}finally{c.disconnect()}
+ private fun request(baseUrl:String,model:String,key:String,system:String,user:String):String {
+  val host=java.net.URI(baseUrl).host.orEmpty()
+  return if(host.equals("generativelanguage.googleapis.com",true)) gemini(baseUrl,model,key,system,user)
+  else compatible(baseUrl,model,key,system,user)
+ }
+ private fun compatible(baseUrl:String,model:String,key:String,system:String,user:String):String {
+  val base=baseUrl.trimEnd('/');val endpoint=if(base.endsWith("/v1",true)) "$base/chat/completions" else "$base/v1/chat/completions"
+  val messages=JSONArray();if(system.isNotBlank())messages.put(JSONObject().put("role","system").put("content",system))
+  messages.put(JSONObject().put("role","user").put("content",user))
+  val body=JSONObject().put("model",model).put("temperature",0.7).put("max_tokens",1200).put("messages",messages)
+  val con=(URL(endpoint).openConnection() as HttpURLConnection).apply {
+   requestMethod="POST";connectTimeout=15000;readTimeout=45000;doOutput=true;instanceFollowRedirects=false
+   setRequestProperty("Authorization","Bearer $key");setRequestProperty("Content-Type","application/json; charset=utf-8");setRequestProperty("Accept","application/json")
+  }
+  return try {
+   con.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))}
+   val code=con.responseCode;val raw=(if(code in 200..299)con.inputStream else con.errorStream)?.bufferedReader(Charsets.UTF_8)?.use{it.readText().take(1000000)}.orEmpty()
+   if(code !in 200..299){val msg=runCatching{JSONObject(raw).optJSONObject("error")?.optString("message")}.getOrNull();throw IllegalStateException("HTTP $code"+(if(msg.isNullOrBlank())"" else ": "+msg.take(180)))}
+   val answer=JSONObject(raw).optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content").orEmpty().trim()
+   if(answer.isBlank())throw IllegalStateException("Provider returned an empty response.");answer.take(30000)
+  } finally {con.disconnect()}
+ }
+ private fun gemini(baseUrl:String,model:String,key:String,system:String,user:String):String {
+  require(model.matches(Regex("[A-Za-z0-9._-]{1,120}"))){"Invalid Gemini model ID."}
+  val base=baseUrl.trimEnd('/');val versioned=if(base.endsWith("/v1beta",true))base else "$base/v1beta"
+  val body=JSONObject().put("contents",JSONArray().put(JSONObject().put("role","user").put("parts",JSONArray().put(JSONObject().put("text",user)))))
+   .put("generationConfig",JSONObject().put("temperature",0.7).put("maxOutputTokens",1200))
+  if(system.isNotBlank())body.put("systemInstruction",JSONObject().put("parts",JSONArray().put(JSONObject().put("text",system))))
+  val con=(URL("$versioned/models/$model:generateContent").openConnection() as HttpURLConnection).apply {
+   requestMethod="POST";connectTimeout=15000;readTimeout=45000;doOutput=true;instanceFollowRedirects=false
+   setRequestProperty("x-goog-api-key",key);setRequestProperty("Content-Type","application/json; charset=utf-8");setRequestProperty("Accept","application/json")
+  }
+  return try {
+   con.outputStream.use{it.write(body.toString().toByteArray(Charsets.UTF_8))}
+   val code=con.responseCode;val raw=(if(code in 200..299)con.inputStream else con.errorStream)?.bufferedReader(Charsets.UTF_8)?.use{it.readText().take(1000000)}.orEmpty()
+   if(code !in 200..299){val msg=runCatching{JSONObject(raw).optJSONObject("error")?.optString("message")}.getOrNull();throw IllegalStateException("Gemini HTTP $code"+(if(msg.isNullOrBlank())"" else ": "+msg.take(180)))}
+   val parts=JSONObject(raw).optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("content")?.optJSONArray("parts")
+   val answer=buildString{if(parts!=null)for(x in 0 until parts.length())append(parts.optJSONObject(x)?.optString("text").orEmpty())}.trim()
+   if(answer.isBlank())throw IllegalStateException("Gemini returned an empty response.");answer.take(30000)
+  } finally {con.disconnect()}
  }
 }
