@@ -1,17 +1,9 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
-val galaxyLocalProperties = Properties().apply {
-    val secretsFile = rootProject.file("local.properties")
-    if (secretsFile.exists()) secretsFile.inputStream().use { load(it) }
-}
-val galaxyApiKey = galaxyLocalProperties.getProperty("GALAXY_API_KEY") ?: System.getenv("GALAXY_API_KEY").orEmpty()
-val escapedGalaxyApiKey = galaxyApiKey.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "com.nationvk.galaxy"
@@ -23,9 +15,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("String", "GALAXY_API_KEY", "\"${escapedGalaxyApiKey}\"")
-        buildConfigField("String", "GALAXY_API_BASE_URL", "\"https://generativelanguage.googleapis.com\"")
-        buildConfigField("String", "GALAXY_API_MODEL", "\"gemini-2.5-flash\"")
     }
 
     buildFeatures {
