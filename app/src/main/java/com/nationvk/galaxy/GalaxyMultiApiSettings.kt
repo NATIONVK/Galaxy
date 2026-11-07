@@ -28,6 +28,7 @@ fun GalaxyMultiApiSettingsPanel() {
  var url by remember { mutableStateOf("https://generativelanguage.googleapis.com") }
  var model by remember { mutableStateOf("gemini-3.8-flash") }
  var key by remember { mutableStateOf("") }
+ var revealKey by remember { mutableStateOf(false) }
  var status by remember { mutableStateOf("Gemini আগে যোগ করো; এরপর OpenAI Backup হিসেবে যোগ করো।") }
  var testing by remember { mutableStateOf(false) }
  val card=Color(0xFF101326);val field=Color(0xFF171B33);val cyan=Color(0xFF55DFFF);val violet=Color(0xFF9B69FF);val muted=Color(0xFF929AB8)
@@ -37,8 +38,11 @@ fun GalaxyMultiApiSettingsPanel() {
   Text("Gemini আগে যোগ করো, তারপর OpenAI যোগ করো—প্রথমটি Primary এবং দ্বিতীয়টি Backup থাকবে। সব API Key এই ডিভাইসে Android Keystore দিয়ে encrypted থাকবে।",color=muted,fontSize=10.sp,lineHeight=15.sp,modifier=Modifier.padding(top=6.dp,bottom=12.dp))
   Text("Gemini: gemini-3.8-flash (stable). OpenAI backup: https://api.openai.com, model gpt-4o-mini. Gemini আগে Add API করো; OpenAI পরে যোগ করো।",color=cyan,fontSize=9.sp,lineHeight=14.sp,modifier=Modifier.padding(bottom=8.dp))
   @Composable fun field(label:String,value:String,change:(String)->Unit,secret:Boolean=false){
-   Text(label,color=muted,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp,bottom=4.dp))
-   BasicTextField(value=value,onValueChange=change,singleLine=true,visualTransformation=if(secret)PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,textStyle=androidx.compose.ui.text.TextStyle(color=Color.White,fontSize=11.sp),modifier=Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(field).padding(11.dp),decorationBox={inner->Box{if(value.isEmpty())Text(if(secret)"API key" else label,color=muted,fontSize=11.sp);inner()}})
+   Row(Modifier.fillMaxWidth().padding(top=7.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically) {
+    Text(label,color=muted,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f))
+    if(secret && value.isNotEmpty()) Text(if(revealKey)"HIDE" else "SHOW",color=cyan,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clickable{revealKey=!revealKey}.padding(horizontal=5.dp,vertical=3.dp))
+   }
+   BasicTextField(value=value,onValueChange=change,singleLine=true,visualTransformation=if(secret&&!revealKey)PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,textStyle=androidx.compose.ui.text.TextStyle(color=Color.White,fontSize=11.sp),modifier=Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(field).padding(11.dp),decorationBox={inner->Box{if(value.isEmpty())Text(if(secret)"API key" else label,color=muted,fontSize=11.sp);inner()}})
   }
   Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
    Text("GEMINI PRESET",color=Color.White,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(violet).clickable{editId=null;name="Gemini";url="https://generativelanguage.googleapis.com";model="gemini-3.8-flash";key="";status="Gemini preset প্রস্তুত। নিজের API key দিয়ে Add API চাপো।"}.padding(10.dp))
