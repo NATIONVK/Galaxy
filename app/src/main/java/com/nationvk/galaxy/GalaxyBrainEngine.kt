@@ -57,6 +57,18 @@ object GalaxyBrainEngine {
             }
         }
 
+        // Build a safe preview for sequential requests; planning never executes actions.
+        GalaxyTaskPlanner.createPlan(text)?.let { plan ->
+            val stepSummary = plan.steps.joinToString("; ") { step ->
+                "${step.index}. ${step.originalInstruction}" +
+                    if (step.supported) " (সমর্থিত, অনুমোদন লাগবে)" else " (এখনো সমর্থিত নয়)"
+            }
+            return Reply(
+                "তোমার কাজের পরিকল্পনা: $stepSummary। ${plan.explanation} এখনো কোনো কাজ চালানো হয়নি।",
+                "Task plan prepared • awaiting safe executor"
+            )
+        }
+
         // Acknowledge natural-language tasks without falsely claiming execution.
         val taskWords = listOf(
             "করো", "করে দাও", "শুরু কর", "তৈরি কর", "খুঁজে দাও", "দেখে দাও",
