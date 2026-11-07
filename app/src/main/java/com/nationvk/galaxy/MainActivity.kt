@@ -624,6 +624,54 @@ private fun VoiceStudioScreen() {
             .trim()
         transcript = raw
         when {
+            command.startsWith("search ") || command.startsWith("সার্চ ") || command.startsWith("খুঁজে দাও ") -> {
+                val query = command.substringAfter(" ").trim()
+                if (query.isBlank()) {
+                    status = "কী search করতে চাও বলো।"
+                    speak("কী খুঁজব বলো")
+                } else {
+                    try {
+                        val searchUri = android.net.Uri.parse(
+                            "https://www.google.com/search?q=" + android.net.Uri.encode(query)
+                        )
+                        context.startActivity(Intent(Intent.ACTION_VIEW, searchUri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        status = "Web search শুরু হয়েছে: $query"
+                        speak("$query search করছি")
+                    } catch (error: Exception) {
+                        status = "Browser দিয়ে search করা যায়নি।"
+                        speak("সার্চ করা যাচ্ছে না")
+                    }
+                }
+            }
+            command.contains("calculator") || command.contains("ক্যালকুলেটর") -> {
+                try {
+                    val calculatorPackages = listOf(
+                        "com.google.android.calculator",
+                        "com.android.calculator2",
+                        "com.sec.android.app.popupcalculator"
+                    )
+                    val calculatorIntent = calculatorPackages.firstNotNullOfOrNull {
+                        context.packageManager.getLaunchIntentForPackage(it)
+                    } ?: Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_APP_CALCULATOR)
+                    context.startActivity(calculatorIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Calculator খোলা হচ্ছে"
+                    speak("ক্যালকুলেটর খুলছি")
+                } catch (error: Exception) {
+                    status = "Calculator app পাওয়া যায়নি।"
+                    speak("ক্যালকুলেটর খোলা যাচ্ছে না")
+                }
+            }
+            command.contains("gallery") || command.contains("গ্যালারি") || command.contains("ছবি দেখাও") -> {
+                try {
+                    val galleryIntent = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+                    context.startActivity(Intent.createChooser(galleryIntent, "Choose an image").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    status = "Gallery picker খোলা হচ্ছে"
+                    speak("গ্যালারি খুলছি")
+                } catch (error: Exception) {
+                    status = "Gallery খোলা যায়নি।"
+                    speak("গ্যালারি খোলা যাচ্ছে না")
+                }
+            }
             command.contains("youtube") || command.contains("ইউটিউব") -> {
                 val launch = context.packageManager.getLaunchIntentForPackage("com.google.android.youtube")
                 if (launch != null) context.startActivity(launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -835,6 +883,21 @@ private fun VoiceStudioScreen() {
                 Text("STOP BACKGROUND", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                 Text("Microphone released", color = Color(0xFFE8B8C8), fontSize = 9.sp)
             }
+        }
+        Spacer(Modifier.height(14.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+            Text("VOICE COMMAND GUIDE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text("বাংলা বা English-এ বলতে পারো:", color = Muted, fontSize = 10.sp)
+            listOf(
+                "“Search আজকের আবহাওয়া”  •  “সার্চ ঢাকা বিশ্ববিদ্যালয়”",
+                "“Open calculator”  •  “গ্যালারি খুলে দাও”",
+                "“Open YouTube”  •  “Wi-Fi settings”",
+                "“Open camera”  •  “Open maps”  •  “Open settings”"
+            ).forEach { example ->
+                Text(example, color = Color(0xFFD8DDF0), fontSize = 10.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 5.dp))
+            }
+            Text("Voice command চালাতে START LISTENING চাপো; background mode আলাদাভাবে চালু করতে হবে।", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
         }
         Spacer(Modifier.height(14.dp))
         VoiceCommandHistoryPanel()
