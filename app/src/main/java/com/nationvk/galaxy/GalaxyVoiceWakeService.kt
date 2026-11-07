@@ -104,11 +104,18 @@ class GalaxyVoiceWakeService : Service() {
         val voices = engine.voices ?: emptySet()
         val genderToken = if (preferred.equals("Female", ignoreCase = true)) "female" else "male"
         val matchingGender = voices.filter { it.name.contains(genderToken, ignoreCase = true) }
-        val bengaliVoice = matchingGender.firstOrNull { it.locale.language.equals("bn", ignoreCase = true) }
-        val indianBengaliFallback = if (preferred.equals("Female", ignoreCase = true)) {
-            matchingGender.firstOrNull { it.locale.language.equals("hi", ignoreCase = true) }
-        } else null
-        val selected = bengaliVoice ?: indianBengaliFallback
+        val bangladeshBengaliVoice = matchingGender.firstOrNull {
+            it.locale.language.equals("bn", ignoreCase = true) &&
+                it.locale.country.equals("BD", ignoreCase = true)
+        }
+        val indianBengaliVoice = matchingGender.firstOrNull {
+            it.locale.language.equals("bn", ignoreCase = true) &&
+                it.locale.country.equals("IN", ignoreCase = true)
+        }
+        val anyBengaliVoice = matchingGender.firstOrNull {
+            it.locale.language.equals("bn", ignoreCase = true)
+        }
+        val selected = bangladeshBengaliVoice ?: indianBengaliVoice ?: anyBengaliVoice
         if (selected != null) engine.voice = selected
     }
 
