@@ -92,6 +92,11 @@ object GalaxyApiProfiles {
    if(oldId.isNotBlank() && oldId !in ids) GalaxyProfileCrypto.delete(GalaxyProfileCrypto.alias(oldId))
   }
  }
+ fun configureFromBuildConfig(c:Context) {
+  val key=BuildConfig.GALAXY_API_KEY.trim()
+  if(key.isBlank()) return
+  save(c,"build-config-gemini","Gemini (Build Config)",BuildConfig.GALAXY_API_BASE_URL,BuildConfig.GALAXY_API_MODEL,key)
+ }
  fun hasEnabled(c:Context)=list(c).any{it.enabled&&it.hasKey}
 }
 object GalaxyMultiApiClient {
