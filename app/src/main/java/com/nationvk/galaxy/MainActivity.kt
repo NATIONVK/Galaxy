@@ -981,6 +981,8 @@ private fun MemoryVaultScreen() {
     var noteDraft by remember { mutableStateOf("") }
     var memoryPriority by remember { mutableIntStateOf(2) }
     var notes by remember { mutableStateOf(GalaxyMemoryStore.getAll(context)) }
+    var trashItems by remember { mutableStateOf(GalaxyMemoryStore.getTrash(context)) }
+    var historyMemoryId by remember { mutableStateOf<Long?>(null) }
     var preferenceSuggestions by remember { mutableStateOf(GalaxyPreferenceLearner.suggestions(context)) }
     var showEditor by remember { mutableStateOf(false) }
     var editingMemoryId by remember { mutableStateOf<Long?>(null) }
@@ -1250,8 +1252,10 @@ private fun MemoryVaultScreen() {
                             }.padding(start = 8.dp))
                         Text("  ×", color = Color(0xFFFFA7B8), fontSize = 16.sp,
                             modifier = Modifier.clickable {
-                                GalaxyMemoryStore.delete(context, item.id)
+                                val movedToTrash = GalaxyMemoryStore.delete(context, item.id)
                                 notes = GalaxyMemoryStore.getAll(context)
+                                trashItems = GalaxyMemoryStore.getTrash(context)
+                                notice = if (movedToTrash) "Memory Trash-এ পাঠানো হয়েছে; Restore করা যাবে।" else "Memory delete করা যায়নি।"
                                 if (editingMemoryId == item.id) {
                                     editingMemoryId = null; showEditor = false; noteDraft = ""
                                 }
@@ -1261,6 +1265,43 @@ private fun MemoryVaultScreen() {
                     Text("IMPORTANCE: " + when (item.priority) { 3 -> "HIGH"; 1 -> "LOW"; else -> "NORMAL" } + "  •  CONFIDENCE: ${(item.confidence * 100).toInt()}%", color = Muted, fontSize = 8.sp, modifier = Modifier.padding(top = 4.dp))
                     Text(item.content, color = Color(0xFFE2E6F5), fontSize = 11.sp, lineHeight = 17.sp)
                     Text(java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(item.createdAt)), color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 7.dp))
+                    Text("VERSION HISTORY (${GalaxyMemoryStore.versions(context, item.id).size})", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable { historyMemoryId = if (historyMemoryId == item.id) null else item.id }.padding(top = 8.dp))
+                    if (historyMemoryId == item.id) {
+                        GalaxyMemoryStore.versions(context, item.id).forEach { version ->
+                            Column(Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(9.dp)).background(Panel2).padding(8.dp)) {
+                                Text(java.text.SimpleDateFormat("dd MMM yyyy, HH:mm", java.util.Locale.getDefault()).format(java.util.Date(version.savedAt)), color = Muted, fontSize = 8.sp)
+                                Text(version.entry.content, color = Color.White, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 3.dp))
+                                Text("RESTORE THIS VERSION", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.clickable {
+                                        val restored = GalaxyMemoryStore.restoreVersion(context, item.id, version)
+                                        notes = GalaxyMemoryStore.getAll(context)
+                                        notice = if (restored) "Previous version restored. The replaced version is also kept in history." else "Could not restore: duplicate or missing memory."
+                                    }.padding(top = 6.dp))
+                            }
+                        }
+                        if (GalaxyMemoryStore.versions(context, item.id).isEmpty()) Text("Edit this memory to start its version history.", color = Muted, fontSize = 8.sp)
+                    }
+                }
+            }
+        }
+        if (trashItems.isNotEmpty()) {
+            Spacer(Modifier.height(10.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(15.dp)).background(Color(0xFF30232F)).padding(12.dp)) {
+                Text("MEMORY TRASH • ${trashItems.size}", color = Color(0xFFFFC2A8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text("মুছে ফেলা memory এখানে থাকে। Restore করলে নতুন ID দিয়ে Vault-এ ফিরবে। সর্বোচ্চ ১০০টি item রাখা হয়।", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 4.dp))
+                trashItems.forEach { deleted ->
+                    Column(Modifier.fillMaxWidth().padding(top = 8.dp).clip(RoundedCornerShape(9.dp)).background(Panel).padding(9.dp)) {
+                        Text(deleted.entry.category, color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                        Text(deleted.entry.content, color = Color.White, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 3.dp))
+                        Text("RESTORE", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                val restored = GalaxyMemoryStore.restoreDeleted(context, deleted.entry.id)
+                                notes = GalaxyMemoryStore.getAll(context)
+                                trashItems = GalaxyMemoryStore.getTrash(context)
+                                notice = if (restored) "Deleted memory restored to Vault." else "Restore failed: matching memory may already exist."
+                            }.padding(top = 6.dp))
+                    }
                 }
             }
         }
