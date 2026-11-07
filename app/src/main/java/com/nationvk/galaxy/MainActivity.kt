@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -2189,6 +2190,8 @@ private fun SettingsScreen() {
         Spacer(Modifier.height(12.dp))
         SettingsSectionTitle("PERSONALIZATION INTELLIGENCE")
         PersonalizationSettingsPanel()
+        SettingsSectionTitle("AI PROVIDER")
+        GalaxyProviderSettingsPanel()
         SettingsSectionTitle("VOICE PREFERENCES")
         var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
         var settingsTtsReady by remember { mutableStateOf(false) }
@@ -2493,6 +2496,71 @@ private fun PermissionStatusRow(title: String, description: String, granted: Boo
         } else {
             Text("NOT GRANTED", color = Muted, fontSize = 9.sp)
         }
+    }
+}
+
+@Composable
+private fun GalaxyProviderSettingsPanel() {
+    val context = LocalContext.current
+    val initial = remember { GalaxyAiProviderStore.load(context) }
+    var baseUrl by remember { mutableStateOf(initial.baseUrl.ifBlank { "https://api.openai.com" }) }
+    var model by remember { mutableStateOf(initial.model.ifBlank { "gpt-4o-mini" }) }
+    var apiKey by remember { mutableStateOf("") }
+    var hasKey by remember { mutableStateOf(initial.hasApiKey) }
+    var busy by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf(if (initial.isConfigured) "Provider settings loaded. API key is encrypted on this device." else "No AI provider configured. Galaxy remains in offline mode.") }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Text("OPENAI-COMPATIBLE API", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("নিজের provider-এর HTTPS base URL, model ID এবং API key দাও। OpenAI-compatible Chat Completions endpoint সমর্থিত।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 5.dp, bottom = 10.dp))
+        Text("BASE URL", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        BasicTextField(value = baseUrl, onValueChange = { baseUrl = it.take(500) }, singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Panel2).padding(12.dp))
+        Spacer(Modifier.height(9.dp))
+        Text("MODEL ID", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        BasicTextField(value = model, onValueChange = { model = it.take(120) }, singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Panel2).padding(12.dp))
+        Spacer(Modifier.height(9.dp))
+        Text(if (hasKey) "API KEY • SAVED ENCRYPTED" else "API KEY", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        BasicTextField(value = apiKey, onValueChange = { apiKey = it.take(500) }, singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(Panel2).padding(12.dp),
+            decorationBox = { inner -> Box { if (apiKey.isEmpty()) Text(if (hasKey) "Leave blank to keep saved key" else "Paste API key", color = Muted, fontSize = 11.sp); inner() } })
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("SAVE CONFIG", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(Violet).clickable {
+                    val saved = GalaxyAiProviderStore.save(context, baseUrl, model, apiKey)
+                    if (saved) {
+                        apiKey = ""
+                        hasKey = GalaxyAiProviderStore.load(context).hasApiKey
+                        status = if (hasKey) "Configuration saved. API key encrypted using Android Keystore." else "Configuration saved, but an API key is still required."
+                    } else status = "Save failed. Use a valid HTTPS URL and a non-empty model ID."
+                }.padding(horizontal = 10.dp, vertical = 12.dp))
+            Text("TEST", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable(enabled = !busy && GalaxyAiProviderStore.load(context).isConfigured) {
+                    busy = true
+                    status = "Testing provider connection…"
+                    GalaxyAiClient.send(context, "You are running a connection test. Reply with exactly: Galaxy connection verified.") { result ->
+                        busy = false
+                        status = result.fold({ "Connection successful: ${it.take(100)}" }, { "Connection failed: ${it.message ?: "Unknown error"}" })
+                    }
+                }.padding(horizontal = 15.dp, vertical = 12.dp))
+        }
+        if (hasKey) {
+            Text("REMOVE PROVIDER CONFIG", color = Color(0xFFFF9AAB), fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 11.dp).clickable {
+                    GalaxyAiProviderStore.clear(context)
+                    hasKey = false
+                    apiKey = ""
+                    status = "Provider configuration and encrypted key removed from this device."
+                }.padding(vertical = 5.dp))
+        }
+        Text(status, color = if (status.startsWith("Connection successful")) Color(0xFF8BE0B5) else Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 9.dp))
+        Text("Security: HTTPS only • API key encrypted with Android Keystore • never written to source code or logs. Provider charges and data handling follow your provider's terms.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 7.dp))
     }
 }
 
