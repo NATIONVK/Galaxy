@@ -26,27 +26,27 @@ object GalaxyConversationContext {
         val followUp = query.isNotEmpty() && isFollowUp(query)
         val previousUser = recent.lastOrNull { it.first }?.second.orEmpty()
         val resolved = if (followUp && previousUser.isNotBlank()) {
-            "$query\\n[Follow-up to the user's previous request: $previousUser]"
+            "$query\n[Follow-up to the user's previous request: $previousUser]"
         } else query
         val memoryQuery = if (query.isBlank()) previousUser else query
         val memories = if (memoryQuery.isBlank()) emptyList() else
             GalaxyMemoryStore.search(context, memoryQuery, limit = 3)
-        val historyBlock = recent.joinToString("\\n") { (isUser, text) ->
+        val historyBlock = recent.joinToString("\n") { (isUser, text) ->
             (if (isUser) "User" else "Galaxy") + ": " + text.take(900)
         }
-        val memoryBlock = memories.joinToString("\\n") { "- [${it.category}] ${it.content.take(500)}" }
+        val memoryBlock = memories.joinToString("\n") { "- [${it.category}] ${it.content.take(500)}" }
         val packet = buildString {
             appendLine("You are Galaxy, a context-aware assistant. Reply in the user's language.")
-            if (historyBlock.isNotBlank()) appendLine("Recent conversation:\\n$historyBlock")
-            if (memoryBlock.isNotBlank()) appendLine("Relevant user-approved local memories:\\n$memoryBlock")
-            if (resolved.isNotBlank()) appendLine("Current user message:\\n$resolved")
+            if (historyBlock.isNotBlank()) appendLine("Recent conversation:\n$historyBlock")
+            if (memoryBlock.isNotBlank()) appendLine("Relevant user-approved local memories:\n$memoryBlock")
+            if (resolved.isNotBlank()) appendLine("Current user message:\n$resolved")
             append("Use the conversation and memories only when relevant. Do not invent missing facts.")
         }.take(MAX_CONTEXT_CHARS)
         val preview = buildString {
             append("Recent turns: ${recent.size}")
-            if (followUp) append("\\nFollow-up reference: ${previousUser.take(180)}")
-            if (memories.isNotEmpty()) append("\\nRelated memory: ${memories.joinToString { it.category }.take(120)}")
-            if (query.isNotBlank()) append("\\nCurrent message: ${query.take(180)}")
+            if (followUp) append("\nFollow-up reference: ${previousUser.take(180)}")
+            if (memories.isNotEmpty()) append("\nRelated memory: ${memories.joinToString { it.category }.take(120)}")
+            if (query.isNotBlank()) append("\nCurrent message: ${query.take(180)}")
             if (query.isBlank() && previousUser.isBlank()) append("No conversation context yet. Send a message to build context.")
         }
         return GalaxyConversationContextPacket(recent.size, memories.size, followUp, resolved, packet, preview)
