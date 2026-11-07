@@ -28,7 +28,7 @@ fun GalaxyMultiApiSettingsPanel() {
  var url by remember { mutableStateOf("https://generativelanguage.googleapis.com") }
  var model by remember { mutableStateOf("gemini-3.8-flash") }
  var key by remember { mutableStateOf("") }
- var status by remember { mutableStateOf("সর্বোচ্চ ৫০০টি API Profile যোগ করা যাবে। নতুন API যোগ হলেই সেটি Active ও Primary হবে।") }
+ var status by remember { mutableStateOf("Gemini আগে যোগ করো; এরপর OpenAI Backup হিসেবে যোগ করো।") }
  var testing by remember { mutableStateOf(false) }
  val card=Color(0xFF101326);val field=Color(0xFF171B33);val cyan=Color(0xFF55DFFF);val violet=Color(0xFF9B69FF);val muted=Color(0xFF929AB8)
  fun reset(){editId=null;name="Gemini";url="https://generativelanguage.googleapis.com";model="gemini-3.8-flash";key=""}
@@ -39,6 +39,10 @@ fun GalaxyMultiApiSettingsPanel() {
   @Composable fun field(label:String,value:String,change:(String)->Unit,secret:Boolean=false){
    Text(label,color=muted,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=7.dp,bottom=4.dp))
    BasicTextField(value=value,onValueChange=change,singleLine=true,visualTransformation=if(secret)PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,textStyle=androidx.compose.ui.text.TextStyle(color=Color.White,fontSize=11.sp),modifier=Modifier.fillMaxWidth().clip(RoundedCornerShape(9.dp)).background(field).padding(11.dp),decorationBox={inner->Box{if(value.isEmpty())Text(if(secret)"API key" else label,color=muted,fontSize=11.sp);inner()}})
+  }
+  Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+   Text("GEMINI PRESET",color=Color.White,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(violet).clickable{editId=null;name="Gemini";url="https://generativelanguage.googleapis.com";model="gemini-3.8-flash";key="";status="Gemini preset প্রস্তুত। নিজের API key দিয়ে Add API চাপো।"}.padding(10.dp))
+   Text("OPENAI PRESET",color=Color.White,fontSize=9.sp,fontWeight=FontWeight.Bold,modifier=Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(field).clickable{editId=null;name="OpenAI";url="https://api.openai.com";model="gpt-4o-mini";key="";status="OpenAI preset প্রস্তুত। Gemini আগে যোগ করা থাকলে এটি Backup হবে।"}.padding(10.dp))
   }
   field("PROFILE NAME",name,{name=it.take(50)})
   field("BASE URL (HTTPS)",url,{url=it.take(500)})
@@ -53,7 +57,7 @@ fun GalaxyMultiApiSettingsPanel() {
   }
   Spacer(Modifier.height(15.dp))
   Text("SAVED PROVIDERS • "+profiles.size,color=cyan,fontSize=10.sp,fontWeight=FontWeight.Bold)
-  if(profiles.isEmpty()) Text("এখনো কোনো profile নেই। উপরে OpenAI API key দিয়ে প্রথম profile যোগ করো।",color=muted,fontSize=10.sp,modifier=Modifier.padding(top=8.dp))
+  if(profiles.isEmpty()) Text("এখনো কোনো profile নেই। Gemini preset নির্বাচন করে প্রথমে Gemini API key যোগ করো।",color=muted,fontSize=10.sp,modifier=Modifier.padding(top=8.dp))
   profiles.forEachIndexed { index,p ->
    Column(Modifier.fillMaxWidth().padding(top=8.dp).clip(RoundedCornerShape(12.dp)).background(field).padding(10.dp)) {
     Row(verticalAlignment=Alignment.CenterVertically) {
