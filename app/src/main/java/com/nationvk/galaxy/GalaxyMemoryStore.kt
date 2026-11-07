@@ -69,19 +69,92 @@ object GalaxyMemoryStore {
         return save(context, entries)
     }
 
+    /** Relevance-ranked local retrieval. No memory content leaves the device. */
     fun search(context: Context, query: String, category: String? = null, limit: Int = 8): List<GalaxyMemoryEntry> {
-        val terms = query.lowercase().split(Regex("[^\\p{L}\\p{N}]+")).filter { it.length > 1 }
+        val cleanQuery = normalizeText(query)
+        val terms = tokenize(query)
+        if (terms.isEmpty()) return recent(context, limit).filter {
+            category == null || it.category.equals(category, ignoreCase = true)
+        }
         return getAll(context).asSequence()
             .filter { category == null || it.category.equals(category, ignoreCase = true) }
-            .map { entry ->
-                val haystack = (entry.content + " " + entry.category).lowercase()
-                val score = if (terms.isEmpty()) 1 else terms.count { haystack.contains(it) }
-                entry to score
+            .mapNotNull { entry ->
+                val cleanContent = normalizeText(entry.content)
+                val contentTerms = tokenize(entry.content).toSet()
+                val matched = terms.count { term ->
+                    term in contentTerms || contentTerms.any { it.startsWith(term) }
+                }
+                if (matched == 0) return@mapNotNull null
+                val coverage = matched.toDouble() / terms.size.coerceAtLeast(1)
+                val phraseBonus = if (cleanContent.contains(cleanQuery)) 8.0 else 0.0
+                val categoryBonus = if (terms.any { normalizeText(entry.category).contains(it) }) 2.0 else 0.0
+                val prefixBonus = if (contentTerms.any { word -> terms.any { it.length >= 3 && word.startsWith(it) } }) 1.0 else 0.0
+                val ageDays = ((System.currentTimeMillis() - entry.createdAt).coerceAtLeast(0L) / 86_400_000L).toDouble()
+                val recencyBonus = (1.0 / (1.0 + ageDays / 30.0))
+                val score = matched * 3.0 + coverage * 5.0 + phraseBonus + categoryBonus + prefixBonus + recencyBonus
+                Triple(entry, score, matched)
             }
-            .filter { it.second > 0 }
-            .sortedWith(compareByDescending<Pair<GalaxyMemoryEntry, Int>> { it.second }.thenByDescending { it.first.createdAt })
-            .take(limit).map { it.first }.toList()
+            .sortedWith(
+                compareByDescending<Triple<GalaxyMemoryEntry, Double, Int>> { it.second }
+                    .thenByDescending { it.third }
+                    .thenByDescending { it.first.createdAt }
+            )
+            .take(limit.coerceAtLeast(0))
+            .map { it.first }
+            .toList()
     }
+
+    /** Add a memory, or refresh an existing normalized exact match instead of duplicating it. */
+    fun addOrRefresh(context: Context, category: String, content: String): Boolean {
+        val clean = content.trim().take(10000)
+        val cleanCategory = category.trim().uppercase().take(24)
+        if (clean.isEmpty() || cleanCategory !in ALLOWED_CATEGORIES) return false
+        val entries = getAll(context).toMutableList()
+        val key = dedupeKey(cleanCategory, clean)
+        val existingIndex = entries.indexOfFirst {
+            it.category == cleanCategory && dedupeKey(it.category, it.content) == key
+        }
+        if (existingIndex >= 0) {
+            entries[existingIndex] = entries[existingIndex].copy(createdAt = System.currentTimeMillis())
+            return save(context, entries.sortedByDescending { it.createdAt })
+        }
+        val nextId = (entries.maxOfOrNull { it.id } ?: 0L) + 1L
+        entries.add(0, GalaxyMemoryEntry(nextId, cleanCategory, clean, System.currentTimeMillis()))
+        return save(context, entries.take(MAX_ENTRIES))
+    }
+
+    data class MemoryInsights(
+        val total: Int,
+        val categoryCounts: Map<String, Int>,
+        val newestAt: Long?,
+        val recoveryAvailable: Boolean
+    )
+
+    fun insights(context: Context): MemoryInsights {
+        val entries = getAll(context)
+        return MemoryInsights(
+            total = entries.size,
+            categoryCounts = entries.groupingBy { it.category }.eachCount(),
+            newestAt = entries.maxOfOrNull { it.createdAt },
+            recoveryAvailable = hasRecoveryBackup(context)
+        )
+    }
+
+    private val STOP_WORDS = setOf(
+        "the", "and", "for", "with", "that", "this", "from", "your", "you", "are", "was",
+        "what", "when", "where", "how", "why", "about", "into", "have", "has", "had",
+        "একটা", "একটি", "এবং", "আর", "এই", "ওই", "সেই", "আমার", "তোমার", "তার", "হলো", "হবে", "করে", "করা", "কি", "কী"
+    )
+
+    private fun tokenize(value: String): List<String> =
+        normalizeText(value).split(Regex("[^\\p{L}\\p{N}]+"))
+            .filter { it.length > 1 && it !in STOP_WORDS }
+            .distinct()
+
+    private fun normalizeText(value: String): String =
+        java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFC)
+            .lowercase().replace(Regex("[^\\p{L}\\p{N}\\s]+"), " ")
+            .replace(Regex("\\s+"), " ").trim()
 
     fun recent(context: Context, limit: Int = 5): List<GalaxyMemoryEntry> = getAll(context).take(limit)
 
@@ -153,7 +226,7 @@ object GalaxyMemoryStore {
     }
 
     private fun dedupeKey(category: String, content: String): String =
-        category.trim().uppercase() + "|" + content.trim().replace(Regex("\\s+"), " ").lowercase()
+        category.trim().uppercase() + "|" + normalizeText(content)
 
     private fun save(context: Context, entries: List<GalaxyMemoryEntry>): Boolean {
         val array = JSONArray()
