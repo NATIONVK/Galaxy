@@ -156,7 +156,8 @@ private fun GalaxyTopBar() {
 }
 
 @Composable
-private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {\n    val context = LocalContext.current
+private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(8.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
