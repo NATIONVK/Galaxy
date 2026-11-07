@@ -57,6 +57,20 @@ object GalaxyBrainEngine {
             }
         }
 
+        // Resolve short follow-ups against the last saved Brain exchange.
+        val previousTurn = GalaxyConversationMemory.getLastTurn(context)
+        val followUpPhrases = listOf(
+            "আরও বল", "আরো বল", "আরও বিস্তারিত", "আরো বিস্তারিত", "এটা কী", "এটা কি",
+            "ওটা কী", "ওটা কি", "কেন", "কীভাবে", "কিভাবে", "ব্যাখ্যা কর", "বুঝিয়ে বল",
+            "বুঝিয়ে বল", "continue", "tell me more", "explain more", "why", "how"
+        )
+        if (previousTurn != null && followUpPhrases.any { q.contains(it) }) {
+            return Reply(
+                "আগের প্রসঙ্গটি ছিল: ${previousTurn.userText}। আগের উত্তরের ভিত্তিতে বলছি: ${previousTurn.assistantText}। কোন দিকটি আরও বিস্তারিত জানতে চাও?",
+                "Contextual follow-up • local memory"
+            )
+        }
+
         // Build a safe preview for sequential requests; planning never executes actions.
         GalaxyTaskPlanner.createPlan(text)?.let { plan ->
             val stepSummary = plan.steps.joinToString("; ") { step ->
