@@ -931,6 +931,19 @@ private fun VoiceStudioScreen() {
                     }
                 }
             }
+            command.contains("read mail") || command.contains("read emails") || command.contains("read email") || command.contains("মেইল পড়ে") || command.contains("মেইল পড়ে") || command.contains("মেইল শোনাও") || command.contains("ইমেইল পড়ে") || command.contains("ইমেইল পড়ে") -> {
+                val latest = GalaxyMailStore.read(context).take(5)
+                if (latest.isEmpty()) {
+                    status = "এখনো কোনো Gmail notification preview পাওয়া যায়নি। Notification Access চালু করে নতুন মেইল আসতে দাও।"
+                    speak("এখনো কোনো নতুন মেইলের preview পাওয়া যায়নি")
+                } else {
+                    val summary = latest.mapIndexed { index, mail ->
+                        "মেইল ${index + 1}. ${mail.title}. ${mail.preview}"
+                    }.joinToString(". ").take(3200)
+                    status = "সর্বশেষ ${latest.size}টি Gmail notification preview পড়ে শোনাচ্ছি।"
+                    speak(summary)
+                }
+            }
             command.contains("read note") || command.contains("read notes") || command.contains("নোট পড়ে") || command.contains("নোট পড়ে") || command.contains("নোট শোনাও") || command.contains("নোট পড়ে শোনাও") -> {
                 val notePrefs = context.getSharedPreferences("galaxy_notepad", android.content.Context.MODE_PRIVATE)
                 val noteTitle = notePrefs.getString("note_title", "") ?: ""
@@ -2264,6 +2277,8 @@ private fun NotificationCenterScreen() {
     var push by remember { mutableStateOf(false) }
     val unread=items.count { it.unread }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=18.dp, vertical=10.dp)) {
+        GmailReaderPanel()
+        Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("GALAXY ACTIVITY • UPDATES",color=Cyan,fontSize = 10.sp,letterSpacing=1.5.sp,fontWeight=FontWeight.Bold)
@@ -2353,6 +2368,58 @@ private fun NotificationCenterScreen() {
             Text("Local UI demo • sample notifications, no live delivery service.",color=Color(0xFFB8D8E8),fontSize = 10.sp,lineHeight=14.sp)
         }
         Spacer(Modifier.height(8.dp))
+    }
+}
+
+
+@Composable
+private fun GmailReaderPanel() {
+    val context = LocalContext.current
+    var previews by remember { mutableStateOf(GalaxyMailStore.read(context)) }
+    var accessEnabled by remember {
+        mutableStateOf(
+            Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+                ?.contains(context.packageName) == true
+        )
+    }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(14.dp)) {
+        Text("GMAIL READER • NOTIFICATION PREVIEWS", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("সাম্প্রতিক মেইল", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
+        Text(
+            if (accessEnabled) "Notification Access চালু • শুধু Gmail notification preview সংরক্ষণ হয়"
+            else "Gmail preview পড়তে Android Notification Access অনুমতি প্রয়োজন",
+            color = Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 4.dp)
+        )
+        Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(if (accessEnabled) "ACCESS SETTINGS" else "ENABLE ACCESS", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet).clickable {
+                    context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }.padding(horizontal = 12.dp, vertical = 11.dp))
+            Text("REFRESH", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable {
+                    accessEnabled = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+                        ?.contains(context.packageName) == true
+                    previews = GalaxyMailStore.read(context)
+                }.padding(horizontal = 12.dp, vertical = 11.dp))
+            Text("CLEAR", color = Color(0xFFFF9AA9), fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable {
+                    GalaxyMailStore.clear(context)
+                    previews = emptyList()
+                }.padding(horizontal = 12.dp, vertical = 11.dp))
+        }
+        if (previews.isEmpty()) {
+            Text("এখনো কোনো মেইল preview নেই। Access চালু করার পর নতুন Gmail notification এলে এখানে দেখাবে।",
+                color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 12.dp))
+        } else {
+            previews.take(5).forEach { mail ->
+                Column(Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(11.dp)).background(Panel2).padding(10.dp)) {
+                    Text(mail.title.ifBlank { "Gmail message" }, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    if (mail.preview.isNotBlank()) Text(mail.preview, color = Muted, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+        }
+        Text("Privacy: Galaxy কেবল com.google.android.gm-এর notification title ও preview পড়ে; full inbox/body নয়। Preview local device storage-এ থাকে।",
+            color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 10.dp))
     }
 }
 
