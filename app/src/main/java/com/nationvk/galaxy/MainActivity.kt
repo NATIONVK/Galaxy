@@ -513,11 +513,11 @@ private fun ChatScreen() {
                     if (GalaxyLocalConversationStore.save(context, updated)) {
                         messages = updated
                         draft = ""
-                        providerReady = GalaxyAiProviderStore.load(context).isConfigured
+                        providerReady = GalaxyApiProfiles.hasEnabled(context) || GalaxyAiProviderStore.load(context).isConfigured
                         if (providerReady) {
                             isSending = true
                             notice = "Galaxy is preparing a secure AI request…"
-                            GalaxyAiClient.send(context, contextInfo.promptContext) { result ->
+                            GalaxyAiClient.send(context, contextInfo.promptContext, contextInfo.resolvedMessage) { result ->
                                 isSending = false
                                 result.fold(
                                     { answer ->
