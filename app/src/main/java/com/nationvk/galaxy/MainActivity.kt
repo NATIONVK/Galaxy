@@ -365,9 +365,13 @@ private data class GalaxyDeviceSnapshot(
     val temperature: String,
     val batteryHealth: String,
     val powerMode: String,
+    val thermalState: String,
     val memory: String,
+    val memoryPressure: String,
     val storage: String,
-    val network: String
+    val storageSpace: String,
+    val network: String,
+    val networkCost: String
 )
 
 private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDeviceSnapshot {
@@ -408,12 +412,31 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
     }
     val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
     val powerMode = if (powerManager.isPowerSaveMode) "Battery Saver ON" else "Normal mode"
+    val thermalState = if (android.os.Build.VERSION.SDK_INT >= 29) {
+        when (powerManager.currentThermalStatus) {
+            android.os.PowerManager.THERMAL_STATUS_NONE -> "Normal"
+            android.os.PowerManager.THERMAL_STATUS_LIGHT -> "Light"
+            android.os.PowerManager.THERMAL_STATUS_MODERATE -> "Moderate"
+            android.os.PowerManager.THERMAL_STATUS_SEVERE -> "Severe"
+            android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "Critical"
+            android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "Emergency"
+            android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "Shutdown risk"
+            else -> "Unavailable"
+        }
+    } else "Not supported on this Android version"
 
     val activityManager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
     val memoryInfo = android.app.ActivityManager.MemoryInfo()
     activityManager.getMemoryInfo(memoryInfo)
     val totalRam = memoryInfo.totalMem.coerceAtLeast(1L)
     val usedRam = (totalRam - memoryInfo.availMem).coerceAtLeast(0L)
+    val ramPercent = ((usedRam * 100L) / totalRam).toInt().coerceIn(0, 100)
+    val memoryPressure = when {
+        memoryInfo.lowMemory -> "System low-memory warning"
+        ramPercent >= 90 -> "High memory pressure ($ramPercent%)"
+        ramPercent >= 80 -> "Elevated memory use ($ramPercent%)"
+        else -> "Normal ($ramPercent%)"
+    }
     fun size(bytes: Long): String = when {
         bytes >= 1024L * 1024L * 1024L -> String.format(Locale.US, "%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
         else -> String.format(Locale.US, "%.0f MB", bytes / (1024.0 * 1024.0))
@@ -422,6 +445,8 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
     val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
     val totalStorage = stat.totalBytes.coerceAtLeast(1L)
     val usedStorage = (totalStorage - stat.availableBytes).coerceAtLeast(0L)
+    val storageSpace = if (stat.availableBytes < 1024L * 1024L * 1024L) "Low free space • ${size(stat.availableBytes)} free"
+        else "${size(stat.availableBytes)} free"
     val connectivity = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
     val network = if (android.os.Build.VERSION.SDK_INT >= 23) {
         val active = connectivity.activeNetwork
@@ -434,6 +459,8 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
             else -> "Connected"
         }
     } else if (connectivity.activeNetworkInfo?.isConnected == true) "Connected" else "Offline"
+    val networkCost = if (network == "Offline") "Not connected"
+        else if (connectivity.isActiveNetworkMetered) "Metered connection" else "Unmetered connection"
 
     return GalaxyDeviceSnapshot(
         device = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}".trim(),
@@ -443,9 +470,13 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
         temperature = temperature,
         batteryHealth = batteryHealth,
         powerMode = powerMode,
+        thermalState = thermalState,
         memory = "${size(usedRam)} / ${size(totalRam)} used",
+        memoryPressure = memoryPressure,
         storage = "${size(usedStorage)} / ${size(totalStorage)} used",
-        network = network
+        storageSpace = storageSpace,
+        network = network,
+        networkCost = networkCost
     )
 }
 
@@ -470,10 +501,14 @@ private fun DeviceMonitorPanel() {
         DeviceMetricRow("Battery temperature", snapshot.temperature, "♨")
         DeviceMetricRow("Battery health", snapshot.batteryHealth, "♥")
         DeviceMetricRow("Power profile", snapshot.powerMode, "◉")
+        DeviceMetricRow("Thermal status", snapshot.thermalState, "♨")
         DeviceMetricRow("Memory (RAM)", snapshot.memory, "▦")
+        DeviceMetricRow("Memory pressure", snapshot.memoryPressure, "▥")
         DeviceMetricRow("Internal storage", snapshot.storage, "▤")
+        DeviceMetricRow("Free storage", snapshot.storageSpace, "▤")
         DeviceMetricRow("Network", snapshot.network, "⌁")
-        Text("Battery Intelligence: Android-এর battery status, power source, reported temperature/health এবং Battery Saver mode দেখায়। এটি battery capacity বা battery health percentage অনুমান করে না। তথ্য ফোনেই থাকে; এই panel cloud-এ পাঠায় না। Refresh চাপলে নতুন snapshot নেওয়া হবে।",
+        DeviceMetricRow("Network usage type", snapshot.networkCost, "⇅")
+        Text("Phone Brain: Android reports battery, charging, temperature, thermal state, memory pressure, storage space and network cost type. Thermal data is unavailable on some devices. These are device-level indicators, not exact app-by-app usage or battery health percentage. Snapshot stays on this phone; Refresh reads current values.",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
