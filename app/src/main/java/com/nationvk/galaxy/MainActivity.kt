@@ -411,7 +411,8 @@ private fun ChatScreen() {
             Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {
                 Text("Galaxy Assistant", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                Text("Conversation interface preview • AI Core not connected", color = Muted, fontSize = 10.sp)
+                val personalization = GalaxyPersonalizationStore.load(context)
+                Text("Preview • ${personalization.assistantMode} mode • ${personalization.responseStyle} • ${personalization.tone}", color = Muted, fontSize = 10.sp)
             }
             Text("● OFFLINE", color = Muted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
         }
