@@ -403,7 +403,9 @@ class GalaxyVoiceWakeService : Service() {
             "read my messages", "new message", "নতুন মেসেজ", "সব মেসেজ", "সাম্প্রতিক মেসেজ",
             "শেষের মেসেজগুলো", "কয়টা মেসেজ", "কতগুলো মেসেজ", "কতটি মেসেজ", "কে মেসেজ দিয়েছে",
             "কে মেসেজ পাঠিয়েছে", "who messaged me", "who sent message", "last 3", "last three",
-            "recent messages", "all messages", "how many"
+            "recent messages", "all messages", "how many", "whatsapp", "messenger", "telegram",
+            "instagram", "gmail", "viber", "discord", "signal", "snapchat", "teams", "imo",
+            "হোয়াটসঅ্যাপ", "হোয়াটসঅ্যাপ", "মেসেঞ্জার", "টেলিগ্রাম", "ইনস্টাগ্রাম", "ইমো"
         ).any { q.contains(it) }
         if (!asksAboutMessages) return false
 
@@ -423,6 +425,9 @@ class GalaxyVoiceWakeService : Service() {
             "viber" to listOf("viber"),
             "line" to listOf("line"),
             "discord" to listOf("discord"),
+            "signal" to listOf("signal"),
+            "snapchat" to listOf("snapchat"),
+            "teams" to listOf("teams"),
             "sms" to listOf("messages", "messaging", "sms"),
             "মেসেঞ্জার" to listOf("messenger"),
             "হোয়াটসঅ্যাপ" to listOf("whatsapp"),
