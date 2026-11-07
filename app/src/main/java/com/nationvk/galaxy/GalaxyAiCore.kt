@@ -134,6 +134,15 @@ object GalaxyAiClient {
         GalaxyMultiApiClient.send(context, promptContext, onResult)
     }
 
+    fun send(
+        context: Context,
+        promptContext: String,
+        userMessage: String,
+        onResult: (Result<String>) -> Unit
+    ) {
+        GalaxyMultiApiClient.send(context, promptContext, userMessage, onResult)
+    }
+
     private fun performRequest(context: Context, promptContext: String): String {
         val config = GalaxyAiProviderStore.load(context)
         require(config.isConfigured) { "AI provider is not configured. Open Settings → AI Provider." }
