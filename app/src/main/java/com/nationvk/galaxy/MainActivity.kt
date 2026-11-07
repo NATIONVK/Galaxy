@@ -2391,7 +2391,7 @@ private fun NotificationCenterScreen() {
 @Composable
 private fun GmailReaderPanel() {
     val context = LocalContext.current
-    var previews by remember { mutableStateOf(GalaxyMailStore.read(context)) }
+    var messages by remember { mutableStateOf(GalaxyMessageStore.read(context)) }
     var accessEnabled by remember {
         mutableStateOf(
             Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
@@ -2399,11 +2399,11 @@ private fun GmailReaderPanel() {
         )
     }
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).padding(14.dp)) {
-        Text("GMAIL READER • NOTIFICATION PREVIEWS", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        Text("সাম্প্রতিক মেইল", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
+        Text("MESSAGE READER • LIVE NOTIFICATION PREVIEWS", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("সাম্প্রতিক মেসেজ", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 5.dp))
         Text(
-            if (accessEnabled) "Notification Access চালু • শুধু Gmail notification preview সংরক্ষণ হয়"
-            else "Gmail preview পড়তে Android Notification Access অনুমতি প্রয়োজন",
+            if (accessEnabled) "Notification Access চালু • WhatsApp, Messenger, Telegram, SMS, Gmail সহ সমর্থিত অ্যাপ"
+            else "মেসেজ শনাক্ত করতে Android Notification Access অনুমতি চালু করো",
             color = Muted, fontSize = 10.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 4.dp)
         )
         Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -2415,26 +2415,34 @@ private fun GmailReaderPanel() {
                 modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable {
                     accessEnabled = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
                         ?.contains(context.packageName) == true
-                    previews = GalaxyMailStore.read(context)
+                    messages = GalaxyMessageStore.read(context)
                 }.padding(horizontal = 12.dp, vertical = 11.dp))
             Text("CLEAR", color = Color(0xFFFF9AA9), fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable {
+                    GalaxyMessageStore.clear(context)
                     GalaxyMailStore.clear(context)
-                    previews = emptyList()
+                    messages = emptyList()
                 }.padding(horizontal = 12.dp, vertical = 11.dp))
         }
-        if (previews.isEmpty()) {
-            Text("এখনো কোনো মেইল preview নেই। Access চালু করার পর নতুন Gmail notification এলে এখানে দেখাবে।",
+        if (messages.isEmpty()) {
+            Text("এখনো কোনো সমর্থিত মেসেজ preview নেই। Access চালু করার পর নতুন notification এলে এখানে দেখাবে।",
                 color = Muted, fontSize = 10.sp, lineHeight = 15.sp, modifier = Modifier.padding(top = 12.dp))
         } else {
-            previews.take(5).forEach { mail ->
+            messages.take(8).forEach { message ->
                 Column(Modifier.fillMaxWidth().padding(top = 10.dp).clip(RoundedCornerShape(11.dp)).background(Panel2).padding(10.dp)) {
-                    Text(mail.title.ifBlank { "Gmail message" }, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    if (mail.preview.isNotBlank()) Text(mail.preview, color = Muted, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+                    Text(
+                        "${message.sender.ifBlank { message.appName }} • ${message.appName}" + if (message.isVoiceMessage) " • VOICE MESSAGE" else "",
+                        color = if (message.isVoiceMessage) Cyan else Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold
+                    )
+                    if (message.isVoiceMessage) {
+                        Text("একটি Voice Message এসেছে", color = Muted, fontSize = 10.sp, modifier = Modifier.padding(top = 4.dp))
+                    } else if (message.content.isNotBlank()) {
+                        Text(message.content, color = Muted, fontSize = 10.sp, lineHeight = 14.sp, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
+                    }
                 }
             }
         }
-        Text("Privacy: Galaxy কেবল com.google.android.gm-এর notification title ও preview পড়ে; full inbox/body নয়। Preview local device storage-এ থাকে।",
+        Text("Privacy: শুধু নির্দিষ্ট messaging apps-এর notification title ও preview; full inbox বা voice audio নয়। তথ্য এই ফোনেই local storage-এ থাকে।",
             color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 10.dp))
     }
 }
