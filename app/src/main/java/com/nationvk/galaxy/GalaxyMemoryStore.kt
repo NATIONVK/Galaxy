@@ -69,7 +69,9 @@ object GalaxyMemoryStore {
         val entries = getAll(context).toMutableList()
         val index = entries.indexOfFirst { it.id == id }
         if (index < 0) return false
-        entries[index] = entries[index].copy(category = cleanCategory, content = clean, priority = priority?.coerceIn(1, 3) ?: entries[index].priority)
+        val previous = entries[index]
+        if (previous.category != cleanCategory || previous.content != clean || (priority != null && previous.priority != priority.coerceIn(1, 3))) recordVersion(context, previous)
+        entries[index] = previous.copy(category = cleanCategory, content = clean, priority = priority?.coerceIn(1, 3) ?: previous.priority)
         return save(context, entries)
     }
 
@@ -164,13 +166,117 @@ object GalaxyMemoryStore {
 
     fun recent(context: Context, limit: Int = 5): List<GalaxyMemoryEntry> = getAll(context).take(limit)
 
-    fun delete(context: Context, id: Long): Boolean =
-        save(context, getAll(context).filterNot { it.id == id })
+    data class MemoryVersion(val entry: GalaxyMemoryEntry, val savedAt: Long)
+    data class TrashedMemory(val entry: GalaxyMemoryEntry, val deletedAt: Long)
+
+    private const val ARCHIVE_PREFS = "galaxy_memory_timeline"
+    private const val KEY_VERSIONS = "versions"
+    private const val KEY_TRASH = "trash"
+    private const val MAX_VERSIONS_PER_MEMORY = 10
+    private const val MAX_TRASH_ITEMS = 100
+
+    private fun entryJson(entry: GalaxyMemoryEntry): JSONObject =
+        JSONObject().put("id", entry.id).put("category", entry.category).put("content", entry.content)
+            .put("createdAt", entry.createdAt).put("priority", entry.priority).put("confidence", entry.confidence.toDouble())
+
+    private fun parseEntry(item: JSONObject): GalaxyMemoryEntry? {
+        val content = item.optString("content", "").trim()
+        val category = item.optString("category", "NOTES").uppercase().take(24)
+        if (content.isEmpty() || content.length > 10000 || category !in ALLOWED_CATEGORIES) return null
+        return GalaxyMemoryEntry(item.optLong("id", 0L).coerceAtLeast(0L), category, content,
+            item.optLong("createdAt", 0L).coerceIn(0L, System.currentTimeMillis() + 86_400_000L),
+            item.optInt("priority", 2).coerceIn(1, 3), item.optDouble("confidence", 1.0).toFloat().coerceIn(0f, 1f))
+    }
+
+    private fun archivePrefs(context: Context) = context.getSharedPreferences(ARCHIVE_PREFS, Context.MODE_PRIVATE)
+
+    private fun recordVersion(context: Context, entry: GalaxyMemoryEntry) {
+        val prefs = archivePrefs(context)
+        val old = try { JSONArray(prefs.getString(KEY_VERSIONS, "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
+        val kept = JSONArray()
+        val history = mutableListOf<JSONObject>()
+        for (i in 0 until old.length()) {
+            val item = old.optJSONObject(i) ?: continue
+            if (item.optLong("memoryId", -1L) == entry.id) history.add(item) else kept.put(item)
+        }
+        history.add(JSONObject().put("memoryId", entry.id).put("savedAt", System.currentTimeMillis()).put("entry", entryJson(entry)))
+        history.takeLast(MAX_VERSIONS_PER_MEMORY).forEach { kept.put(it) }
+        prefs.edit().putString(KEY_VERSIONS, kept.toString()).commit()
+    }
+
+    fun versions(context: Context, memoryId: Long): List<MemoryVersion> {
+        val raw = archivePrefs(context).getString(KEY_VERSIONS, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(raw)
+            (0 until array.length()).mapNotNull { i ->
+                val item = array.optJSONObject(i) ?: return@mapNotNull null
+                if (item.optLong("memoryId", -1L) != memoryId) return@mapNotNull null
+                val entry = parseEntry(item.optJSONObject("entry") ?: return@mapNotNull null) ?: return@mapNotNull null
+                MemoryVersion(entry, item.optLong("savedAt", 0L))
+            }.sortedByDescending { it.savedAt }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun restoreVersion(context: Context, memoryId: Long, version: MemoryVersion): Boolean {
+        val entries = getAll(context).toMutableList()
+        val index = entries.indexOfFirst { it.id == memoryId }
+        if (index < 0 || isDuplicate(context, version.entry.category, version.entry.content, memoryId)) return false
+        val current = entries[index]
+        recordVersion(context, current)
+        entries[index] = current.copy(category = version.entry.category, content = version.entry.content,
+            priority = version.entry.priority, confidence = version.entry.confidence)
+        return save(context, entries)
+    }
+
+    fun delete(context: Context, id: Long): Boolean {
+        val entries = getAll(context)
+        val target = entries.firstOrNull { it.id == id } ?: return false
+        val prefs = archivePrefs(context)
+        val old = try { JSONArray(prefs.getString(KEY_TRASH, "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
+        val items = mutableListOf<JSONObject>()
+        for (i in 0 until old.length()) {
+            val item = old.optJSONObject(i) ?: continue
+            if (item.optJSONObject("entry")?.optLong("id", -1L) != id) items.add(item)
+        }
+        items.add(JSONObject().put("deletedAt", System.currentTimeMillis()).put("entry", entryJson(target)))
+        val bounded = JSONArray()
+        items.takeLast(MAX_TRASH_ITEMS).forEach { bounded.put(it) }
+        if (!prefs.edit().putString(KEY_TRASH, bounded.toString()).commit()) return false
+        return save(context, entries.filterNot { it.id == id })
+    }
+
+    fun getTrash(context: Context): List<TrashedMemory> {
+        val raw = archivePrefs(context).getString(KEY_TRASH, "[]") ?: "[]"
+        return try {
+            val array = JSONArray(raw)
+            (0 until array.length()).mapNotNull { i ->
+                val item = array.optJSONObject(i) ?: return@mapNotNull null
+                val entry = parseEntry(item.optJSONObject("entry") ?: return@mapNotNull null) ?: return@mapNotNull null
+                TrashedMemory(entry, item.optLong("deletedAt", 0L))
+            }.sortedByDescending { it.deletedAt }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    fun restoreDeleted(context: Context, memoryId: Long): Boolean {
+        val target = getTrash(context).firstOrNull { it.entry.id == memoryId } ?: return false
+        if (isDuplicate(context, target.entry.category, target.entry.content)) return false
+        val entries = getAll(context).toMutableList()
+        val nextId = maxOf(entries.maxOfOrNull { it.id } ?: 0L, memoryId) + 1L
+        entries.add(0, target.entry.copy(id = nextId, createdAt = System.currentTimeMillis()))
+        if (!save(context, entries.take(MAX_ENTRIES))) return false
+        val raw = try { JSONArray(archivePrefs(context).getString(KEY_TRASH, "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
+        val kept = JSONArray()
+        for (i in 0 until raw.length()) {
+            val item = raw.optJSONObject(i) ?: continue
+            if (item.optJSONObject("entry")?.optLong("id", -1L) != memoryId) kept.put(item)
+        }
+        return archivePrefs(context).edit().putString(KEY_TRASH, kept.toString()).commit()
+    }
 
     fun clear(context: Context) {
-        // A deliberate user clear removes both the active vault and any recovery copy.
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .remove(KEY_ENTRIES).remove(KEY_CORRUPT_BACKUP).apply()
+        // Explicit Clear All also clears timeline and trash.
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_ENTRIES).remove(KEY_CORRUPT_BACKUP).apply()
+        archivePrefs(context).edit().remove(KEY_VERSIONS).remove(KEY_TRASH).apply()
     }
 
     fun hasRecoveryBackup(context: Context): Boolean =
