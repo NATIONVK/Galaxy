@@ -351,7 +351,7 @@ private fun StatusRow(name: String, status: String, tint: Color) {
 @Composable
 private fun ChatScreen() {
     val context = LocalContext.current
-    var providerReady by remember { mutableStateOf(GalaxyAiProviderStore.load(context).isConfigured) }
+    var providerReady by remember { mutableStateOf((GalaxyApiProfiles.hasEnabled(context) || GalaxyAiProviderStore.load(context).isConfigured)) }
     var isSending by remember { mutableStateOf(false) }
     var draft by remember { mutableStateOf("") }
     var messages by remember { mutableStateOf(GalaxyLocalConversationStore.load(context)) }
@@ -2217,7 +2217,7 @@ private fun SettingsScreen() {
         SettingsSectionTitle("PERSONALIZATION INTELLIGENCE")
         PersonalizationSettingsPanel()
         SettingsSectionTitle("AI PROVIDER")
-        GalaxyProviderSettingsPanel()
+        GalaxyMultiApiSettingsPanel()
         SettingsSectionTitle("VOICE PREFERENCES")
         var voiceGender by remember { mutableStateOf(prefs.getString("voice_gender", "Male") ?: "Male") }
         var settingsTtsReady by remember { mutableStateOf(false) }
