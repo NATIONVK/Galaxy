@@ -339,15 +339,6 @@ class GalaxyVoiceWakeService : Service() {
         if (handleMemoryCommand(command)) return
         if (handleMessageCommand(command)) return
 
-        // Galaxy Brain v1: interpret natural language beyond the fixed device-command list.
-        val brainReply = GalaxyBrainEngine.respond(this, command)
-        if (brainReply != null) {
-            GalaxyVoiceHistory.add(this, command, brainReply.status)
-            updateNotification(brainReply.status.take(180))
-            speak(brainReply.spokenText, "galaxy-brain")
-            return
-        }
-
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
                 requestSettingsConfirmation("Wi-Fi", Intent("android.settings.panel.action.WIFI"))
@@ -396,9 +387,16 @@ class GalaxyVoiceWakeService : Service() {
                 speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", "galaxy-maps")
             }
             else -> {
-                GalaxyVoiceHistory.add(this, command, "Unsupported command")
-                updateNotification("Command not supported yet • $command".take(180))
-                speak("এই কমান্ডটি এখনো সমর্থিত নয়। Voice Studio-তে supported command দেখে আবার বলো।", "galaxy-unsupported")
+                val brainReply = GalaxyBrainEngine.respond(this, command)
+                if (brainReply != null) {
+                    GalaxyVoiceHistory.add(this, command, brainReply.status)
+                    updateNotification(brainReply.status.take(180))
+                    speak(brainReply.spokenText, "galaxy-brain")
+                } else {
+                    GalaxyVoiceHistory.add(this, command, "Needs clarification")
+                    updateNotification("Galaxy needs more details • $command".take(180))
+                    speak("কাজটি বুঝতে আরও একটু বিস্তারিত বলো।", "galaxy-clarify")
+                }
             }
         }
     }
