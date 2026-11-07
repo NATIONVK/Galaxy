@@ -38,9 +38,13 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 - Local Memory Vault with memory management and JSON import/export.
 - Voice assistant service foundation with foreground notification and speech recognition.
 - Voice preferences and dedicated Black Hole settings area.
-- Ongoing work on consistent background voice responses and natural Bangladeshi/Indian Bengali female TTS voice support.
+- Phone Brain foundation with permission-controlled device context and battery/charging awareness.
+- Notification message summaries and app-specific voice queries for supported messaging apps.
+- Multi-provider API settings UI with Gemini and OpenAI presets, editable provider profiles, enable/disable controls, and primary/backup ordering.
+- Provider keys are encrypted at rest with Android Keystore AES/GCM and are entered locally in the app; no API keys are included in the repository.
+- Gemini uses its native generate-content request path; OpenAI and compatible providers use a chat-completions path. Enabled profiles are tried in priority order when a request fails.
 
-> **Development note:** Features are actively evolving. Background listening depends on Android microphone permission, foreground-service rules, device battery settings and an available speech/TTS engine. A Bangladeshi female voice is available only when the device's installed speech engine provides one; otherwise a supported Bengali voice is used as fallback. Force-stopping the app prevents background listening.
+> **Development note:** A configured provider profile is not the same as a verified live connection. Users must add their own provider API keys in the app, and provider model availability, pricing and quotas can change. API keys stored inside a mobile app cannot be considered fully secret on a compromised or rooted device; a server-side proxy is recommended before public production release. Background listening depends on Android microphone permission, foreground-service rules, device battery settings and an available speech/TTS engine. Force-stopping the app prevents background listening.
 
 ## 🛠️ Technology
 
@@ -48,6 +52,8 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 - **Jetpack Compose** — UI
 - **Gradle Kotlin DSL** — build system
 - **Android Speech APIs** — speech recognition and text-to-speech
+- **Android Keystore AES/GCM** — local encryption for provider credentials
+- **Gemini API / OpenAI-compatible chat completions** — optional remote AI providers
 - **Firebase** — planned integration; configure securely when enabled
 
 ## 📦 Build the Android app
@@ -69,6 +75,8 @@ Build configuration and device compatibility may change during development. An A
 - Make background microphone use visible and controllable.
 - Keep personal memory reviewable and deletable by the user.
 - Device actions must be permission-gated and confirmed where appropriate.
+- Local Keystore encryption protects stored credentials at rest, but does not make an API key inside an APK impossible to extract from a compromised device.
+- Use a backend proxy with server-side secrets and abuse controls for a public production release.
 - Cybersecurity learning features are intended for authorized, defensive use only.
 
 ## 🗺️ Roadmap
@@ -76,12 +84,16 @@ Build configuration and device compatibility may change during development. An A
 - [x] Android foundation and core UI
 - [x] Local Memory Vault foundation
 - [x] Foreground voice-service foundation
-- [ ] Reliable background voice response
+- [x] Multi-provider settings UI and local encrypted credential storage
+- [x] Gemini and OpenAI-compatible request routing with priority-based failover logic
+- [x] Phone Brain device-context and battery-awareness foundations
+- [ ] Verify Gemini and OpenAI connections using user-supplied API keys
+- [ ] Reliable background voice response on supported devices
 - [ ] Consistent male/female voice selection across app and service
 - [ ] Natural Bangladeshi Bengali female voice with supported fallback
-- [ ] AI provider integration and intelligent model selection
+- [ ] Server-side API proxy before public production release
 - [ ] Expanded creative, research and analysis workspace
-- [ ] Security, performance and device testing
+- [ ] Security, performance and real-device testing
 - [ ] Production APK release
 
 ## 👨‍🚀 Project identity
