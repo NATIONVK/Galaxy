@@ -387,16 +387,21 @@ class GalaxyVoiceWakeService : Service() {
                 speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", "galaxy-maps")
             }
             else -> {
-                val brainReply = GalaxyBrainEngine.respond(this, command)
-                if (brainReply != null) {
-                    GalaxyConversationMemory.saveTurn(this, command, brainReply.spokenText)
-                    GalaxyVoiceHistory.add(this, command, brainReply.status)
-                    updateNotification(brainReply.status.take(180))
-                    speak(brainReply.spokenText, "galaxy-brain")
+                val planned = GalaxyTaskPlanner.createPlan(command)
+                if (planned != null && planned.steps.size == 1 && planned.steps.first().supported) {
+                    offerPlannedAction(planned.steps.first())
                 } else {
-                    GalaxyVoiceHistory.add(this, command, "Needs clarification")
-                    updateNotification("Galaxy needs more details • $command".take(180))
-                    speak("কাজটি বুঝতে আরও একটু বিস্তারিত বলো।", "galaxy-clarify")
+                    val brainReply = GalaxyBrainEngine.respond(this, command)
+                    if (brainReply != null) {
+                        GalaxyConversationMemory.saveTurn(this, command, brainReply.spokenText)
+                        GalaxyVoiceHistory.add(this, command, brainReply.status)
+                        updateNotification(brainReply.status.take(180))
+                        speak(brainReply.spokenText, "galaxy-brain")
+                    } else {
+                        GalaxyVoiceHistory.add(this, command, "Needs clarification")
+                        updateNotification("Galaxy needs more details • $command".take(180))
+                        speak("কাজটি বুঝতে আরও একটু বিস্তারিত বলো।", "galaxy-clarify")
+                    }
                 }
             }
         }
@@ -616,6 +621,42 @@ class GalaxyVoiceWakeService : Service() {
             .build()
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
         speak("এই মেমোরিটি মুছতে notification থেকে confirm করো, না হলে cancel করো।", "memory-delete-confirm")
+    }
+
+    /**
+     * Presents one allow-listed app launch for explicit notification confirmation.
+     * This method only prepares a PendingIntent; the app is not launched until Run action is tapped.
+     */
+    private fun offerPlannedAction(step: GalaxyTaskPlanner.PlannedStep) {
+        val action = when (step.action) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS ->
+                Intent(android.provider.Settings.ACTION_SETTINGS)
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE ->
+                packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                    ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER ->
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA ->
+                Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER ->
+                Intent(Intent.ACTION_DIAL)
+            GalaxyTaskPlanner.ActionType.UNKNOWN -> return
+        }
+        val label = when (step.action) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS -> "Android Settings"
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE -> "YouTube"
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER -> "Browser"
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA -> "Camera"
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER -> "Phone dialer"
+            GalaxyTaskPlanner.ActionType.UNKNOWN -> return
+        }
+        if (step.action == GalaxyTaskPlanner.ActionType.OPEN_SETTINGS) {
+            requestSettingsConfirmation(label, action)
+        } else {
+            showActionNotification("$label খুলতে notification থেকে Run action চাপো", action)
+            speak("$label খুলতে notification থেকে Run action চাপো।", "galaxy-planned-action")
+        }
+        GalaxyVoiceHistory.add(this, step.originalInstruction, "Waiting for explicit action confirmation")
     }
 
     /** Voice requests never change protected system settings directly. */
