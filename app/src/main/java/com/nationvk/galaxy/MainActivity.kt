@@ -231,6 +231,10 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         SectionHeading("INSTALLED APPS", "Launchable apps on this phone")
         Spacer(Modifier.height(10.dp))
         InstalledAppsDashboard()
+        Spacer(Modifier.height(18.dp))
+        SectionHeading("APP USAGE INTELLIGENCE", "Today’s screen-time overview • opt-in")
+        Spacer(Modifier.height(10.dp))
+        AppUsageIntelligencePanel()
         Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
     }
@@ -335,6 +339,122 @@ private fun InstalledAppsDashboard() {
         }
         Text("Privacy: শুধু Android launcher-এ দৃশ্যমান app-এর নাম ও package দেখানো হয়। কোনো app data, message বা usage history পড়া হয় না।",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 9.dp))
+    }
+}
+
+
+private data class GalaxyAppUsage(val label: String, val packageName: String, val foregroundMillis: Long)
+
+@Composable
+private fun AppUsageIntelligencePanel() {
+    val context = LocalContext.current
+    var hasAccess by remember { mutableStateOf(false) }
+    var usage by remember { mutableStateOf(emptyList<GalaxyAppUsage>()) }
+    var status by remember { mutableStateOf("Usage Access অনুমতি প্রয়োজন।") }
+
+    fun refreshUsage() {
+        try {
+            val appOps = context.getSystemService(android.content.Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+            val mode = if (android.os.Build.VERSION.SDK_INT >= 29) {
+                appOps.unsafeCheckOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            }
+            hasAccess = mode == android.app.AppOpsManager.MODE_ALLOWED
+            if (!hasAccess) {
+                usage = emptyList()
+                status = "Usage Access বন্ধ আছে। চাইলে Settings থেকে অনুমতি দিতে পারো।"
+                return
+            }
+
+            val manager = context.getSystemService(android.app.usage.UsageStatsManager::class.java)
+            val calendar = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val now = System.currentTimeMillis()
+            val records = manager?.queryUsageStats(
+                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                calendar.timeInMillis,
+                now
+            ).orEmpty()
+            usage = records.groupBy { it.packageName }.mapNotNull { (packageName, entries) ->
+                val total = entries.sumOf { it.totalTimeInForeground }
+                if (total <= 0L) return@mapNotNull null
+                val label = try {
+                    val appInfo = context.packageManager.getApplicationInfo(packageName, 0)
+                    context.packageManager.getApplicationLabel(appInfo).toString()
+                } catch (_: Exception) {
+                    packageName
+                }
+                GalaxyAppUsage(label, packageName, total)
+            }.sortedByDescending { it.foregroundMillis }
+            status = if (usage.isEmpty()) "আজকের জন্য কোনো app usage record পাওয়া যায়নি।"
+                else "আজ ${usage.size}টি app-এর foreground usage পাওয়া গেছে।"
+        } catch (error: Exception) {
+            status = "Usage data পড়া যায়নি: ${error.message ?: "unknown error"}"
+        }
+    }
+
+    LaunchedEffect(context) { refreshUsage() }
+    fun formatDuration(millis: Long): String {
+        val minutes = millis / 60_000L
+        val hours = minutes / 60L
+        val remainder = minutes % 60L
+        return if (hours > 0L) "${hours}h ${remainder}m" else "${remainder}m"
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(13.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("TODAY'S APP USAGE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text(status, color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { refreshUsage() }.padding(horizontal = 11.dp, vertical = 9.dp))
+        }
+        if (!hasAccess) {
+            Spacer(Modifier.height(10.dp))
+            Text("Usage Access দিলে Galaxy আজ কোন app কতক্ষণ foreground-এ ছিল তা দেখাতে পারবে। এটি message, password বা app-এর ভেতরের content পড়ে না।",
+                color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+            Spacer(Modifier.height(9.dp))
+            Text("OPEN USAGE ACCESS SETTINGS", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Violet).clickable {
+                    try {
+                        context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (error: Exception) {
+                        status = "Settings খোলা যায়নি: ${error.message ?: "unknown error"}"
+                    }
+                }.padding(12.dp))
+        } else if (usage.isEmpty()) {
+            Text("ব্যবহার শুরু হলে এখানে app-wise সময় দেখা যাবে।", color = Muted, fontSize = 10.sp,
+                modifier = Modifier.padding(vertical = 12.dp))
+        } else {
+            Spacer(Modifier.height(8.dp))
+            usage.take(12).forEach { item ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(item.label, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(item.packageName, color = Muted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text(formatDuration(item.foregroundMillis), color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            if (usage.size > 12) Text("শীর্ষ ১২টি app দেখানো হচ্ছে।", color = Muted, fontSize = 8.sp)
+        }
+        Text("ডেটা Android UsageStats থেকে নেওয়া হয়; এটি foreground time-এর আনুমানিক হিসাব, battery usage বা exact active screen time নয়। অনুমতি Settings থেকে যেকোনো সময় বন্ধ করা যাবে।",
+            color = Muted, fontSize = 8.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 9.dp))
     }
 }
 
