@@ -38,7 +38,8 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 - Local Memory Vault with memory management and JSON import/export.
 - Voice assistant service foundation with foreground notification and speech recognition.
 - Voice preferences and dedicated Black Hole settings area.
-- Phone Brain foundation with permission-controlled device context and battery/charging awareness.
+- Phone Brain dashboard with battery, thermal, RAM and storage snapshots, on-screen alerts, and Bengali text-to-speech reports.
+- Installed Apps Dashboard lists launcher-visible apps, supports name/package search, and opens an app on user tap; it does not read app contents or usage history.
 - Notification message summaries and app-specific voice queries for supported messaging apps.
 - Multi-provider API settings UI with Gemini and OpenAI presets, editable provider profiles, enable/disable controls, and primary/backup ordering.
 - Provider keys are encrypted at rest with Android Keystore AES/GCM and are entered locally in the app; no API keys are included in the repository.
@@ -86,7 +87,8 @@ Build configuration and device compatibility may change during development. An A
 - [x] Foreground voice-service foundation
 - [x] Multi-provider settings UI and local encrypted credential storage
 - [x] Gemini and OpenAI-compatible request routing with priority-based failover logic
-- [x] Phone Brain device-context and battery-awareness foundations
+- [x] Phone Brain device-context, battery/thermal/RAM/storage dashboard and Bengali voice report
+- [x] Installed Apps Dashboard with launcher-only app discovery, search and tap-to-open
 - [ ] Verify Gemini and OpenAI connections using user-supplied API keys
 - [ ] Reliable background voice response on supported devices
 - [ ] Consistent male/female voice selection across app and service
