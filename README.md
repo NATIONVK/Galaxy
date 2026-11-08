@@ -115,3 +115,10 @@ Build configuration and device compatibility may change during development. An A
 <div align="center">
   <sub>PROJECT GALAXY AI · NATIONVK · Made for exploration</sub>
 </div>
+
+
+### Battery Intelligence (Phone Brain)
+- Adds an on-device battery insight panel using Android-reported charge percentage, charging state, battery temperature and battery-health broadcast.
+- Shows conservative suggestions for low charge, elevated temperature and Android-reported battery-health warnings.
+- Does not estimate remaining battery life, battery wear percentage, cycle count or design capacity because these are not reliably exposed by the current implementation.
+- Refreshes with the existing Phone Brain snapshot while the Home screen is visible; it does not run a background battery monitor or send notifications.
