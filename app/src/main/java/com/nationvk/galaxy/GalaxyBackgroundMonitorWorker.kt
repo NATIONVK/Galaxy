@@ -42,7 +42,7 @@ class GalaxyBackgroundMonitorWorker(
         if (level in 0..batteryLimit) alerts += "battery" to "Battery low: $level%"
 
         val tempTenths = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
-        if (tempTenths >= 450) alerts += "temperature" to "Battery temperature is high: \${tempTenths / 10.0} °C"
+        if (tempTenths >= 450) alerts += "temperature" to "Battery temperature is high: ${tempTenths / 10.0} °C"
 
         val powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
         if (Build.VERSION.SDK_INT >= 29) {
