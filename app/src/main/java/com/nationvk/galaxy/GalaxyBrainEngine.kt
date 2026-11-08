@@ -43,6 +43,9 @@ object GalaxyBrainEngine {
             val date = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("bn", "BD")).format(Date())
             return Reply("আজ $date।")
         }
+        if (matches(q, "ফোনের অবস্থা", "ফোন কেমন আছে", "আমার ফোন কেমন", "phone status", "phone health", "how is my phone", "device status", "ফোনের হেলথ", "ফোনের স্বাস্থ্য")) {
+            return phoneStatus(context)
+        }
         if (matches(q, "ব্যাটারি কত", "battery level", "battery percentage", "চার্জ কত")) {
             val battery = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
             val level = battery?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) ?: -1
@@ -101,6 +104,77 @@ object GalaxyBrainEngine {
             "তোমার কথা বুঝেছি: $text। এই বিষয়ে নির্ভুলভাবে সাহায্য করতে আরেকটু প্রসঙ্গ বলবে?",
             "Conversation continued • clarification needed"
         )
+    }
+
+    fun phoneStatus(context: Context): Reply {
+        val batteryIntent = context.registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val batteryManager = context.getSystemService(Context.BATTERY_SERVICE) as? BatteryManager
+        val level = batteryManager?.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)?.takeIf { it in 0..100 }
+            ?: run {
+                val raw = batteryIntent?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                val scale = batteryIntent?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+                if (raw >= 0 && scale > 0) raw * 100 / scale else -1
+            }
+        val status = batteryIntent?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+        val charging = when (status) {
+            BatteryManager.BATTERY_STATUS_CHARGING -> "চার্জ হচ্ছে"
+            BatteryManager.BATTERY_STATUS_FULL -> "সম্পূর্ণ চার্জ"
+            BatteryManager.BATTERY_STATUS_DISCHARGING -> "চার্জার ছাড়া চলছে"
+            BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "চার্জ হচ্ছে না"
+            else -> "অজানা"
+        }
+        val temp = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
+        val temperature = if (temp >= 0) String.format(Locale.US, "%.1f ডিগ্রি সেলসিয়াস", temp / 10.0) else "পাওয়া যায়নি"
+        val healthCode = batteryIntent?.getIntExtra(BatteryManager.EXTRA_HEALTH, -1) ?: -1
+        val health = when (healthCode) {
+            BatteryManager.BATTERY_HEALTH_GOOD -> "স্বাভাবিক"
+            BatteryManager.BATTERY_HEALTH_OVERHEAT -> "অতিরিক্ত গরম"
+            BatteryManager.BATTERY_HEALTH_COLD -> "অস্বাভাবিক ঠান্ডা"
+            BatteryManager.BATTERY_HEALTH_DEAD -> "ত্রুটিপূর্ণ"
+            BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "ভোল্টেজ সতর্কতা"
+            BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "সিস্টেম সতর্কতা"
+            else -> "অজানা"
+        }
+        val power = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+        val thermal = if (android.os.Build.VERSION.SDK_INT >= 29 && power != null) {
+            when (power.currentThermalStatus) {
+                android.os.PowerManager.THERMAL_STATUS_NONE -> "স্বাভাবিক"
+                android.os.PowerManager.THERMAL_STATUS_LIGHT -> "সামান্য উষ্ণ"
+                android.os.PowerManager.THERMAL_STATUS_MODERATE -> "মাঝারি"
+                android.os.PowerManager.THERMAL_STATUS_SEVERE -> "বেশি গরম"
+                android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "গুরুতর গরম"
+                android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "জরুরি তাপমাত্রা"
+                android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "বন্ধ হওয়ার ঝুঁকি"
+                else -> "পাওয়া যায়নি"
+            }
+        } else "সমর্থিত নয়"
+        val memory = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
+        val memoryInfo = android.app.ActivityManager.MemoryInfo()
+        memory?.getMemoryInfo(memoryInfo)
+        val ram = if (memoryInfo.totalMem > 0L) {
+            val used = ((memoryInfo.totalMem - memoryInfo.availMem).coerceAtLeast(0L) * 100L / memoryInfo.totalMem).toInt()
+            "$used শতাংশ"
+        } else "পাওয়া যায়নি"
+        val storage = runCatching {
+            val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
+            val freeMb = stat.availableBytes / (1024L * 1024L)
+            if (freeMb >= 1024L) String.format(Locale.US, "%.1f GB ফাঁকা", freeMb / 1024.0) else "$freeMb MB ফাঁকা"
+        }.getOrDefault("পাওয়া যায়নি")
+        val batteryText = if (level >= 0) "$level শতাংশ" else "পাওয়া যায়নি"
+        val advice = buildList {
+            if (level in 0..15) add("ব্যাটারি কম, চার্জে দাও।")
+            if (temp >= 450) add("ব্যাটারি গরম, ভারী কাজ ও চার্জিং সাময়িক বন্ধ রাখো।")
+            if (healthCode == BatteryManager.BATTERY_HEALTH_OVERHEAT || healthCode == BatteryManager.BATTERY_HEALTH_DEAD ||
+                healthCode == BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE || healthCode == BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE) {
+                add("ব্যাটারি health warning আছে; চার্জার পরীক্ষা করো এবং প্রয়োজনে সার্ভিস সেন্টারে দেখাও।")
+            }
+            if (android.os.Build.VERSION.SDK_INT >= 29 && thermal >= android.os.PowerManager.THERMAL_STATUS_SEVERE) {
+                add("ফোন ঠান্ডা হতে দাও।")
+            }
+        }
+        val report = "ফোনের বর্তমান অবস্থা। ব্যাটারি $batteryText, $charging। ব্যাটারির তাপমাত্রা $temperature। ব্যাটারি health $health। ফোনের তাপমাত্রার অবস্থা $thermal। র‍্যাম ব্যবহার $ram। স্টোরেজে $storage। " +
+            if (advice.isEmpty()) "কোনো জরুরি সতর্কতা পাওয়া যায়নি।" else "পরামর্শ: " + advice.joinToString(" ")
+        return Reply(report, "Phone status • live Android snapshot")
     }
 
     private fun matches(text: String, vararg phrases: String): Boolean =
