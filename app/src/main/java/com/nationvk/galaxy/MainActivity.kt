@@ -228,8 +228,113 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(10.dp))
         PhoneQuickActionsPanel()
         Spacer(Modifier.height(18.dp))
+        SectionHeading("INSTALLED APPS", "Launchable apps on this phone")
+        Spacer(Modifier.height(10.dp))
+        InstalledAppsDashboard()
         Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
+    }
+}
+
+
+private data class GalaxyLaunchableApp(val label: String, val packageName: String)
+
+@Composable
+private fun InstalledAppsDashboard() {
+    val context = LocalContext.current
+    var apps by remember(context) { mutableStateOf(emptyList<GalaxyLaunchableApp>()) }
+    var query by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf("অ্যাপ তালিকা প্রস্তুত হচ্ছে…") }
+
+    fun loadApps() {
+        try {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val matches = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                context.packageManager.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(0)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(intent, 0)
+            }
+            apps = matches.mapNotNull { info ->
+                val activity = info.activityInfo ?: return@mapNotNull null
+                val label = info.loadLabel(context.packageManager)?.toString()?.trim().orEmpty()
+                if (label.isBlank()) null else GalaxyLaunchableApp(label, activity.packageName)
+            }.distinctBy { it.packageName }.sortedBy { it.label.lowercase(Locale.ROOT) }
+            status = if (apps.isEmpty()) "কোনো launchable app পাওয়া যায়নি।" else "${apps.size}টি launchable app পাওয়া গেছে।"
+        } catch (error: Exception) {
+            status = "App list পড়া যায়নি: ${error.message ?: "unknown error"}"
+        }
+    }
+
+    LaunchedEffect(context) { loadApps() }
+    val filtered = apps.filter {
+        it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(13.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("APP LIBRARY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text(status, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { loadApps() }.padding(horizontal = 12.dp, vertical = 9.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        BasicTextField(
+            value = query,
+            onValueChange = { query = it },
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Panel2).padding(12.dp),
+            decorationBox = { inner ->
+                Box {
+                    if (query.isBlank()) Text("Search app name or package…", color = Muted, fontSize = 11.sp)
+                    inner()
+                }
+            }
+        )
+        Spacer(Modifier.height(8.dp))
+        if (filtered.isEmpty()) {
+            Text(if (apps.isEmpty()) "অ্যাপ তালিকা খালি।" else "এই নামে কোনো app পাওয়া যায়নি।",
+                color = Muted, fontSize = 10.sp, modifier = Modifier.padding(vertical = 12.dp))
+        } else {
+            filtered.take(40).forEach { app ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(11.dp)).background(Panel2)
+                        .clickable {
+                            try {
+                                val launch = context.packageManager.getLaunchIntentForPackage(app.packageName)
+                                if (launch != null) context.startActivity(launch)
+                                else status = "${app.label} সরাসরি launch করা যাচ্ছে না।"
+                            } catch (error: Exception) {
+                                status = "${app.label} খোলা যায়নি: ${error.message ?: "unknown error"}"
+                            }
+                        }.padding(horizontal = 11.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.size(30.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFF25294F)), contentAlignment = Alignment.Center) {
+                        Text(app.label.take(1).uppercase(Locale.ROOT), color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(app.label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(app.packageName, color = Muted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text("OPEN", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            if (filtered.size > 40) {
+                Text("প্রথম ৪০টি ফলাফল দেখানো হচ্ছে; search দিয়ে বাকিগুলো খুঁজে নাও।", color = Muted, fontSize = 9.sp,
+                    modifier = Modifier.padding(top = 7.dp))
+            }
+        }
+        Text("Privacy: শুধু Android launcher-এ দৃশ্যমান app-এর নাম ও package দেখানো হয়। কোনো app data, message বা usage history পড়া হয় না।",
+            color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 9.dp))
     }
 }
 
