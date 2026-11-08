@@ -514,7 +514,6 @@ private fun DeviceMonitorPanel() {
 
     val batteryPercent = snapshot.battery.removeSuffix("%").toIntOrNull()
     val ramPercent = Regex("\\((\\d+)%\\)").find(snapshot.memoryPressure)?.groupValues?.getOrNull(1)?.toIntOrNull()
-    val freeStorageMb = Regex("([0-9.]+) MB free").find(snapshot.storageSpace)?.groupValues?.getOrNull(1)?.toDoubleOrNull()
     val batteryTemp = snapshot.temperature.removeSuffix(" °C").toDoubleOrNull()
     val warnings = buildList {
         if (snapshot.thermalState in setOf("Severe", "Critical", "Emergency", "Shutdown risk")) {
