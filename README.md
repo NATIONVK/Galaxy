@@ -128,3 +128,11 @@ Build configuration and device compatibility may change during development. An A
 - The spoken report includes battery percentage and charging state, battery temperature and Android-reported battery health, thermal status where supported, approximate system RAM use, and free internal storage.
 - The voice command is routed before the generic phone/dialer launcher so asking about phone health does not open the dialer.
 - It uses Android system signals only; it does not estimate battery wear, exact remaining runtime, or inspect private app content.
+
+### Mohakhali Local Hub
+- Adds a dedicated Mohakhali, Dhaka local-update screen with category filters for news, traffic, weather, emergency reports, campus/events, jobs/tuition and local services.
+- Fetches category search results from Google News RSS on demand; article links open at the publisher/source.
+- Includes shortcuts to Google Maps traffic around the Mohakhali map area and Dhaka weather search.
+- Voice commands mentioning Mohakhali plus news/update terms open the Local Hub.
+- Search results may cover wider Dhaka and are not verified real-time emergency or traffic feeds. The screen labels this limitation; users should verify urgent information with official sources.
+- Current mobile implementation is native Kotlin/Jetpack Compose and does not require a Python server. A Python/FastAPI aggregation service can be added later for official-source normalization, alert verification and weather APIs before production deployment.
