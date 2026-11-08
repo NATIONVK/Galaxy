@@ -399,7 +399,8 @@ class GalaxyVoiceWakeService : Service() {
                 showActionNotification("Camera খুলতে notification থেকে Run action চাপো", launch)
                 speak("ক্যামেরা খুলতে notification থেকে Run action চাপো।", "galaxy-camera")
             }
-            command.contains("phone", true) || command.contains("dialer", true) || command.contains("ফোন", true) || command.contains("কল", true) -> {
+            (command.contains("phone", true) || command.contains("dialer", true) || command.contains("ফোন", true) || command.contains("কল", true)) &&
+                !listOf("status", "health", "অবস্থা", "কেমন", "স্বাস্থ্য").any { command.contains(it, true) } -> {
                 val launch = Intent(Intent.ACTION_DIAL)
                 showActionNotification("Phone dialer খুলতে Run action চাপো", launch)
                 speak("Phone dialer খুলতে notification থেকে Run action চাপো।", "galaxy-dialer")
