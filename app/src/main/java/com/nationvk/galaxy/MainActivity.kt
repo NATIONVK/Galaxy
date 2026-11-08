@@ -486,6 +486,18 @@ private fun DeviceMonitorPanel() {
     val context = LocalContext.current
     var snapshot by remember(context) { mutableStateOf(readGalaxyDeviceSnapshot(context)) }
     var lastUpdated by remember { mutableStateOf("Just now") }
+    var voiceReady by remember { mutableStateOf(false) }
+    val speechEngine = remember(context) {
+        TextToSpeech(context) { status ->
+            voiceReady = status == TextToSpeech.SUCCESS
+        }
+    }
+    DisposableEffect(speechEngine) {
+        onDispose {
+            speechEngine.stop()
+            speechEngine.shutdown()
+        }
+    }
 
     fun refreshSnapshot() {
         snapshot = readGalaxyDeviceSnapshot(context)
@@ -527,6 +539,23 @@ private fun DeviceMonitorPanel() {
                     .clickable { refreshSnapshot() }
                     .padding(horizontal = 12.dp, vertical = 9.dp))
         }
+        Spacer(Modifier.height(8.dp))
+        val report = buildString {
+            append("ফোনের অবস্থা। ডিভাইস: ${snapshot.device}। ব্যাটারি ${snapshot.battery}। চার্জের অবস্থা ${snapshot.charging}। ব্যাটারির তাপমাত্রা ${snapshot.temperature}। থার্মাল স্ট্যাটাস ${snapshot.thermalState}। র‍্যাম ${snapshot.memory}। মেমোরি অবস্থা ${snapshot.memoryPressure}। ফ্রি স্টোরেজ ${snapshot.storageSpace}। নেটওয়ার্ক ${snapshot.network}। ")
+            if (warnings.isEmpty()) append("কোনো গুরুত্বপূর্ণ সতর্কতা পাওয়া যায়নি।")
+            else append("সতর্কতা: " + warnings.joinToString("। "))
+        }
+        Text(if (voiceReady) "🔊  SPEAK PHONE REPORT" else "VOICE REPORT • TTS UNAVAILABLE",
+            color = if (voiceReady) Color.White else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                .background(if (voiceReady) Color(0xFF26345A) else Panel2)
+                .clickable(enabled = voiceReady) {
+                    val bangla = Locale("bn", "BD")
+                    val selectedLocale = if (speechEngine.isLanguageAvailable(bangla) >= TextToSpeech.LANG_AVAILABLE) bangla else Locale("bn")
+                    speechEngine.language = selectedLocale
+                    speechEngine.setSpeechRate(0.92f)
+                    speechEngine.speak(report, TextToSpeech.QUEUE_FLUSH, null, "galaxy-phone-report")
+                }.padding(horizontal = 12.dp, vertical = 12.dp))
         Spacer(Modifier.height(10.dp))
         if (warnings.isNotEmpty()) {
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -555,7 +584,7 @@ private fun DeviceMonitorPanel() {
         DeviceMetricRow("Free storage", snapshot.storageSpace, "▤")
         DeviceMetricRow("Network", snapshot.network, "⌁")
         DeviceMetricRow("Network usage type", snapshot.networkCost, "⇅")
-        Text("Phone Brain refreshes every 30 seconds while this screen is visible. Alerts are on-screen only; no background monitoring or notification is enabled. Android may hide or approximate some device metrics. Snapshot stays on this phone.",
+        Text("Phone Brain refreshes every 30 seconds while this screen is visible. Tap Speak Phone Report to hear the latest snapshot using the device TTS voice. Bengali voice availability depends on the installed speech engine. Alerts are on-screen only; no background monitoring or notification is enabled. Snapshot stays on this phone.",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
