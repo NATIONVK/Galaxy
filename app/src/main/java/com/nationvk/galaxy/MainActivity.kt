@@ -75,7 +75,7 @@ private val Muted = Color(0xFF929AB8)
 private enum class GalaxyTab(val label: String, val glyph: String) {
     HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), NOTES("Notepad", "▤"), PROFILE("Profile", "◎"),
     VOICE("Voice", "♫"), RESEARCH("Research", "⌁"), CAMERA("Camera", "◉"), MODELS("AI Models", "⎇"),
-    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
+    NOTIFICATIONS("Alerts", "♢"), LOCAL("Mohakhali", "⌖"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
 }
 
 @Composable
@@ -85,6 +85,7 @@ fun GalaxyApp(initialTab: String? = null) {
         "VOICE" -> GalaxyTab.VOICE
         "SETTINGS" -> GalaxyTab.SETTINGS
         "PROFILE" -> GalaxyTab.PROFILE
+        "LOCAL", "MOHAKHALI" -> GalaxyTab.LOCAL
         else -> GalaxyTab.HOME
     }
     val navigationStack = remember {
@@ -127,6 +128,7 @@ fun GalaxyApp(initialTab: String? = null) {
                             GalaxyTab.CAMERA -> VisionStudioScreen()
                             GalaxyTab.MODELS -> ModelControlScreen()
                             GalaxyTab.NOTIFICATIONS -> NotificationCenterScreen()
+                            GalaxyTab.LOCAL -> MohakhaliLocalHubScreen()
                             GalaxyTab.SETTINGS -> SettingsScreen()
                         }
                     }
@@ -215,6 +217,8 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             ModuleCard("⚙", "SETTINGS", "App preferences", Modifier.weight(1f)) { onOpen(GalaxyTab.SETTINGS) }
             ModuleCard("◎", "PROFILE", "Your Galaxy space", Modifier.weight(1f)) { onOpen(GalaxyTab.PROFILE) }
         }
+        Spacer(Modifier.height(11.dp))
+        ModuleCard("⌖", "MOHAKHALI LOCAL HUB", "Area news • traffic • weather • alerts • jobs", Modifier.fillMaxWidth()) { onOpen(GalaxyTab.LOCAL) }
         Spacer(Modifier.height(20.dp))
         SectionHeading("SYSTEM STATUS", "Foundation phase")
         Spacer(Modifier.height(10.dp))
