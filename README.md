@@ -122,3 +122,9 @@ Build configuration and device compatibility may change during development. An A
 - Shows conservative suggestions for low charge, elevated temperature and Android-reported battery-health warnings.
 - Does not estimate remaining battery life, battery wear percentage, cycle count or design capacity because these are not reliably exposed by the current implementation.
 - Refreshes with the existing Phone Brain snapshot while the Home screen is visible; it does not run a background battery monitor or send notifications.
+
+### Voice Phone Status (Galaxy Brain)
+- Voice queries such as “Hey Galaxy, ফোনের অবস্থা কী?” and “Hey Galaxy, phone status” return a live Android snapshot.
+- The spoken report includes battery percentage and charging state, battery temperature and Android-reported battery health, thermal status where supported, approximate system RAM use, and free internal storage.
+- The voice command is routed before the generic phone/dialer launcher so asking about phone health does not open the dialer.
+- It uses Android system signals only; it does not estimate battery wear, exact remaining runtime, or inspect private app content.
