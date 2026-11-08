@@ -353,6 +353,18 @@ class GalaxyVoiceWakeService : Service() {
         if (handleMemoryCommand(command)) return
         if (handleMessageCommand(command)) return
 
+        val localAreaRequest = command.contains("মহাখালী", true) || command.contains("mohakhali", true)
+        val localUpdateRequest = listOf("খবর", "news", "traffic", "যানজট", "weather", "আবহাওয়া", "আবহাওয়া", "জব", "চাকরি", "tuition", "টিউশন", "alert", "আপডেট").any { command.contains(it, true) }
+        if (localAreaRequest && localUpdateRequest) {
+            val openHub = Intent(this, MainActivity::class.java)
+                .putExtra("galaxy_widget_tab", "LOCAL")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            runCatching { startActivity(openHub) }
+            speak("মহাখালী Local Hub খুলছি। সেখানে এলাকার খবর ও আপডেট পাবে।", "mohakhali-local-hub")
+            GalaxyVoiceHistory.add(this, command, "Opened Mohakhali Local Hub")
+            return
+        }
+
         val multiStepPlan = GalaxyTaskPlanner.createPlan(command)
         if (multiStepPlan != null && multiStepPlan.steps.size > 1) {
             if (multiStepPlan.hasUnknownSteps) {
