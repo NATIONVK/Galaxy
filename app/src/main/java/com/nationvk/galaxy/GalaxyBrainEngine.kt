@@ -136,18 +136,17 @@ object GalaxyBrainEngine {
             else -> "অজানা"
         }
         val power = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
-        val thermal = if (android.os.Build.VERSION.SDK_INT >= 29 && power != null) {
-            when (power.currentThermalStatus) {
-                android.os.PowerManager.THERMAL_STATUS_NONE -> "স্বাভাবিক"
-                android.os.PowerManager.THERMAL_STATUS_LIGHT -> "সামান্য উষ্ণ"
-                android.os.PowerManager.THERMAL_STATUS_MODERATE -> "মাঝারি"
-                android.os.PowerManager.THERMAL_STATUS_SEVERE -> "বেশি গরম"
-                android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "গুরুতর গরম"
-                android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "জরুরি তাপমাত্রা"
-                android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "বন্ধ হওয়ার ঝুঁকি"
-                else -> "পাওয়া যায়নি"
-            }
-        } else "সমর্থিত নয়"
+        val thermalCode = if (android.os.Build.VERSION.SDK_INT >= 29 && power != null) power.currentThermalStatus else -1
+        val thermal = when (thermalCode) {
+            android.os.PowerManager.THERMAL_STATUS_NONE -> "স্বাভাবিক"
+            android.os.PowerManager.THERMAL_STATUS_LIGHT -> "সামান্য উষ্ণ"
+            android.os.PowerManager.THERMAL_STATUS_MODERATE -> "মাঝারি"
+            android.os.PowerManager.THERMAL_STATUS_SEVERE -> "বেশি গরম"
+            android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "গুরুতর গরম"
+            android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "জরুরি তাপমাত্রা"
+            android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "বন্ধ হওয়ার ঝুঁকি"
+            else -> if (android.os.Build.VERSION.SDK_INT >= 29) "পাওয়া যায়নি" else "সমর্থিত নয়"
+        }
         val memory = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
         val memoryInfo = android.app.ActivityManager.MemoryInfo()
         memory?.getMemoryInfo(memoryInfo)
@@ -168,7 +167,7 @@ object GalaxyBrainEngine {
                 healthCode == BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE || healthCode == BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE) {
                 add("ব্যাটারি health warning আছে; চার্জার পরীক্ষা করো এবং প্রয়োজনে সার্ভিস সেন্টারে দেখাও।")
             }
-            if (android.os.Build.VERSION.SDK_INT >= 29 && thermal >= android.os.PowerManager.THERMAL_STATUS_SEVERE) {
+            if (thermalCode >= android.os.PowerManager.THERMAL_STATUS_SEVERE) {
                 add("ফোন ঠান্ডা হতে দাও।")
             }
         }
