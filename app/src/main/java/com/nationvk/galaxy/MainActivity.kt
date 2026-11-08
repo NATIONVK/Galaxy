@@ -229,6 +229,8 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         SectionHeading("PHONE BRAIN", "Live device health snapshot")
         Spacer(Modifier.height(10.dp))
         DeviceMonitorPanel()
+        Spacer(Modifier.height(12.dp))
+        BackgroundAlertPanel()
         Spacer(Modifier.height(18.dp))
         SectionHeading("PHONE CONTROL CENTER", "Quick actions • Android-safe shortcuts")
         Spacer(Modifier.height(10.dp))
@@ -246,6 +248,70 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
     }
 }
 
+
+
+@Composable
+private fun BackgroundAlertPanel() {
+    val context = LocalContext.current
+    val prefs = remember(context) {
+        context.getSharedPreferences(GalaxyBackgroundMonitorWorker.PREFS, android.content.Context.MODE_PRIVATE)
+    }
+    var enabled by remember { mutableStateOf(prefs.getBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, false)) }
+    var batteryLimit by remember { mutableFloatStateOf(prefs.getInt(GalaxyBackgroundMonitorWorker.KEY_BATTERY_LIMIT, 20).toFloat()) }
+    var status by remember { mutableStateOf(if (enabled) "Background checks are scheduled (about every 15 minutes)." else "Background monitoring is off.") }
+
+    fun scheduleMonitor() {
+        val request = androidx.work.PeriodicWorkRequestBuilder<GalaxyBackgroundMonitorWorker>(15, java.util.concurrent.TimeUnit.MINUTES).build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            GalaxyBackgroundMonitorWorker.UNIQUE_WORK,
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+        prefs.edit().putBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, true)
+            .putInt(GalaxyBackgroundMonitorWorker.KEY_BATTERY_LIMIT, batteryLimit.toInt()).apply()
+        enabled = true
+        status = "Enabled • Android checks approximately every 15 minutes; delivery may be delayed by Doze or battery saver."
+    }
+
+    fun stopMonitor() {
+        androidx.work.WorkManager.getInstance(context).cancelUniqueWork(GalaxyBackgroundMonitorWorker.UNIQUE_WORK)
+        prefs.edit().putBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, false).apply()
+        enabled = false
+        status = "Background monitoring is off."
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) scheduleMonitor()
+        else {
+            prefs.edit().putBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, false).apply()
+            status = "Notification permission denied. Allow notifications to receive phone alerts."
+        }
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("SMART BACKGROUND ALERTS", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                Text("Battery • temperature • RAM • storage", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            Switch(checked = enabled, onCheckedChange = { turnOn ->
+                if (!turnOn) stopMonitor()
+                else if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                ) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                else scheduleMonitor()
+            })
+        }
+        Spacer(Modifier.height(10.dp))
+        Text("LOW BATTERY ALERT AT ${batteryLimit.toInt()}%", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Slider(value = batteryLimit, onValueChange = {
+            batteryLimit = it
+            prefs.edit().putInt(GalaxyBackgroundMonitorWorker.KEY_BATTERY_LIMIT, it.toInt()).apply()
+        }, valueRange = 5f..50f, steps = 8)
+        Text(status, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+        Text("Checks run in Android's scheduled background window (minimum interval 15 minutes, not real-time). Alerts have a 6-hour per-category cooldown. Android/OEM battery restrictions may delay checks; force-stop disables scheduled work until the app is opened again.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 7.dp))
+    }
+}
 
 private data class GalaxyLaunchableApp(val label: String, val packageName: String)
 
