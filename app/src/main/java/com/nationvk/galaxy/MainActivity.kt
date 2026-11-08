@@ -17,6 +17,8 @@ import android.content.pm.PackageManager
 import android.content.Intent
 import android.Manifest
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.BasicTextField
@@ -412,6 +414,18 @@ private fun AppUsageIntelligencePanel() {
     }
 
     LaunchedEffect(context) { refreshUsage() }
+
+    // Usage Access is a special permission changed in Android Settings.
+    // Re-check automatically when the user returns to Galaxy.
+    DisposableEffect(context) {
+        val activity = context as? ComponentActivity
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshUsage()
+        }
+        activity?.lifecycle?.addObserver(observer)
+        onDispose { activity?.lifecycle?.removeObserver(observer) }
+    }
+
     fun formatDuration(millis: Long): String {
         val minutes = millis / 60_000L
         val hours = minutes / 60L
