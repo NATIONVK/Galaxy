@@ -751,6 +751,29 @@ private fun DeviceMonitorPanel() {
         if (snapshot.storageSpace.startsWith("Low free space")) add("Storage space low: ${snapshot.storageSpace}.")
     }
 
+    val batteryInsights = buildList {
+        when {
+            batteryPercent == null -> add("চার্জের শতাংশ Android থেকে পাওয়া যায়নি; Refresh করে আবার দেখো।")
+            batteryPercent <= 15 -> add("চার্জ খুব কম। সম্ভব হলে এখনই চার্জে দাও এবং Battery Saver চালু করো।")
+            batteryPercent <= 30 -> add("চার্জ কমের দিকে। বাইরে যাওয়ার আগে চার্জ দেওয়া বা Battery Saver ব্যবহার করা ভালো।")
+            batteryPercent >= 80 && snapshot.charging.contains("Charging", ignoreCase = true) ->
+                add("চার্জ ৮০% বা বেশি এবং এখনও চার্জ হচ্ছে। প্রয়োজন না হলে চার্জার খুলে নিতে পারো।")
+            else -> add("চার্জের মাত্রা ${snapshot.battery}; এই তথ্য একাই battery health বা অবশিষ্ট ব্যবহারের সময় নির্ধারণ করে না।")
+        }
+        when {
+            batteryTemp == null -> add("Battery temperature পাওয়া যায়নি।")
+            batteryTemp >= 45.0 -> add("ব্যাটারি খুব গরম (${snapshot.temperature})। চার্জিং/ভারী কাজ থামিয়ে ফোন ঠান্ডা হতে দাও।")
+            batteryTemp >= 40.0 -> add("ব্যাটারি তুলনামূলক উষ্ণ (${snapshot.temperature})। ভারী গেমিং বা চার্জের সময় তাপমাত্রা নজরে রাখো।")
+            else -> add("Battery temperature: ${snapshot.temperature}।")
+        }
+        when (snapshot.batteryHealth) {
+            "Good" -> add("Android battery health: Good — এটি সিস্টেমের reported status, capacity percentage নয়।")
+            "Overheating", "Cold", "Dead", "Over voltage", "System-reported issue" ->
+                add("Android battery health warning: ${snapshot.batteryHealth}। চার্জার/কেবল পরীক্ষা করো; সমস্যা থাকলে সার্ভিস সেন্টারে দেখাও।")
+            else -> add("Battery health status Android থেকে নিশ্চিতভাবে পাওয়া যায়নি।")
+        }
+    }
+
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -808,6 +831,16 @@ private fun DeviceMonitorPanel() {
         DeviceMetricRow("Free storage", snapshot.storageSpace, "▤")
         DeviceMetricRow("Network", snapshot.network, "⌁")
         DeviceMetricRow("Network usage type", snapshot.networkCost, "⇅")
+        Spacer(Modifier.height(9.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel2).padding(11.dp)) {
+            Text("BATTERY INTELLIGENCE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+            batteryInsights.forEach { insight ->
+                Text("• $insight", color = Color.White, fontSize = 9.sp, lineHeight = 14.sp,
+                    modifier = Modifier.padding(top = 6.dp))
+            }
+            Text("নোট: Android-এর battery health broadcast থেকে battery cycle count, design capacity বা প্রকৃত battery degradation জানা যায় না।",
+                color = Muted, fontSize = 8.sp, lineHeight = 12.sp, modifier = Modifier.padding(top = 7.dp))
+        }
         Text("Phone Brain refreshes every 30 seconds while this screen is visible. Tap Speak Phone Report to hear the latest snapshot using the device TTS voice. Bengali voice availability depends on the installed speech engine. Alerts are on-screen only; no background monitoring or notification is enabled. Snapshot stays on this phone.",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
     }
