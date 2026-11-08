@@ -39,7 +39,8 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 - Voice assistant service foundation with foreground notification and speech recognition.
 - Voice preferences and dedicated Black Hole settings area.
 - Phone Brain dashboard with battery, thermal, RAM and storage snapshots, on-screen alerts, and Bengali text-to-speech reports.
-- Installed Apps Dashboard lists launcher-visible apps, supports name/package search, and opens an app on user tap; it does not read app contents or usage history.
+- Installed Apps Dashboard lists launcher-visible apps, supports name/package search, and opens an app on user tap.
+- Opt-in App Usage Intelligence reads Android UsageStats after the user grants Usage Access in Settings; it shows today's approximate foreground time per app and does not inspect messages, passwords or in-app content.
 - Notification message summaries and app-specific voice queries for supported messaging apps.
 - Multi-provider API settings UI with Gemini and OpenAI presets, editable provider profiles, enable/disable controls, and primary/backup ordering.
 - Provider keys are encrypted at rest with Android Keystore AES/GCM and are entered locally in the app; no API keys are included in the repository.
@@ -73,6 +74,7 @@ Build configuration and device compatibility may change during development. An A
 
 - Keep API keys, Firebase secrets, signing keys and personal credentials out of Git.
 - Request Android permissions only when the related feature is used.
+- App Usage Intelligence requires the user to enable Usage Access in Android Settings; the feature can be disabled there at any time.
 - Make background microphone use visible and controllable.
 - Keep personal memory reviewable and deletable by the user.
 - Device actions must be permission-gated and confirmed where appropriate.
@@ -89,6 +91,7 @@ Build configuration and device compatibility may change during development. An A
 - [x] Gemini and OpenAI-compatible request routing with priority-based failover logic
 - [x] Phone Brain device-context, battery/thermal/RAM/storage dashboard and Bengali voice report
 - [x] Installed Apps Dashboard with launcher-only app discovery, search and tap-to-open
+- [x] Opt-in daily App Usage Intelligence with explicit Usage Access permission flow
 - [ ] Verify Gemini and OpenAI connections using user-supplied API keys
 - [ ] Reliable background voice response on supported devices
 - [ ] Consistent male/female voice selection across app and service
