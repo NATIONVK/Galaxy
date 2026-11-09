@@ -31,7 +31,7 @@ class GalaxyVoiceWakeService : Service() {
         const val ACTION_CONFIRM_PLAN_STEP = "com.nationvk.galaxy.voice.CONFIRM_PLAN_STEP"
         const val ACTION_CANCEL_PLAN = "com.nationvk.galaxy.voice.CANCEL_PLAN"
         const val PREF_CONVERSATION_WINDOW_SECONDS = "voice_conversation_window_seconds"
-        private const val DEFAULT_CONVERSATION_WINDOW_SECONDS = 12
+        private const val DEFAULT_CONVERSATION_WINDOW_SECONDS = 20
         private const val PREF_PLAN_STEPS = "pending_plan_steps"
         private const val PREF_PLAN_INDEX = "pending_plan_index"
         private const val PREF_PENDING_DELETE = "pending_memory_delete_id"
@@ -918,7 +918,7 @@ class GalaxyVoiceWakeService : Service() {
     private fun conversationWindowMs(): Long =
         getSharedPreferences("galaxy_preferences", MODE_PRIVATE)
             .getInt(PREF_CONVERSATION_WINDOW_SECONDS, DEFAULT_CONVERSATION_WINDOW_SECONDS)
-            .coerceIn(8, 30) * 1000L
+            .coerceIn(8, 45) * 1000L
 
     private val wakeTimeout = Runnable {
         wakeArmed = false
