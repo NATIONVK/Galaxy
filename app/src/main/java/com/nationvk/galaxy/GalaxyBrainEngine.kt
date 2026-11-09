@@ -60,6 +60,48 @@ object GalaxyBrainEngine {
             }
         }
 
+        // Explicitly retrieve user-approved Memory Vault entries on-device.
+        val memoryRecallPhrases = listOf(
+            "মেমোরিতে খুঁজে", "মেমোরি থেকে", "মেমোরিতে কী আছে", "আমার সম্পর্কে কী মনে আছে",
+            "আমার কী মনে আছে", "আমার সম্পর্কে বল", "আমার প্রজেক্ট", "আমার project",
+            "আমার পছন্দ", "আগে সংরক্ষণ করেছি", "মনে করিয়ে দাও", "মনে করিয়ে দাও",
+            "what do you remember", "search my memory", "from my memory",
+            "what do you know about me", "my saved project", "my preferences"
+        )
+        if (memoryRecallPhrases.any { q.contains(it) }) {
+            val cleanedQuery = q
+                .replace("মেমোরিতে খুঁজে", "")
+                .replace("মেমোরি থেকে", "")
+                .replace("মেমোরিতে কী আছে", "")
+                .replace("আমার সম্পর্কে কী মনে আছে", "")
+                .replace("আমার কী মনে আছে", "")
+                .replace("আমার সম্পর্কে বল", "")
+                .replace("আগে সংরক্ষণ করেছি", "")
+                .replace("মনে করিয়ে দাও", "")
+                .replace("মনে করিয়ে দাও", "")
+                .replace("what do you remember", "")
+                .replace("search my memory", "")
+                .replace("from my memory", "")
+                .replace("what do you know about me", "")
+                .replace("আমার", "")
+                .replace("আমার project", "project")
+                .replace("আমার প্রজেক্ট", "প্রজেক্ট")
+                .trim()
+            val matches = GalaxyMemoryStore.search(context, cleanedQuery, limit = 4)
+                .ifEmpty {
+                    if (q.contains("আমার সম্পর্কে") || q.contains("about me")) {
+                        GalaxyMemoryStore.search(context, "personal", category = "PERSONAL", limit = 4)
+                    } else GalaxyMemoryStore.recent(context, 4)
+                }
+            if (matches.isEmpty()) {
+                return Reply("Memory Vault-এ এই বিষয়ে কোনো সংরক্ষিত তথ্য পাইনি।", "Memory Vault • no match")
+            }
+            val spoken = matches.joinToString("। ") { entry ->
+                "${entry.category}: ${entry.content.take(420)}"
+            }
+            return Reply("Memory Vault-এ পাওয়া তথ্য: $spoken", "Memory Vault retrieval • local only")
+        }
+
         // Recall a short, bounded summary of recent local voice conversation.
         val recallPhrases = listOf(
             "আগের কথোপকথন", "আগে কী কথা", "কোন বিষয়ে কথা", "কী নিয়ে কথা হচ্ছিল",
