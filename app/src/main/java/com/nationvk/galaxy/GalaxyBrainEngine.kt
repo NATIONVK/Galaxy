@@ -60,6 +60,21 @@ object GalaxyBrainEngine {
             }
         }
 
+        // Recall a short, bounded summary of recent local voice conversation.
+        val recallPhrases = listOf(
+            "আগের কথোপকথন", "আগে কী কথা", "কোন বিষয়ে কথা", "কী নিয়ে কথা হচ্ছিল",
+            "শেষের বিষয়", "আগের বিষয়গুলো", "what were we discussing", "recent conversation",
+            "conversation history", "last topics"
+        )
+        if (recallPhrases.any { q.contains(it) }) {
+            val recent = GalaxyConversationMemory.getRecentTurns(context, 4)
+            if (recent.isEmpty()) return Reply("এখনো মনে রাখার মতো কোনো সাম্প্রতিক কথোপকথন নেই।")
+            val summary = recent.joinToString("। ") { turn ->
+                "তুমি বলেছিলে: ${turn.userText}. আমি বলেছিলাম: ${turn.assistantText}"
+            }
+            return Reply("সাম্প্রতিক কথোপকথনের সারাংশ: $summary", "Conversation recall • local history")
+        }
+
         // Resolve short follow-ups against the last saved Brain exchange.
         val previousTurn = GalaxyConversationMemory.getLastTurn(context)
         val repeatPhrases = listOf("আবার বল", "পুনরায় বল", "পুনরায় বল", "repeat", "say that again", "শেষের উত্তর")
