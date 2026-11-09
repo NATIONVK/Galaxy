@@ -361,16 +361,25 @@ class GalaxyVoiceWakeService : Service() {
             "চালিও না", "বন্ধ করো"
         ).any { normalizedCommand == it || normalizedCommand.startsWith("$it ") }
         // A memory suggestion is confirmed independently from task-plan confirmations.
-        val pendingMemoryText = runtimeMemoryPrefs().getString("pending_memory_suggestion", null)
-        val pendingMemoryCategory = runtimeMemoryPrefs().getString("pending_memory_category", "NOTES") ?: "NOTES"
-        if (!pendingMemoryText.isNullOrBlank() && affirmative) {
+        val memoryPrefs = runtimeMemoryPrefs()
+        val pendingMemoryAt = memoryPrefs.getLong("pending_memory_suggestion_at", 0L)
+        val pendingMemoryText = memoryPrefs.getString("pending_memory_suggestion", null)
+        val pendingMemoryCategory = memoryPrefs.getString("pending_memory_category", "NOTES") ?: "NOTES"
+        val memorySuggestionActive = !pendingMemoryText.isNullOrBlank() &&
+            pendingMemoryAt > 0L && System.currentTimeMillis() - pendingMemoryAt in 0..60_000L
+        if (!memorySuggestionActive && !pendingMemoryText.isNullOrBlank()) {
+            memoryPrefs.edit().remove("pending_memory_suggestion").remove("pending_memory_category")
+                .remove("pending_memory_suggestion_at").apply()
+        }
+        if (memorySuggestionActive && affirmative) {
             val saved = GalaxyMemoryStore.add(this, pendingMemoryCategory, pendingMemoryText)
-            runtimeMemoryPrefs().edit().remove("pending_memory_suggestion").remove("pending_memory_category").apply()
+            memoryPrefs.edit().remove("pending_memory_suggestion").remove("pending_memory_category")
+                .remove("pending_memory_suggestion_at").apply()
             speakMemory(if (saved) "ঠিক আছে, তোমার অনুমতিতে তথ্যটি Memory Vault-এ সংরক্ষণ করেছি।" else "তথ্যটি সংরক্ষণ করা যায়নি বা আগে থেকেই আছে।")
             GalaxyVoiceHistory.add(this, command, if (saved) "Suggested memory accepted" else "Suggested memory not saved")
             return
         }
-        if (!pendingMemoryText.isNullOrBlank() && negative) {
+        if (memorySuggestionActive && negative) {
             runtimeMemoryPrefs().edit().remove("pending_memory_suggestion").remove("pending_memory_category").apply()
             speakMemory("ঠিক আছে, তথ্যটি সংরক্ষণ করছি না।")
             GalaxyVoiceHistory.add(this, command, "Suggested memory declined")
@@ -503,6 +512,7 @@ class GalaxyVoiceWakeService : Service() {
                             runtimeMemoryPrefs().edit()
                                 .putString("pending_memory_suggestion", memorySuggestion.second)
                                 .putString("pending_memory_category", memorySuggestion.first)
+                                .putLong("pending_memory_suggestion_at", System.currentTimeMillis())
                                 .apply()
                             updateNotification("Galaxy has a memory suggestion • say yes or no")
                             speak("একটি গুরুত্বপূর্ণ তথ্য মনে রাখার মতো মনে হচ্ছে। এটি Memory Vault-এ সংরক্ষণ করব? হ্যাঁ অথবা না বলো।", "memory-suggestion")
