@@ -62,14 +62,26 @@ object GalaxyBrainEngine {
 
         // Resolve short follow-ups against the last saved Brain exchange.
         val previousTurn = GalaxyConversationMemory.getLastTurn(context)
+        val repeatPhrases = listOf("আবার বল", "পুনরায় বল", "পুনরায় বল", "repeat", "say that again", "শেষের উত্তর")
+        if (previousTurn != null && repeatPhrases.any { q.contains(it) }) {
+            return Reply(previousTurn.assistantText, "Repeated previous answer • local memory")
+        }
         val followUpPhrases = listOf(
             "আরও বল", "আরো বল", "আরও বিস্তারিত", "আরো বিস্তারিত", "এটা কী", "এটা কি",
             "ওটা কী", "ওটা কি", "কেন", "কীভাবে", "কিভাবে", "ব্যাখ্যা কর", "বুঝিয়ে বল",
-            "বুঝিয়ে বল", "continue", "tell me more", "explain more", "why", "how"
+            "বুঝিয়ে বল", "উদাহরণ দাও", "একটা উদাহরণ", "সংক্ষেপে বল", "সহজ করে বল",
+            "বুঝিনি", "আরও সহজ", "continue", "tell me more", "explain more", "why", "how",
+            "give an example", "simplify", "in short"
         )
         if (previousTurn != null && followUpPhrases.any { q.contains(it) }) {
+            val instruction = when {
+                q.contains("উদাহরণ") || q.contains("example") -> "একটি সহজ উদাহরণ দিয়ে ব্যাখ্যা করো।"
+                q.contains("সংক্ষেপে") || q.contains("in short") -> "আগের বিষয়টি সংক্ষেপে বলো।"
+                q.contains("সহজ") || q.contains("বুঝিনি") || q.contains("simplify") -> "আগের বিষয়টি আরও সহজ ভাষায় বুঝিয়ে বলো।"
+                else -> "আগের বিষয়টি আরও বিস্তারিতভাবে ব্যাখ্যা করো।"
+            }
             return Reply(
-                "আগের প্রসঙ্গটি ছিল: ${previousTurn.userText}। আগের উত্তরের ভিত্তিতে বলছি: ${previousTurn.assistantText}। কোন দিকটি আরও বিস্তারিত জানতে চাও?",
+                "আগের প্রসঙ্গ: ${previousTurn.userText}। আগের উত্তর: ${previousTurn.assistantText}। $instruction",
                 "Contextual follow-up • local memory"
             )
         }
