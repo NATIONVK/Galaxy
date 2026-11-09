@@ -47,7 +47,8 @@ private val localCategories = listOf(
     LocalFeedCategory("ALERTS", "Mohakhali Dhaka accident OR fire OR waterlogging", "দুর্ঘটনা, আগুন ও জরুরি ঘটনার খবর"),
     LocalFeedCategory("CAMPUS", "Mohakhali Dhaka campus university event education", "ক্যাম্পাস, শিক্ষা ও স্থানীয় আয়োজন"),
     LocalFeedCategory("JOBS", "Mohakhali Dhaka jobs tuition hiring", "চাকরি, নিয়োগ ও টিউশন-সম্পর্কিত খবর"),
-    LocalFeedCategory("LOCAL", "Mohakhali Dhaka hospital service market business", "হাসপাতাল, সেবা ও স্থানীয় ব্যবসা")
+    LocalFeedCategory("LOCAL", "Mohakhali Dhaka hospital service market business", "হাসপাতাল, সেবা ও স্থানীয় ব্যবসা"),
+    LocalFeedCategory("PUBLIC SERVICES", "Mohakhali Dhaka hospital ambulance blood bank police fire station", "হাসপাতাল, অ্যাম্বুলেন্স, ব্লাড ব্যাংক ও জরুরি জনসেবা")
 )
 
 private suspend fun loadLocalFeed(query: String): List<LocalFeedItem> = withContext(Dispatchers.IO) {
