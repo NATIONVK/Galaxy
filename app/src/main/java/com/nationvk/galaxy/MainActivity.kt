@@ -230,6 +230,8 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(10.dp))
         DeviceMonitorPanel()
         Spacer(Modifier.height(12.dp))
+        BatteryTrendPanel()
+        Spacer(Modifier.height(12.dp))
         BackgroundAlertPanel()
         Spacer(Modifier.height(18.dp))
         SectionHeading("PHONE CONTROL CENTER", "Quick actions • Android-safe shortcuts")
@@ -249,6 +251,86 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
 }
 
 
+
+private data class GalaxyBatterySample(val time: Long, val level: Int, val temperatureC: Double)
+
+@Composable
+private fun BatteryTrendPanel() {
+    val context = LocalContext.current
+    val prefs = remember(context) {
+        context.getSharedPreferences(GalaxyBackgroundMonitorWorker.PREFS, android.content.Context.MODE_PRIVATE)
+    }
+    var samples by remember { mutableStateOf(emptyList<GalaxyBatterySample>()) }
+
+    fun loadHistory() {
+        samples = prefs.getString(GalaxyBackgroundMonitorWorker.KEY_BATTERY_HISTORY, "").orEmpty()
+            .split(";").mapNotNull { row ->
+                val parts = row.split(",")
+                if (parts.size != 3) null else runCatching {
+                    GalaxyBatterySample(parts[0].toLong(), parts[1].toInt(), parts[2].toDouble())
+                }.getOrNull()
+            }.filter { it.level in 0..100 }.takeLast(GalaxyBackgroundMonitorWorker.MAX_HISTORY)
+    }
+
+    LaunchedEffect(context) { loadHistory() }
+    val latest = samples.lastOrNull()
+    val minLevel = samples.minOfOrNull { it.level }
+    val maxLevel = samples.maxOfOrNull { it.level }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("BATTERY HISTORY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("On-device samples • up to 48 recent checks", color = Muted, fontSize = 9.sp)
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { loadHistory() }
+                    .padding(horizontal = 11.dp, vertical = 8.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        if (samples.isEmpty()) {
+            Text("এখনো কোনো history sample নেই। Smart Background Alerts চালু রাখলে scheduled check থেকে battery history জমা হবে।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BatteryHistoryStat("LATEST", "${latest?.level}%")
+                BatteryHistoryStat("LOWEST", "${minLevel}%")
+                BatteryHistoryStat("HIGHEST", "${maxLevel}%")
+            }
+            Spacer(Modifier.height(12.dp))
+            Canvas(Modifier.fillMaxWidth().height(92.dp)) {
+                if (samples.size >= 2) {
+                    val stepX = size.width / (samples.size - 1).toFloat()
+                    val points = samples.mapIndexed { index, sample ->
+                        Offset(index * stepX, size.height - (sample.level / 100f * size.height))
+                    }
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        points.drop(1).forEach { lineTo(it.x, it.y) }
+                    }
+                    drawLine(Color(0xFF35415F), Offset(0f, size.height * 0.2f), Offset(size.width, size.height * 0.2f), strokeWidth = 1.dp.toPx())
+                    drawLine(Color(0xFF35415F), Offset(0f, size.height * 0.5f), Offset(size.width, size.height * 0.5f), strokeWidth = 1.dp.toPx())
+                    drawLine(Cyan, points.first(), points.last(), strokeWidth = 0f)
+                    drawPath(path, Cyan, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx()))
+                    points.forEach { drawCircle(Cyan, radius = 2.5.dp.toPx(), center = it) }
+                } else {
+                    drawCircle(Cyan, radius = 4.dp.toPx(), center = Offset(size.width / 2f, size.height / 2f))
+                }
+            }
+            Text("${samples.size} samples • Last check: ${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(latest!!.time))}", color = Muted, fontSize = 8.sp)
+            val latestTemp = latest.temperatureC.takeIf { it >= 0.0 }
+            if (latestTemp != null) Text("Latest reported battery temperature: ${"%.1f".format(Locale.US, latestTemp)} °C", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        Text("History is collected only while Smart Background Alerts is enabled. WorkManager checks are best-effort (normally no more often than every 15 minutes); gaps and missed short charging events are expected. This is charge-level history, not battery wear, cycle count, or exact battery capacity.", color = Muted, fontSize = 8.sp, lineHeight = 12.sp, modifier = Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
+private fun RowScope.BatteryHistoryStat(label: String, value: String) {
+    Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel2).padding(9.dp)) {
+        Text(label, color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Text(value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 3.dp))
+    }
+}
 
 @Composable
 private fun BackgroundAlertPanel() {
