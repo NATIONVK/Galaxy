@@ -1378,6 +1378,7 @@ private fun VoiceStudioScreen() {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
     var selectedVoice by remember { mutableStateOf(preferences.getString("voice_gender", "Male") ?: "Male") }
+    var conversationWindowSeconds by remember { mutableIntStateOf(preferences.getInt(GalaxyVoiceWakeService.PREF_CONVERSATION_WINDOW_SECONDS, 12).coerceIn(8, 30)) }
     var recognitionLanguage by remember { mutableStateOf("bn-BD") }
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
@@ -1836,6 +1837,23 @@ private fun VoiceStudioScreen() {
         Spacer(Modifier.height(14.dp))
         VoiceCommandHistoryPanel()
         Spacer(Modifier.height(16.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+            Text("CONTINUOUS COMMAND WINDOW", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+            Text("Hey Galaxy বলার পর পরের command দেওয়ার জন্য কতক্ষণ অপেক্ষা করবে", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 5.dp, bottom = 9.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                listOf(8, 12, 20, 30).forEach { seconds ->
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (conversationWindowSeconds == seconds) Color(0xFF29264F) else Panel2)
+                        .clickable {
+                            conversationWindowSeconds = seconds
+                            preferences.edit().putInt(GalaxyVoiceWakeService.PREF_CONVERSATION_WINDOW_SECONDS, seconds).apply()
+                        }.padding(vertical = 11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("${seconds}s", color = if (conversationWindowSeconds == seconds) Cyan else Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+                }
+            }
+            Text("বর্তমান সময়: $conversationWindowSeconds সেকেন্ড • “কথা বলা বন্ধ” বললে আগেই বন্ধ হবে।", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 8.dp))
+        }
+        Spacer(Modifier.height(14.dp))
         Text("VOICE TYPE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf("Male", "Female").forEach { voice ->
