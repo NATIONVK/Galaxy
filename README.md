@@ -196,3 +196,10 @@ Build configuration and device compatibility may change during development. An A
 - Galaxy Brain can now retrieve matching user-saved Memory Vault entries when the user explicitly asks what is remembered, asks about a saved project/preference, or requests a memory search.
 - Retrieval uses the existing relevance-ranked local memory search and reads up to four matching entries; it does not send memory content to Gemini, OpenAI or a server.
 - If no matching item exists, Galaxy says so rather than inventing an answer. This is deterministic retrieval, not automatic memory creation or semantic inference.
+
+
+### Consent-based Memory Suggestions
+- Galaxy can recognize a narrow set of non-sensitive first-person statements about projects, preferences, learning and tasks and ask whether the user wants to save them.
+- No suggestion is saved automatically: the user must answer yes; no discards it. A pending suggestion is stored locally until answered.
+- Passwords, OTPs, bank details, health/medicine, religion, politics and sexual-topic statements are excluded from suggestions. Explicit user-directed save commands remain available.
+- Detection is a conservative keyword heuristic, not AI classification; false positives/negatives are possible.
