@@ -345,6 +345,36 @@ class GalaxyVoiceWakeService : Service() {
             return
         }
 
+        // Voice confirmation is accepted only when an allow-listed multi-step plan is pending.
+        // A plain "yes/no" never triggers an action without that explicit pending context.
+        val runtimePrefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+        val pendingSteps = runtimePrefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
+        val pendingIndex = runtimePrefs.getInt(PREF_PLAN_INDEX, 0)
+        val hasPendingPlanStep = pendingIndex in pendingSteps.indices
+        val normalizedCommand = command.lowercase(Locale.ROOT).trim().trimEnd('.', '!', '?', '।')
+        val affirmative = listOf(
+            "yes", "yeah", "yep", "confirm", "ঠিক আছে", "হ্যাঁ", "হ্যা",
+            "অনুমতি দিলাম", "চালাও", "চালু করো", "করো", "ওটাই করো"
+        ).any { normalizedCommand == it || normalizedCommand.startsWith("$it ") }
+        val negative = listOf(
+            "no", "nope", "cancel", "না", "বাতিল", "থাক", "করবে না",
+            "চালিও না", "বন্ধ করো"
+        ).any { normalizedCommand == it || normalizedCommand.startsWith("$it ") }
+        if (hasPendingPlanStep && affirmative) {
+            GalaxyVoiceHistory.add(this, command, "Voice-confirmed pending plan step")
+            updateNotification("Voice confirmation received • launching approved step")
+            speak("ঠিক আছে, নিশ্চিতকরণের পর ধাপটি চালু করছি।", "voice-plan-confirm")
+            runNextPlannedStep()
+            return
+        }
+        if (hasPendingPlanStep && negative) {
+            clearPendingPlan()
+            GalaxyVoiceHistory.add(this, command, "Pending plan cancelled by voice")
+            updateNotification("Plan cancelled by voice • say Hey Galaxy")
+            speak("ঠিক আছে, পরিকল্পনাটি বাতিল করেছি।", "voice-plan-cancel")
+            return
+        }
+
         // Keep a short hands-free follow-up window after every accepted command.
         // The user can speak the next instruction without repeating the wake phrase.
         wakeArmed = true
