@@ -25,9 +25,8 @@ class GalaxyBackgroundMonitorWorker(
     override suspend fun doWork(): Result {
         val prefs = applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(KEY_ENABLED, false)) return Result.success()
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) return Result.success()
+        val canNotify = Build.VERSION.SDK_INT < 33 ||
+            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
         val alerts = mutableListOf<Pair<String, String>>()
         val batteryIntent = applicationContext.registerReceiver(
@@ -38,6 +37,15 @@ class GalaxyBackgroundMonitorWorker(
             val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             if (raw >= 0 && scale > 0) raw * 100 / scale else -1
         } ?: -1
+        if (level >= 0) {
+            val tempC = tempTenths.takeIf { it >= 0 }?.div(10.0)
+            val sample = "${System.currentTimeMillis()},$level,${tempC ?: -1.0}"
+            val history = prefs.getString(KEY_BATTERY_HISTORY, "").orEmpty()
+                .split(";").filter { it.isNotBlank() }.toMutableList()
+            history += sample
+            prefs.edit().putString(KEY_BATTERY_HISTORY, history.takeLast(MAX_HISTORY).joinToString(";")).apply()
+        }
+
         val batteryLimit = prefs.getInt(KEY_BATTERY_LIMIT, 20).coerceIn(5, 50)
         if (level in 0..batteryLimit) alerts += "battery" to "Battery low: $level%"
 
@@ -72,7 +80,7 @@ class GalaxyBackgroundMonitorWorker(
         alerts.forEach { (key, message) ->
             val lastSent = prefs.getLong("last_$key", 0L)
             val now = System.currentTimeMillis()
-            if (now - lastSent >= TimeUnit.HOURS.toMillis(6)) {
+            if (canNotify && now - lastSent >= TimeUnit.HOURS.toMillis(6)) {
                 postAlert(key, message)
                 prefs.edit().putLong("last_$key", now).apply()
             }
@@ -112,6 +120,8 @@ class GalaxyBackgroundMonitorWorker(
         const val PREFS = "galaxy_background_monitor"
         const val KEY_ENABLED = "enabled"
         const val KEY_BATTERY_LIMIT = "battery_limit"
+        const val KEY_BATTERY_HISTORY = "battery_history"
+        const val MAX_HISTORY = 48
         const val UNIQUE_WORK = "galaxy_phone_background_monitor"
         const val CHANNEL_ID = "galaxy_phone_alerts"
     }
