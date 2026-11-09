@@ -30,6 +30,7 @@ class GalaxyVoiceWakeService : Service() {
         const val ACTION_CANCEL_MEMORY_DELETE = "com.nationvk.galaxy.voice.CANCEL_MEMORY_DELETE"
         const val ACTION_CONFIRM_PLAN_STEP = "com.nationvk.galaxy.voice.CONFIRM_PLAN_STEP"
         const val ACTION_CANCEL_PLAN = "com.nationvk.galaxy.voice.CANCEL_PLAN"
+        private const val CONVERSATION_WINDOW_MS = 12000L
         private const val PREF_PLAN_STEPS = "pending_plan_steps"
         private const val PREF_PLAN_INDEX = "pending_plan_index"
         private const val PREF_PENDING_DELETE = "pending_memory_delete_id"
@@ -217,7 +218,7 @@ class GalaxyVoiceWakeService : Service() {
         override fun onReadyForSpeech(params: Bundle?) {
             networkFailureCount = 0
             val engine = if (useOnDeviceRecognition == true) "On-device" else "System"
-            updateNotification("$engine recognition • $recognitionLanguage • say Hey Galaxy")
+            updateNotification(if (wakeArmed) "$engine recognition • conversation mode • speak next command" else "$engine recognition • $recognitionLanguage • say Hey Galaxy")
         }
         override fun onBeginningOfSpeech() { }
         override fun onRmsChanged(rmsdB: Float) { }
@@ -330,13 +331,26 @@ class GalaxyVoiceWakeService : Service() {
             updateNotification("Galaxy is ready • বলো, কী করতে হবে?")
             speak("জি, বলো।", "galaxy-ready")
             handler.removeCallbacks(wakeTimeout)
-            handler.postDelayed(wakeTimeout, 8000)
+            handler.postDelayed(wakeTimeout, CONVERSATION_WINDOW_MS)
             return
         }
 
-        wakeArmed = false
+        val stopConversationPhrases = listOf("stop conversation", "end conversation", "cancel follow up", "থামো", "আর শুনবে না", "কথা বলা বন্ধ", "ফলোআপ বন্ধ")
+        if (stopConversationPhrases.any { command.lowercase(Locale.ROOT).contains(it) }) {
+            wakeArmed = false
+            handler.removeCallbacks(wakeTimeout)
+            updateNotification("Conversation mode ended • say Hey Galaxy")
+            speak("ঠিক আছে। আবার কথা বলতে Hey Galaxy বলো।", "conversation-ended")
+            return
+        }
+
+        // Keep a short hands-free follow-up window after every accepted command.
+        // The user can speak the next instruction without repeating the wake phrase.
+        wakeArmed = true
         handler.removeCallbacks(wakeTimeout)
-        GalaxyVoiceHistory.add(this, command, "Command received")
+        handler.postDelayed(wakeTimeout, CONVERSATION_WINDOW_MS)
+        updateNotification("Galaxy conversation mode • speak your next command")
+        GalaxyVoiceHistory.add(this, command, "Command received • follow-up window active")
         val shutdownText = command.lowercase(Locale.ROOT).trim()
         val shutdownPhrases = listOf(
             "shutdown your system", "shut down your system",
