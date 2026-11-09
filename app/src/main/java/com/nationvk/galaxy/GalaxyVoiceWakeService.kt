@@ -30,7 +30,8 @@ class GalaxyVoiceWakeService : Service() {
         const val ACTION_CANCEL_MEMORY_DELETE = "com.nationvk.galaxy.voice.CANCEL_MEMORY_DELETE"
         const val ACTION_CONFIRM_PLAN_STEP = "com.nationvk.galaxy.voice.CONFIRM_PLAN_STEP"
         const val ACTION_CANCEL_PLAN = "com.nationvk.galaxy.voice.CANCEL_PLAN"
-        private const val CONVERSATION_WINDOW_MS = 12000L
+        const val PREF_CONVERSATION_WINDOW_SECONDS = "voice_conversation_window_seconds"
+        private const val DEFAULT_CONVERSATION_WINDOW_SECONDS = 12
         private const val PREF_PLAN_STEPS = "pending_plan_steps"
         private const val PREF_PLAN_INDEX = "pending_plan_index"
         private const val PREF_PENDING_DELETE = "pending_memory_delete_id"
@@ -331,7 +332,7 @@ class GalaxyVoiceWakeService : Service() {
             updateNotification("Galaxy is ready • বলো, কী করতে হবে?")
             speak("জি, বলো।", "galaxy-ready")
             handler.removeCallbacks(wakeTimeout)
-            handler.postDelayed(wakeTimeout, CONVERSATION_WINDOW_MS)
+            handler.postDelayed(wakeTimeout, conversationWindowMs())
             return
         }
 
@@ -348,7 +349,7 @@ class GalaxyVoiceWakeService : Service() {
         // The user can speak the next instruction without repeating the wake phrase.
         wakeArmed = true
         handler.removeCallbacks(wakeTimeout)
-        handler.postDelayed(wakeTimeout, CONVERSATION_WINDOW_MS)
+        handler.postDelayed(wakeTimeout, conversationWindowMs())
         updateNotification("Galaxy conversation mode • speak your next command")
         GalaxyVoiceHistory.add(this, command, "Command received • follow-up window active")
         val shutdownText = command.lowercase(Locale.ROOT).trim()
@@ -821,6 +822,11 @@ class GalaxyVoiceWakeService : Service() {
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
         speak("$label settings খুলতে notification থেকে confirm করো।", "galaxy-confirm")
     }
+
+    private fun conversationWindowMs(): Long =
+        getSharedPreferences("galaxy_preferences", MODE_PRIVATE)
+            .getInt(PREF_CONVERSATION_WINDOW_SECONDS, DEFAULT_CONVERSATION_WINDOW_SECONDS)
+            .coerceIn(8, 30) * 1000L
 
     private val wakeTimeout = Runnable {
         wakeArmed = false
