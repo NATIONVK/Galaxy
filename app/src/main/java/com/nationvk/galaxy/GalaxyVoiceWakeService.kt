@@ -345,6 +345,23 @@ class GalaxyVoiceWakeService : Service() {
             return
         }
 
+        // A memory suggestion is confirmed independently from task-plan confirmations.
+        val pendingMemoryText = runtimeMemoryPrefs().getString("pending_memory_suggestion", null)
+        val pendingMemoryCategory = runtimeMemoryPrefs().getString("pending_memory_category", "NOTES") ?: "NOTES"
+        if (!pendingMemoryText.isNullOrBlank() && affirmative) {
+            val saved = GalaxyMemoryStore.add(this, pendingMemoryCategory, pendingMemoryText)
+            runtimeMemoryPrefs().edit().remove("pending_memory_suggestion").remove("pending_memory_category").apply()
+            speakMemory(if (saved) "ঠিক আছে, তোমার অনুমতিতে তথ্যটি Memory Vault-এ সংরক্ষণ করেছি।" else "তথ্যটি সংরক্ষণ করা যায়নি বা আগে থেকেই আছে।")
+            GalaxyVoiceHistory.add(this, command, if (saved) "Suggested memory accepted" else "Suggested memory not saved")
+            return
+        }
+        if (!pendingMemoryText.isNullOrBlank() && negative) {
+            runtimeMemoryPrefs().edit().remove("pending_memory_suggestion").remove("pending_memory_category").apply()
+            speakMemory("ঠিক আছে, তথ্যটি সংরক্ষণ করছি না।")
+            GalaxyVoiceHistory.add(this, command, "Suggested memory declined")
+            return
+        }
+
         // Voice confirmation is accepted only when an allow-listed multi-step plan is pending.
         // A plain "yes/no" never triggers an action without that explicit pending context.
         val runtimePrefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
@@ -481,8 +498,18 @@ class GalaxyVoiceWakeService : Service() {
                     if (brainReply != null) {
                         GalaxyConversationMemory.saveTurn(this, command, brainReply.spokenText)
                         GalaxyVoiceHistory.add(this, command, brainReply.status)
-                        updateNotification(brainReply.status.take(180))
-                        speak(brainReply.spokenText, "galaxy-brain")
+                        val memorySuggestion = buildMemorySuggestion(command)
+                        if (memorySuggestion != null) {
+                            runtimeMemoryPrefs().edit()
+                                .putString("pending_memory_suggestion", memorySuggestion.second)
+                                .putString("pending_memory_category", memorySuggestion.first)
+                                .apply()
+                            updateNotification("Galaxy has a memory suggestion • say yes or no")
+                            speak("একটি গুরুত্বপূর্ণ তথ্য মনে রাখার মতো মনে হচ্ছে। এটি Memory Vault-এ সংরক্ষণ করব? হ্যাঁ অথবা না বলো।", "memory-suggestion")
+                        } else {
+                            updateNotification(brainReply.status.take(180))
+                            speak(brainReply.spokenText, "galaxy-brain")
+                        }
                     } else {
                         GalaxyVoiceHistory.add(this, command, "Needs clarification")
                         updateNotification("Galaxy needs more details • $command".take(180))
@@ -493,6 +520,31 @@ class GalaxyVoiceWakeService : Service() {
         }
     }
 
+
+    private fun runtimeMemoryPrefs() = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+
+    /**
+     * Conservative, on-device candidate detection. Nothing is saved until the user says yes.
+     * Sensitive-topic statements are deliberately excluded from suggestions.
+     */
+    private fun buildMemorySuggestion(raw: String): Pair<String, String>? {
+        val value = raw.trim()
+        val q = value.lowercase(Locale.ROOT)
+        if (value.length !in 24..500) return null
+        val sensitive = listOf("password", "পাসওয়ার্ড", "পাসওয়ার্ড", "otp", "pin code", "ব্যাংক", "bank account",
+            "রোগ", "অসুস্থ", "ওষুধ", "medicine", "ধর্ম", "রাজনীতি", "politic", "sexual", "যৌন")
+        if (sensitive.any { q.contains(it) }) return null
+        val firstPerson = listOf("আমি", "আমার", "i am", "i'm", "my ")
+        if (firstPerson.none { q.contains(it) }) return null
+        val category = when {
+            listOf("project", "প্রজেক্ট", "প্রকল্প", "কাজ করছি").any { q.contains(it) } -> "PROJECT"
+            listOf("পছন্দ", "ভালো লাগে", "prefer", "i like", "my favorite", "আমার লক্ষ্য", "লক্ষ্য").any { q.contains(it) } -> "PERSONAL"
+            listOf("পড়াশোনা", "পড়াশোনা", "study", "শিখছি", "শিখতে চাই", "পরিকল্পনা", "পরীক্ষা", "কোর্স").any { q.contains(it) } -> "LEARNING"
+            listOf("করণীয়", "করতে হবে", "to do", "আমার কাজ", "পরের সপ্তাহ", "আগামীকাল").any { q.contains(it) } -> "TASK"
+            else -> return null
+        }
+        return category to value
+    }
 
     private fun handleMessageCommand(rawCommand: String): Boolean {
         val q = rawCommand.lowercase(Locale.ROOT)
