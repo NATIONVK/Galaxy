@@ -154,3 +154,11 @@ Build configuration and device compatibility may change during development. An A
 - Sampling uses WorkManager's best-effort periodic schedule; it is not continuous and may have gaps. Short charging sessions can be missed.
 - History remains on-device and is not uploaded. The feature does not calculate battery wear, charge cycles, design capacity, or exact battery health.
 - The panel's Refresh action reloads locally stored samples. New samples appear after the next successful scheduled check.
+
+
+### Voice Conversation Mode — hands-free follow-ups
+- After Galaxy accepts a voice command, it opens a 12-second follow-up window. During this window, the user can speak the next command without repeating “Hey Galaxy”.
+- Each accepted follow-up refreshes the 12-second window. If no further speech is received, the assistant returns to wake-phrase mode.
+- Say “stop conversation”, “end conversation”, or “কথা বলা বন্ধ” to close the follow-up window immediately.
+- This is a short sequential command window, not continuous always-on transcription. Speech recognition availability, microphone permission, Android foreground-service rules, network conditions and OEM battery restrictions still apply.
+- The feature does not bypass Android microphone privacy indicators or foreground-service notification requirements.
