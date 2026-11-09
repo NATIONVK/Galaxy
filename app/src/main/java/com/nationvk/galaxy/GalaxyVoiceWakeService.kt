@@ -28,6 +28,12 @@ class GalaxyVoiceWakeService : Service() {
         const val ACTION_CANCEL_PENDING = "com.nationvk.galaxy.voice.CANCEL_PENDING"
         const val ACTION_CONFIRM_MEMORY_DELETE = "com.nationvk.galaxy.voice.CONFIRM_MEMORY_DELETE"
         const val ACTION_CANCEL_MEMORY_DELETE = "com.nationvk.galaxy.voice.CANCEL_MEMORY_DELETE"
+        const val ACTION_CONFIRM_PLAN_STEP = "com.nationvk.galaxy.voice.CONFIRM_PLAN_STEP"
+        const val ACTION_CANCEL_PLAN = "com.nationvk.galaxy.voice.CANCEL_PLAN"
+        const val PREF_CONVERSATION_WINDOW_SECONDS = "voice_conversation_window_seconds"
+        private const val DEFAULT_CONVERSATION_WINDOW_SECONDS = 20
+        private const val PREF_PLAN_STEPS = "pending_plan_steps"
+        private const val PREF_PLAN_INDEX = "pending_plan_index"
         private const val PREF_PENDING_DELETE = "pending_memory_delete_id"
         private const val CHANNEL_ID = "galaxy_voice_assistant"
         private const val NOTIFICATION_ID = 4107
@@ -59,6 +65,16 @@ class GalaxyVoiceWakeService : Service() {
         }
         if (intent?.action == ACTION_CANCEL_PENDING) {
             updateNotification("Request cancelled • say Hey Galaxy")
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_CONFIRM_PLAN_STEP) {
+            runNextPlannedStep()
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_CANCEL_PLAN) {
+            clearPendingPlan()
+            updateNotification("Multi-step plan cancelled • say Hey Galaxy")
+            speak("পরিকল্পনাটি বাতিল করা হয়েছে।", "plan-cancelled")
             return START_STICKY
         }
         if (intent?.action == ACTION_CONFIRM_MEMORY_DELETE) {
@@ -120,6 +136,9 @@ class GalaxyVoiceWakeService : Service() {
     }
 
     private fun speak(message: String, utteranceId: String) {
+        getSharedPreferences("galaxy_voice_session", MODE_PRIVATE).edit()
+            .putString("last_spoken_response", message.take(3500))
+            .apply()
         configureSpeechVoice()
         tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
@@ -203,7 +222,7 @@ class GalaxyVoiceWakeService : Service() {
         override fun onReadyForSpeech(params: Bundle?) {
             networkFailureCount = 0
             val engine = if (useOnDeviceRecognition == true) "On-device" else "System"
-            updateNotification("$engine recognition • $recognitionLanguage • say Hey Galaxy")
+            updateNotification(if (wakeArmed) "$engine recognition • conversation mode • speak next command" else "$engine recognition • $recognitionLanguage • say Hey Galaxy")
         }
         override fun onBeginningOfSpeech() { }
         override fun onRmsChanged(rmsdB: Float) { }
@@ -316,13 +335,115 @@ class GalaxyVoiceWakeService : Service() {
             updateNotification("Galaxy is ready • বলো, কী করতে হবে?")
             speak("জি, বলো।", "galaxy-ready")
             handler.removeCallbacks(wakeTimeout)
-            handler.postDelayed(wakeTimeout, 8000)
+            handler.postDelayed(wakeTimeout, conversationWindowMs())
             return
         }
 
-        wakeArmed = false
+        val stopConversationPhrases = listOf("stop conversation", "end conversation", "cancel follow up", "থামো", "আর শুনবে না", "কথা বলা বন্ধ", "ফলোআপ বন্ধ")
+        if (stopConversationPhrases.any { command.lowercase(Locale.ROOT).contains(it) }) {
+            wakeArmed = false
+            handler.removeCallbacks(wakeTimeout)
+            updateNotification("Conversation mode ended • say Hey Galaxy")
+            speak("ঠিক আছে। আবার কথা বলতে Hey Galaxy বলো।", "conversation-ended")
+            return
+        }
+
+        val normalizedCommand = command.lowercase(Locale.ROOT).trim().trimEnd('.', '!', '?', '।')
+        val voiceSessionPrefs = getSharedPreferences("galaxy_voice_session", MODE_PRIVATE)
+        val repeatPhrases = listOf("repeat", "repeat that", "say that again", "আবার বলো", "আবার বল", "পুনরায় বলো", "পুনরায় বলো", "আরেকবার বলো")
+        if (repeatPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
+            val previous = voiceSessionPrefs.getString("last_spoken_response", null)
+            if (previous.isNullOrBlank()) {
+                speak("আমি এখনো কোনো উত্তর দিইনি। কী জানতে চাও?", "voice-repeat-empty")
+            } else {
+                updateNotification("Repeating the previous Galaxy response")
+                speak(previous, "voice-repeat-last")
+            }
+            GalaxyVoiceHistory.add(this, command, "Repeated previous spoken response")
+            return
+        }
+        val recallCommandPhrases = listOf("what did i say", "what was my last command", "শেষে কী বলেছি", "আমি কী বলেছিলাম", "আমার শেষ কথা কী")
+        if (recallCommandPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
+            val previousCommand = voiceSessionPrefs.getString("last_user_command", null)
+            val reply = if (previousCommand.isNullOrBlank()) "এই সেশনে আগের কোনো command পাওয়া যায়নি।" else "তোমার আগের command ছিল: $previousCommand"
+            speak(reply, "voice-recall-last-command")
+            GalaxyVoiceHistory.add(this, command, "Recalled previous voice command")
+            return
+        }
+        val clearSessionPhrases = listOf("clear voice session", "clear last command", "forget last command", "ভয়েস সেশন মুছে দাও", "ভয়েস সেশন মুছে দাও", "শেষ command মুছে দাও", "শেষ কমান্ড ভুলে যাও")
+        if (clearSessionPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
+            voiceSessionPrefs.edit()
+                .remove("last_user_command")
+                .remove("last_spoken_response")
+                .apply()
+            speak("ঠিক আছে। এই সেশনের শেষ command ও উত্তর মুছে দিয়েছি।", "voice-session-cleared")
+            GalaxyVoiceHistory.add(this, command, "Cleared last command and response from voice session")
+            return
+        }
+        voiceSessionPrefs.edit().putString("last_user_command", command.take(500)).apply()
+
+        // Voice confirmation is accepted only when an allow-listed multi-step plan is pending.
+        // A plain "yes/no" never triggers an action without that explicit pending context.
+        val runtimePrefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+        val pendingSteps = runtimePrefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
+        val pendingIndex = runtimePrefs.getInt(PREF_PLAN_INDEX, 0)
+        val hasPendingPlanStep = pendingIndex in pendingSteps.indices
+        val affirmative = listOf(
+            "yes", "yeah", "yep", "confirm", "ঠিক আছে", "হ্যাঁ", "হ্যা",
+            "অনুমতি দিলাম", "চালাও", "চালু করো", "করো", "ওটাই করো"
+        ).any { normalizedCommand == it || normalizedCommand.startsWith("$it ") }
+        val negative = listOf(
+            "no", "nope", "cancel", "না", "বাতিল", "থাক", "করবে না",
+            "চালিও না", "বন্ধ করো"
+        ).any { normalizedCommand == it || normalizedCommand.startsWith("$it ") }
+        // A memory suggestion is confirmed independently from task-plan confirmations.
+        val memoryPrefs = runtimeMemoryPrefs()
+        val pendingMemoryAt = memoryPrefs.getLong("pending_memory_suggestion_at", 0L)
+        val pendingMemoryText = memoryPrefs.getString("pending_memory_suggestion", null)
+        val pendingMemoryCategory = memoryPrefs.getString("pending_memory_category", "NOTES") ?: "NOTES"
+        val memorySuggestionActive = !pendingMemoryText.isNullOrBlank() &&
+            pendingMemoryAt > 0L && System.currentTimeMillis() - pendingMemoryAt in 0..60_000L
+        if (!memorySuggestionActive && !pendingMemoryText.isNullOrBlank()) {
+            memoryPrefs.edit().remove("pending_memory_suggestion").remove("pending_memory_category")
+                .remove("pending_memory_suggestion_at").apply()
+        }
+        if (memorySuggestionActive && affirmative) {
+            val saved = GalaxyMemoryStore.add(this, pendingMemoryCategory, pendingMemoryText)
+            memoryPrefs.edit().remove("pending_memory_suggestion").remove("pending_memory_category")
+                .remove("pending_memory_suggestion_at").apply()
+            speakMemory(if (saved) "ঠিক আছে, তোমার অনুমতিতে তথ্যটি Memory Vault-এ সংরক্ষণ করেছি।" else "তথ্যটি সংরক্ষণ করা যায়নি বা আগে থেকেই আছে।")
+            GalaxyVoiceHistory.add(this, command, if (saved) "Suggested memory accepted" else "Suggested memory not saved")
+            return
+        }
+        if (memorySuggestionActive && negative) {
+            runtimeMemoryPrefs().edit().remove("pending_memory_suggestion").remove("pending_memory_category").apply()
+            speakMemory("ঠিক আছে, তথ্যটি সংরক্ষণ করছি না।")
+            GalaxyVoiceHistory.add(this, command, "Suggested memory declined")
+            return
+        }
+
+        if (hasPendingPlanStep && affirmative) {
+            GalaxyVoiceHistory.add(this, command, "Voice-confirmed pending plan step")
+            updateNotification("Voice confirmation received • launching approved step")
+            speak("ঠিক আছে, নিশ্চিতকরণের পর ধাপটি চালু করছি।", "voice-plan-confirm")
+            runNextPlannedStep()
+            return
+        }
+        if (hasPendingPlanStep && negative) {
+            clearPendingPlan()
+            GalaxyVoiceHistory.add(this, command, "Pending plan cancelled by voice")
+            updateNotification("Plan cancelled by voice • say Hey Galaxy")
+            speak("ঠিক আছে, পরিকল্পনাটি বাতিল করেছি।", "voice-plan-cancel")
+            return
+        }
+
+        // Keep a short hands-free follow-up window after every accepted command.
+        // The user can speak the next instruction without repeating the wake phrase.
+        wakeArmed = true
         handler.removeCallbacks(wakeTimeout)
-        GalaxyVoiceHistory.add(this, command, "Command received")
+        handler.postDelayed(wakeTimeout, conversationWindowMs())
+        updateNotification("Galaxy conversation mode • speak your next command")
+        GalaxyVoiceHistory.add(this, command, "Command received • follow-up window active")
         val shutdownText = command.lowercase(Locale.ROOT).trim()
         val shutdownPhrases = listOf(
             "shutdown your system", "shut down your system",
@@ -338,6 +459,32 @@ class GalaxyVoiceWakeService : Service() {
         }
         if (handleMemoryCommand(command)) return
         if (handleMessageCommand(command)) return
+
+        val localAreaRequest = command.contains("মহাখালী", true) || command.contains("mohakhali", true)
+        val localUpdateRequest = listOf("খবর", "news", "traffic", "যানজট", "weather", "আবহাওয়া", "আবহাওয়া", "জব", "চাকরি", "tuition", "টিউশন", "alert", "আপডেট").any { command.contains(it, true) }
+        if (localAreaRequest && localUpdateRequest) {
+            val openHub = Intent(this, MainActivity::class.java)
+                .putExtra("galaxy_widget_tab", "LOCAL")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            runCatching { startActivity(openHub) }
+            speak("মহাখালী Local Hub খুলছি। সেখানে এলাকার খবর ও আপডেট পাবে।", "mohakhali-local-hub")
+            GalaxyVoiceHistory.add(this, command, "Opened Mohakhali Local Hub")
+            return
+        }
+
+        val multiStepPlan = GalaxyTaskPlanner.createPlan(command)
+        if (multiStepPlan != null && multiStepPlan.steps.size > 1) {
+            if (multiStepPlan.hasUnknownSteps) {
+                speak("পরিকল্পনার কিছু ধাপ এখনো সমর্থিত নয়। কোনো কাজ চালানো হবে না।", "plan-unsupported")
+                GalaxyVoiceHistory.add(this, command, "Plan rejected: unsupported step")
+            } else {
+                savePendingPlan(multiStepPlan.steps.map { it.action.name })
+                showNextPlanConfirmation()
+                speak("একাধিক ধাপের পরিকল্পনা তৈরি করেছি। প্রতিটি ধাপ চালাতে notification থেকে confirm করতে হবে।", "plan-ready")
+                GalaxyVoiceHistory.add(this, command, "Multi-step plan waiting for step-by-step confirmation")
+            }
+            return
+        }
 
         when {
             command.contains("wifi", true) || command.contains("wi-fi", true) || command.contains("ওয়াইফাই") || command.contains("ওয়াইফাই") -> {
@@ -371,7 +518,8 @@ class GalaxyVoiceWakeService : Service() {
                 showActionNotification("Camera খুলতে notification থেকে Run action চাপো", launch)
                 speak("ক্যামেরা খুলতে notification থেকে Run action চাপো।", "galaxy-camera")
             }
-            command.contains("phone", true) || command.contains("dialer", true) || command.contains("ফোন", true) || command.contains("কল", true) -> {
+            (command.contains("phone", true) || command.contains("dialer", true) || command.contains("ফোন", true) || command.contains("কল", true)) &&
+                !listOf("status", "health", "অবস্থা", "কেমন", "স্বাস্থ্য").any { command.contains(it, true) } -> {
                 val launch = Intent(Intent.ACTION_DIAL)
                 showActionNotification("Phone dialer খুলতে Run action চাপো", launch)
                 speak("Phone dialer খুলতে notification থেকে Run action চাপো।", "galaxy-dialer")
@@ -387,13 +535,62 @@ class GalaxyVoiceWakeService : Service() {
                 speak("Nearby Maps খুলতে notification থেকে Run action চাপো।", "galaxy-maps")
             }
             else -> {
-                GalaxyVoiceHistory.add(this, command, "Unsupported command")
-                updateNotification("Command not supported yet • $command".take(180))
-                speak("এই কমান্ডটি এখনো সমর্থিত নয়। Voice Studio-তে supported command দেখে আবার বলো।", "galaxy-unsupported")
+                val planned = GalaxyTaskPlanner.createPlan(command)
+                if (planned != null && planned.steps.size == 1 && planned.steps.first().supported) {
+                    offerPlannedAction(planned.steps.first())
+                } else {
+                    val brainReply = GalaxyBrainEngine.respond(this, command)
+                    if (brainReply != null) {
+                        GalaxyConversationMemory.saveTurn(this, command, brainReply.spokenText)
+                        GalaxyVoiceHistory.add(this, command, brainReply.status)
+                        val memorySuggestion = buildMemorySuggestion(command)
+                        if (memorySuggestion != null) {
+                            runtimeMemoryPrefs().edit()
+                                .putString("pending_memory_suggestion", memorySuggestion.second)
+                                .putString("pending_memory_category", memorySuggestion.first)
+                                .putLong("pending_memory_suggestion_at", System.currentTimeMillis())
+                                .apply()
+                            updateNotification("Galaxy has a memory suggestion • say yes or no")
+                            speak("একটি গুরুত্বপূর্ণ তথ্য মনে রাখার মতো মনে হচ্ছে। এটি Memory Vault-এ সংরক্ষণ করব? হ্যাঁ অথবা না বলো।", "memory-suggestion")
+                        } else {
+                            updateNotification(brainReply.status.take(180))
+                            speak(brainReply.spokenText, "galaxy-brain")
+                        }
+                    } else {
+                        GalaxyVoiceHistory.add(this, command, "Needs clarification")
+                        updateNotification("Galaxy needs more details • $command".take(180))
+                        speak("কাজটি বুঝতে আরও একটু বিস্তারিত বলো।", "galaxy-clarify")
+                    }
+                }
             }
         }
     }
 
+
+    private fun runtimeMemoryPrefs() = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+
+    /**
+     * Conservative, on-device candidate detection. Nothing is saved until the user says yes.
+     * Sensitive-topic statements are deliberately excluded from suggestions.
+     */
+    private fun buildMemorySuggestion(raw: String): Pair<String, String>? {
+        val value = raw.trim()
+        val q = value.lowercase(Locale.ROOT)
+        if (value.length !in 24..500) return null
+        val sensitive = listOf("password", "পাসওয়ার্ড", "পাসওয়ার্ড", "otp", "pin code", "ব্যাংক", "bank account",
+            "রোগ", "অসুস্থ", "ওষুধ", "medicine", "ধর্ম", "রাজনীতি", "politic", "sexual", "যৌন")
+        if (sensitive.any { q.contains(it) }) return null
+        val firstPerson = listOf("আমি", "আমার", "i am", "i'm", "my ")
+        if (firstPerson.none { q.contains(it) }) return null
+        val category = when {
+            listOf("project", "প্রজেক্ট", "প্রকল্প", "কাজ করছি").any { q.contains(it) } -> "PROJECT"
+            listOf("পছন্দ", "ভালো লাগে", "prefer", "i like", "my favorite", "আমার লক্ষ্য", "লক্ষ্য").any { q.contains(it) } -> "PERSONAL"
+            listOf("পড়াশোনা", "পড়াশোনা", "study", "শিখছি", "শিখতে চাই", "পরিকল্পনা", "পরীক্ষা", "কোর্স").any { q.contains(it) } -> "LEARNING"
+            listOf("করণীয়", "করতে হবে", "to do", "আমার কাজ", "পরের সপ্তাহ", "আগামীকাল").any { q.contains(it) } -> "TASK"
+            else -> return null
+        }
+        return category to value
+    }
 
     private fun handleMessageCommand(rawCommand: String): Boolean {
         val q = rawCommand.lowercase(Locale.ROOT)
@@ -610,6 +807,120 @@ class GalaxyVoiceWakeService : Service() {
         speak("এই মেমোরিটি মুছতে notification থেকে confirm করো, না হলে cancel করো।", "memory-delete-confirm")
     }
 
+    private fun savePendingPlan(actions: List<String>) {
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit()
+            .putString(PREF_PLAN_STEPS, actions.joinToString("|"))
+            .putInt(PREF_PLAN_INDEX, 0)
+            .apply()
+    }
+
+    private fun clearPendingPlan() {
+        getSharedPreferences("galaxy_runtime", MODE_PRIVATE).edit()
+            .remove(PREF_PLAN_STEPS)
+            .remove(PREF_PLAN_INDEX)
+            .apply()
+    }
+
+    private fun showNextPlanConfirmation() {
+        val prefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+        val actions = prefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
+        val index = prefs.getInt(PREF_PLAN_INDEX, 0)
+        if (actions.isEmpty() || index !in actions.indices) {
+            clearPendingPlan()
+            updateNotification("Plan completed • say Hey Galaxy")
+            speak("পরিকল্পনার সব ধাপ শেষ হয়েছে।", "plan-complete")
+            return
+        }
+        val label = actions[index].replace("OPEN_", "").replace("_", " ").lowercase(Locale.ROOT)
+        val confirm = PendingIntent.getService(this, 4310 + index,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CONFIRM_PLAN_STEP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val cancel = PendingIntent.getService(this, 4390,
+            Intent(this, GalaxyVoiceWakeService::class.java).setAction(ACTION_CANCEL_PLAN),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
+            .setContentTitle("Galaxy plan • Step " + (index + 1) + "/" + actions.size)
+            .setContentText("পরবর্তী ধাপ: " + label + " — চালাতে Confirm চাপো")
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_menu_view, "Confirm step", confirm)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel plan", cancel)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+    }
+
+    private fun runNextPlannedStep() {
+        val prefs = getSharedPreferences("galaxy_runtime", MODE_PRIVATE)
+        val actions = prefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
+        val index = prefs.getInt(PREF_PLAN_INDEX, 0)
+        val actionName = actions.getOrNull(index)
+        if (actionName == null) {
+            clearPendingPlan()
+            speak("চালানোর মতো কোনো ধাপ বাকি নেই।", "plan-empty")
+            return
+        }
+        val intent = when (runCatching { GalaxyTaskPlanner.ActionType.valueOf(actionName) }.getOrNull()) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS -> Intent(android.provider.Settings.ACTION_SETTINGS)
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE -> packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER -> Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA -> Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER -> Intent(Intent.ACTION_DIAL)
+            else -> null
+        }
+        if (intent == null) {
+            clearPendingPlan()
+            speak("এই ধাপটি চালানো যাচ্ছে না। পরিকল্পনা বন্ধ করেছি।", "plan-failed")
+            return
+        }
+        try {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            prefs.edit().putInt(PREF_PLAN_INDEX, index + 1).apply()
+            handler.postDelayed({ showNextPlanConfirmation() }, 1200)
+        } catch (_: Exception) {
+            clearPendingPlan()
+            updateNotification("Could not launch step • plan cancelled")
+            speak("এই ধাপটি চালু করা যায়নি। নিরাপত্তার জন্য পরিকল্পনা বন্ধ করেছি।", "plan-launch-failed")
+        }
+    }
+
+    /**
+     * Presents one allow-listed app launch for explicit notification confirmation.
+     * This method only prepares a PendingIntent; the app is not launched until Run action is tapped.
+     */
+    private fun offerPlannedAction(step: GalaxyTaskPlanner.PlannedStep) {
+        val action = when (step.action) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS ->
+                Intent(android.provider.Settings.ACTION_SETTINGS)
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE ->
+                packageManager.getLaunchIntentForPackage("com.google.android.youtube")
+                    ?: Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.youtube.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER ->
+                Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com"))
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA ->
+                Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE)
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER ->
+                Intent(Intent.ACTION_DIAL)
+            GalaxyTaskPlanner.ActionType.UNKNOWN -> return
+        }
+        val label = when (step.action) {
+            GalaxyTaskPlanner.ActionType.OPEN_SETTINGS -> "Android Settings"
+            GalaxyTaskPlanner.ActionType.OPEN_YOUTUBE -> "YouTube"
+            GalaxyTaskPlanner.ActionType.OPEN_BROWSER -> "Browser"
+            GalaxyTaskPlanner.ActionType.OPEN_CAMERA -> "Camera"
+            GalaxyTaskPlanner.ActionType.OPEN_DIALER -> "Phone dialer"
+            GalaxyTaskPlanner.ActionType.UNKNOWN -> return
+        }
+        if (step.action == GalaxyTaskPlanner.ActionType.OPEN_SETTINGS) {
+            requestSettingsConfirmation(label, action)
+        } else {
+            showActionNotification("$label খুলতে notification থেকে Run action চাপো", action)
+            speak("$label খুলতে notification থেকে Run action চাপো।", "galaxy-planned-action")
+        }
+        GalaxyVoiceHistory.add(this, step.originalInstruction, "Waiting for explicit action confirmation")
+    }
+
     /** Voice requests never change protected system settings directly. */
     private fun requestSettingsConfirmation(label: String, actionIntent: Intent) {
         GalaxyVoiceHistory.add(this, label, "Waiting for confirmation")
@@ -639,6 +950,11 @@ class GalaxyVoiceWakeService : Service() {
         getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
         speak("$label settings খুলতে notification থেকে confirm করো।", "galaxy-confirm")
     }
+
+    private fun conversationWindowMs(): Long =
+        getSharedPreferences("galaxy_preferences", MODE_PRIVATE)
+            .getInt(PREF_CONVERSATION_WINDOW_SECONDS, DEFAULT_CONVERSATION_WINDOW_SECONDS)
+            .coerceIn(8, 45) * 1000L
 
     private val wakeTimeout = Runnable {
         wakeArmed = false

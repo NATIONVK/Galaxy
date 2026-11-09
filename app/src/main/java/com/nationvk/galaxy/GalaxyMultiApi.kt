@@ -50,8 +50,8 @@ object GalaxyApiProfiles {
    .put("enabled",old?.optBoolean("enabled",true)?:true)
    .put("priority",if(ix>=0)old?.optInt("priority",ix)?:ix else 0)
   if(ix>=0) a.put(ix,item) else {
-   // A newly added API is enabled and becomes the primary provider immediately.
-   for(i in 0 until a.length()) a.optJSONObject(i)?.put("priority",a.optJSONObject(i)?.optInt("priority",i)?.plus(1)?:i+1)
+   // Preserve existing primary; append newly added profiles as backups.
+   item.put("priority",a.length())
    a.put(item)
   }
   return c.getSharedPreferences(PREF,0).edit().putString(KEY,a.toString()).commit()

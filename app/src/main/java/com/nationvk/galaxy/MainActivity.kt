@@ -2,6 +2,7 @@ package com.nationvk.galaxy
 
 import android.os.Bundle
 import java.util.Locale
+import kotlinx.coroutines.delay
 import androidx.core.content.ContextCompat
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.BackHandler
@@ -16,6 +17,8 @@ import android.content.pm.PackageManager
 import android.content.Intent
 import android.Manifest
 import androidx.activity.ComponentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.BasicTextField
@@ -74,7 +77,7 @@ private val Muted = Color(0xFF929AB8)
 private enum class GalaxyTab(val label: String, val glyph: String) {
     HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), NOTES("Notepad", "▤"), PROFILE("Profile", "◎"),
     VOICE("Voice", "♫"), RESEARCH("Research", "⌁"), CAMERA("Camera", "◉"), MODELS("AI Models", "⎇"),
-    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
+    NOTIFICATIONS("Alerts", "♢"), LOCAL("Mohakhali", "⌖"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
 }
 
 @Composable
@@ -84,6 +87,7 @@ fun GalaxyApp(initialTab: String? = null) {
         "VOICE" -> GalaxyTab.VOICE
         "SETTINGS" -> GalaxyTab.SETTINGS
         "PROFILE" -> GalaxyTab.PROFILE
+        "LOCAL", "MOHAKHALI" -> GalaxyTab.LOCAL
         else -> GalaxyTab.HOME
     }
     val navigationStack = remember {
@@ -126,6 +130,7 @@ fun GalaxyApp(initialTab: String? = null) {
                             GalaxyTab.CAMERA -> VisionStudioScreen()
                             GalaxyTab.MODELS -> ModelControlScreen()
                             GalaxyTab.NOTIFICATIONS -> NotificationCenterScreen()
+                            GalaxyTab.LOCAL -> MohakhaliLocalHubScreen()
                             GalaxyTab.SETTINGS -> SettingsScreen()
                         }
                     }
@@ -214,6 +219,8 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             ModuleCard("⚙", "SETTINGS", "App preferences", Modifier.weight(1f)) { onOpen(GalaxyTab.SETTINGS) }
             ModuleCard("◎", "PROFILE", "Your Galaxy space", Modifier.weight(1f)) { onOpen(GalaxyTab.PROFILE) }
         }
+        Spacer(Modifier.height(11.dp))
+        ModuleCard("⌖", "MOHAKHALI LOCAL HUB", "Area news • traffic • weather • alerts • jobs", Modifier.fillMaxWidth()) { onOpen(GalaxyTab.LOCAL) }
         Spacer(Modifier.height(20.dp))
         SectionHeading("SYSTEM STATUS", "Foundation phase")
         Spacer(Modifier.height(10.dp))
@@ -222,13 +229,398 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         SectionHeading("PHONE BRAIN", "Live device health snapshot")
         Spacer(Modifier.height(10.dp))
         DeviceMonitorPanel()
+        Spacer(Modifier.height(12.dp))
+        BatteryTrendPanel()
+        Spacer(Modifier.height(12.dp))
+        BackgroundAlertPanel()
         Spacer(Modifier.height(18.dp))
         SectionHeading("PHONE CONTROL CENTER", "Quick actions • Android-safe shortcuts")
         Spacer(Modifier.height(10.dp))
         PhoneQuickActionsPanel()
         Spacer(Modifier.height(18.dp))
+        SectionHeading("INSTALLED APPS", "Launchable apps on this phone")
+        Spacer(Modifier.height(10.dp))
+        InstalledAppsDashboard()
+        Spacer(Modifier.height(18.dp))
+        SectionHeading("APP USAGE INTELLIGENCE", "Today’s screen-time overview • opt-in")
+        Spacer(Modifier.height(10.dp))
+        AppUsageIntelligencePanel()
         Text("BUILT FOR CURIOSITY  •  NATIONVK", color = Color(0xFF606985), fontSize = 10.sp, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(14.dp))
+    }
+}
+
+
+
+private data class GalaxyBatterySample(val time: Long, val level: Int, val temperatureC: Double)
+
+@Composable
+private fun BatteryTrendPanel() {
+    val context = LocalContext.current
+    val prefs = remember(context) {
+        context.getSharedPreferences(GalaxyBackgroundMonitorWorker.PREFS, android.content.Context.MODE_PRIVATE)
+    }
+    var samples by remember { mutableStateOf(emptyList<GalaxyBatterySample>()) }
+
+    fun loadHistory() {
+        samples = prefs.getString(GalaxyBackgroundMonitorWorker.KEY_BATTERY_HISTORY, "").orEmpty()
+            .split(";").mapNotNull { row ->
+                val parts = row.split(",")
+                if (parts.size != 3) null else runCatching {
+                    GalaxyBatterySample(parts[0].toLong(), parts[1].toInt(), parts[2].toDouble())
+                }.getOrNull()
+            }.filter { it.level in 0..100 }.takeLast(GalaxyBackgroundMonitorWorker.MAX_HISTORY)
+    }
+
+    LaunchedEffect(context) { loadHistory() }
+    val latest = samples.lastOrNull()
+    val minLevel = samples.minOfOrNull { it.level }
+    val maxLevel = samples.maxOfOrNull { it.level }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("BATTERY HISTORY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text("On-device samples • up to 48 recent checks", color = Muted, fontSize = 9.sp)
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { loadHistory() }
+                    .padding(horizontal = 11.dp, vertical = 8.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        if (samples.isEmpty()) {
+            Text("এখনো কোনো history sample নেই। Smart Background Alerts চালু রাখলে scheduled check থেকে battery history জমা হবে।", color = Muted, fontSize = 10.sp, lineHeight = 15.sp)
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                BatteryHistoryStat("LATEST", "${latest?.level}%")
+                BatteryHistoryStat("LOWEST", "${minLevel}%")
+                BatteryHistoryStat("HIGHEST", "${maxLevel}%")
+            }
+            Spacer(Modifier.height(12.dp))
+            Canvas(Modifier.fillMaxWidth().height(92.dp)) {
+                if (samples.size >= 2) {
+                    val stepX = size.width / (samples.size - 1).toFloat()
+                    val points = samples.mapIndexed { index, sample ->
+                        Offset(index * stepX, size.height - (sample.level / 100f * size.height))
+                    }
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        points.drop(1).forEach { lineTo(it.x, it.y) }
+                    }
+                    drawLine(Color(0xFF35415F), Offset(0f, size.height * 0.2f), Offset(size.width, size.height * 0.2f), strokeWidth = 1.dp.toPx())
+                    drawLine(Color(0xFF35415F), Offset(0f, size.height * 0.5f), Offset(size.width, size.height * 0.5f), strokeWidth = 1.dp.toPx())
+                    drawLine(Cyan, points.first(), points.last(), strokeWidth = 0f)
+                    drawPath(path, Cyan, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.5.dp.toPx()))
+                    points.forEach { drawCircle(Cyan, radius = 2.5.dp.toPx(), center = it) }
+                } else {
+                    drawCircle(Cyan, radius = 4.dp.toPx(), center = Offset(size.width / 2f, size.height / 2f))
+                }
+            }
+            Text("${samples.size} samples • Last check: ${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(java.util.Date(latest!!.time))}", color = Muted, fontSize = 8.sp)
+            val latestTemp = latest.temperatureC.takeIf { it >= 0.0 }
+            if (latestTemp != null) Text("Latest reported battery temperature: ${"%.1f".format(Locale.US, latestTemp)} °C", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+        }
+        Text("History is collected only while Smart Background Alerts is enabled. WorkManager checks are best-effort (normally no more often than every 15 minutes); gaps and missed short charging events are expected. This is charge-level history, not battery wear, cycle count, or exact battery capacity.", color = Muted, fontSize = 8.sp, lineHeight = 12.sp, modifier = Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
+private fun RowScope.BatteryHistoryStat(label: String, value: String) {
+    Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(Panel2).padding(9.dp)) {
+        Text(label, color = Muted, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+        Text(value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 3.dp))
+    }
+}
+
+@Composable
+private fun BackgroundAlertPanel() {
+    val context = LocalContext.current
+    val prefs = remember(context) {
+        context.getSharedPreferences(GalaxyBackgroundMonitorWorker.PREFS, android.content.Context.MODE_PRIVATE)
+    }
+    var enabled by remember { mutableStateOf(prefs.getBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, false)) }
+    var batteryLimit by remember { mutableFloatStateOf(prefs.getInt(GalaxyBackgroundMonitorWorker.KEY_BATTERY_LIMIT, 20).toFloat()) }
+    var status by remember { mutableStateOf(if (enabled) "Background checks are scheduled (about every 15 minutes)." else "Background monitoring is off.") }
+
+    fun scheduleMonitor() {
+        val request = androidx.work.PeriodicWorkRequestBuilder<GalaxyBackgroundMonitorWorker>(15, java.util.concurrent.TimeUnit.MINUTES).build()
+        androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            GalaxyBackgroundMonitorWorker.UNIQUE_WORK,
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            request
+        )
+        prefs.edit().putBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, true)
+            .putInt(GalaxyBackgroundMonitorWorker.KEY_BATTERY_LIMIT, batteryLimit.toInt()).apply()
+        enabled = true
+        status = "Enabled • Android checks approximately every 15 minutes; delivery may be delayed by Doze or battery saver."
+    }
+
+    fun stopMonitor() {
+        androidx.work.WorkManager.getInstance(context).cancelUniqueWork(GalaxyBackgroundMonitorWorker.UNIQUE_WORK)
+        prefs.edit().putBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, false).apply()
+        enabled = false
+        status = "Background monitoring is off."
+    }
+
+    val notificationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) scheduleMonitor()
+        else {
+            prefs.edit().putBoolean(GalaxyBackgroundMonitorWorker.KEY_ENABLED, false).apply()
+            status = "Notification permission denied. Allow notifications to receive phone alerts."
+        }
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("SMART BACKGROUND ALERTS", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.1.sp)
+                Text("Battery • temperature • RAM • storage", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            Switch(checked = enabled, onCheckedChange = { turnOn ->
+                if (!turnOn) stopMonitor()
+                else if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                ) notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                else scheduleMonitor()
+            })
+        }
+        Spacer(Modifier.height(10.dp))
+        Text("LOW BATTERY ALERT AT ${batteryLimit.toInt()}%", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+        Slider(value = batteryLimit, onValueChange = {
+            batteryLimit = it
+            prefs.edit().putInt(GalaxyBackgroundMonitorWorker.KEY_BATTERY_LIMIT, it.toInt()).apply()
+        }, valueRange = 5f..50f, steps = 8)
+        Text(status, color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+        Text("Checks run in Android's scheduled background window (minimum interval 15 minutes, not real-time). Alerts have a 6-hour per-category cooldown. Android/OEM battery restrictions may delay checks; force-stop disables scheduled work until the app is opened again.", color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 7.dp))
+    }
+}
+
+private data class GalaxyLaunchableApp(val label: String, val packageName: String)
+
+@Composable
+private fun InstalledAppsDashboard() {
+    val context = LocalContext.current
+    var apps by remember(context) { mutableStateOf(emptyList<GalaxyLaunchableApp>()) }
+    var query by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf("অ্যাপ তালিকা প্রস্তুত হচ্ছে…") }
+
+    fun loadApps() {
+        try {
+            val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+            val matches = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                context.packageManager.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(0)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(intent, 0)
+            }
+            apps = matches.mapNotNull { info ->
+                val activity = info.activityInfo ?: return@mapNotNull null
+                val label = info.loadLabel(context.packageManager)?.toString()?.trim().orEmpty()
+                if (label.isBlank()) null else GalaxyLaunchableApp(label, activity.packageName)
+            }.distinctBy { it.packageName }.sortedBy { it.label.lowercase(Locale.ROOT) }
+            status = if (apps.isEmpty()) "কোনো launchable app পাওয়া যায়নি।" else "${apps.size}টি launchable app পাওয়া গেছে।"
+        } catch (error: Exception) {
+            status = "App list পড়া যায়নি: ${error.message ?: "unknown error"}"
+        }
+    }
+
+    LaunchedEffect(context) { loadApps() }
+    val filtered = apps.filter {
+        it.label.contains(query, ignoreCase = true) || it.packageName.contains(query, ignoreCase = true)
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(13.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("APP LIBRARY", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text(status, color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { loadApps() }.padding(horizontal = 12.dp, vertical = 9.dp))
+        }
+        Spacer(Modifier.height(10.dp))
+        BasicTextField(
+            value = query,
+            onValueChange = { query = it },
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 11.sp),
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Panel2).padding(12.dp),
+            decorationBox = { inner ->
+                Box {
+                    if (query.isBlank()) Text("Search app name or package…", color = Muted, fontSize = 11.sp)
+                    inner()
+                }
+            }
+        )
+        Spacer(Modifier.height(8.dp))
+        if (filtered.isEmpty()) {
+            Text(if (apps.isEmpty()) "অ্যাপ তালিকা খালি।" else "এই নামে কোনো app পাওয়া যায়নি।",
+                color = Muted, fontSize = 10.sp, modifier = Modifier.padding(vertical = 12.dp))
+        } else {
+            filtered.take(40).forEach { app ->
+                Row(
+                    Modifier.fillMaxWidth().padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(11.dp)).background(Panel2)
+                        .clickable {
+                            try {
+                                val launch = context.packageManager.getLaunchIntentForPackage(app.packageName)
+                                if (launch != null) context.startActivity(launch)
+                                else status = "${app.label} সরাসরি launch করা যাচ্ছে না।"
+                            } catch (error: Exception) {
+                                status = "${app.label} খোলা যায়নি: ${error.message ?: "unknown error"}"
+                            }
+                        }.padding(horizontal = 11.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.size(30.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xFF25294F)), contentAlignment = Alignment.Center) {
+                        Text(app.label.take(1).uppercase(Locale.ROOT), color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(app.label, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(app.packageName, color = Muted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text("OPEN", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            if (filtered.size > 40) {
+                Text("প্রথম ৪০টি ফলাফল দেখানো হচ্ছে; search দিয়ে বাকিগুলো খুঁজে নাও।", color = Muted, fontSize = 9.sp,
+                    modifier = Modifier.padding(top = 7.dp))
+            }
+        }
+        Text("Privacy: শুধু Android launcher-এ দৃশ্যমান app-এর নাম ও package দেখানো হয়। কোনো app data, message বা usage history পড়া হয় না।",
+            color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 9.dp))
+    }
+}
+
+
+private data class GalaxyAppUsage(val label: String, val packageName: String, val foregroundMillis: Long)
+
+@Composable
+private fun AppUsageIntelligencePanel() {
+    val context = LocalContext.current
+    var hasAccess by remember { mutableStateOf(false) }
+    var usage by remember { mutableStateOf(emptyList<GalaxyAppUsage>()) }
+    var status by remember { mutableStateOf("Usage Access অনুমতি প্রয়োজন।") }
+
+    fun refreshUsage() {
+        try {
+            val appOps = context.getSystemService(android.content.Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+            val mode = if (android.os.Build.VERSION.SDK_INT >= 29) {
+                appOps.unsafeCheckOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(
+                    android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    android.os.Process.myUid(),
+                    context.packageName
+                )
+            }
+            hasAccess = mode == android.app.AppOpsManager.MODE_ALLOWED
+            if (!hasAccess) {
+                usage = emptyList()
+                status = "Usage Access বন্ধ আছে। চাইলে Settings থেকে অনুমতি দিতে পারো।"
+                return
+            }
+
+            val manager = context.getSystemService(android.app.usage.UsageStatsManager::class.java)
+            val calendar = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            val now = System.currentTimeMillis()
+            val records = manager?.queryUsageStats(
+                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                calendar.timeInMillis,
+                now
+            ).orEmpty()
+            usage = records.groupBy { it.packageName }.mapNotNull { (packageName, entries) ->
+                val total = entries.sumOf { it.totalTimeInForeground }
+                if (total <= 0L) return@mapNotNull null
+                val label = try {
+                    val appInfo = context.packageManager.getApplicationInfo(packageName, 0)
+                    context.packageManager.getApplicationLabel(appInfo).toString()
+                } catch (_: Exception) {
+                    packageName
+                }
+                GalaxyAppUsage(label, packageName, total)
+            }.sortedByDescending { it.foregroundMillis }
+            status = if (usage.isEmpty()) "আজকের জন্য কোনো app usage record পাওয়া যায়নি।"
+                else "আজ ${usage.size}টি app-এর foreground usage পাওয়া গেছে।"
+        } catch (error: Exception) {
+            status = "Usage data পড়া যায়নি: ${error.message ?: "unknown error"}"
+        }
+    }
+
+    LaunchedEffect(context) { refreshUsage() }
+
+    // Usage Access is a special permission changed in Android Settings.
+    // Re-check automatically when the user returns to Galaxy.
+    DisposableEffect(context) {
+        val activity = context as? ComponentActivity
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshUsage()
+        }
+        activity?.lifecycle?.addObserver(observer)
+        onDispose { activity?.lifecycle?.removeObserver(observer) }
+    }
+
+    fun formatDuration(millis: Long): String {
+        val minutes = millis / 60_000L
+        val hours = minutes / 60L
+        val remainder = minutes % 60L
+        return if (hours > 0L) "${hours}h ${remainder}m" else "${remainder}m"
+    }
+
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(13.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("TODAY'S APP USAGE", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Text(status, color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 4.dp))
+            }
+            Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Panel2).clickable { refreshUsage() }.padding(horizontal = 11.dp, vertical = 9.dp))
+        }
+        if (!hasAccess) {
+            Spacer(Modifier.height(10.dp))
+            Text("Usage Access দিলে Galaxy আজ কোন app কতক্ষণ foreground-এ ছিল তা দেখাতে পারবে। এটি message, password বা app-এর ভেতরের content পড়ে না।",
+                color = Muted, fontSize = 9.sp, lineHeight = 14.sp)
+            Spacer(Modifier.height(9.dp))
+            Text("OPEN USAGE ACCESS SETTINGS", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Violet).clickable {
+                    try {
+                        context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (error: Exception) {
+                        status = "Settings খোলা যায়নি: ${error.message ?: "unknown error"}"
+                    }
+                }.padding(12.dp))
+        } else if (usage.isEmpty()) {
+            Text("ব্যবহার শুরু হলে এখানে app-wise সময় দেখা যাবে।", color = Muted, fontSize = 10.sp,
+                modifier = Modifier.padding(vertical = 12.dp))
+        } else {
+            Spacer(Modifier.height(8.dp))
+            usage.take(12).forEach { item ->
+                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(item.label, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(item.packageName, color = Muted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Text(formatDuration(item.foregroundMillis), color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            if (usage.size > 12) Text("শীর্ষ ১২টি app দেখানো হচ্ছে।", color = Muted, fontSize = 8.sp)
+        }
+        Text("ডেটা Android UsageStats থেকে নেওয়া হয়; এটি foreground time-এর আনুমানিক হিসাব, battery usage বা exact active screen time নয়। অনুমতি Settings থেকে যেকোনো সময় বন্ধ করা যাবে।",
+            color = Muted, fontSize = 8.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 9.dp))
     }
 }
 
@@ -365,9 +757,13 @@ private data class GalaxyDeviceSnapshot(
     val temperature: String,
     val batteryHealth: String,
     val powerMode: String,
+    val thermalState: String,
     val memory: String,
+    val memoryPressure: String,
     val storage: String,
-    val network: String
+    val storageSpace: String,
+    val network: String,
+    val networkCost: String
 )
 
 private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDeviceSnapshot {
@@ -408,12 +804,31 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
     }
     val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as android.os.PowerManager
     val powerMode = if (powerManager.isPowerSaveMode) "Battery Saver ON" else "Normal mode"
+    val thermalState = if (android.os.Build.VERSION.SDK_INT >= 29) {
+        when (powerManager.currentThermalStatus) {
+            android.os.PowerManager.THERMAL_STATUS_NONE -> "Normal"
+            android.os.PowerManager.THERMAL_STATUS_LIGHT -> "Light"
+            android.os.PowerManager.THERMAL_STATUS_MODERATE -> "Moderate"
+            android.os.PowerManager.THERMAL_STATUS_SEVERE -> "Severe"
+            android.os.PowerManager.THERMAL_STATUS_CRITICAL -> "Critical"
+            android.os.PowerManager.THERMAL_STATUS_EMERGENCY -> "Emergency"
+            android.os.PowerManager.THERMAL_STATUS_SHUTDOWN -> "Shutdown risk"
+            else -> "Unavailable"
+        }
+    } else "Not supported on this Android version"
 
     val activityManager = context.getSystemService(android.content.Context.ACTIVITY_SERVICE) as android.app.ActivityManager
     val memoryInfo = android.app.ActivityManager.MemoryInfo()
     activityManager.getMemoryInfo(memoryInfo)
     val totalRam = memoryInfo.totalMem.coerceAtLeast(1L)
     val usedRam = (totalRam - memoryInfo.availMem).coerceAtLeast(0L)
+    val ramPercent = ((usedRam * 100L) / totalRam).toInt().coerceIn(0, 100)
+    val memoryPressure = when {
+        memoryInfo.lowMemory -> "System low-memory warning"
+        ramPercent >= 90 -> "High memory pressure ($ramPercent%)"
+        ramPercent >= 80 -> "Elevated memory use ($ramPercent%)"
+        else -> "Normal ($ramPercent%)"
+    }
     fun size(bytes: Long): String = when {
         bytes >= 1024L * 1024L * 1024L -> String.format(Locale.US, "%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
         else -> String.format(Locale.US, "%.0f MB", bytes / (1024.0 * 1024.0))
@@ -422,6 +837,8 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
     val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
     val totalStorage = stat.totalBytes.coerceAtLeast(1L)
     val usedStorage = (totalStorage - stat.availableBytes).coerceAtLeast(0L)
+    val storageSpace = if (stat.availableBytes < 1024L * 1024L * 1024L) "Low free space • ${size(stat.availableBytes)} free"
+        else "${size(stat.availableBytes)} free"
     val connectivity = context.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
     val network = if (android.os.Build.VERSION.SDK_INT >= 23) {
         val active = connectivity.activeNetwork
@@ -434,6 +851,8 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
             else -> "Connected"
         }
     } else if (connectivity.activeNetworkInfo?.isConnected == true) "Connected" else "Offline"
+    val networkCost = if (network == "Offline") "Not connected"
+        else if (connectivity.isActiveNetworkMetered) "Metered connection" else "Unmetered connection"
 
     return GalaxyDeviceSnapshot(
         device = "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}".trim(),
@@ -443,9 +862,13 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
         temperature = temperature,
         batteryHealth = batteryHealth,
         powerMode = powerMode,
+        thermalState = thermalState,
         memory = "${size(usedRam)} / ${size(totalRam)} used",
+        memoryPressure = memoryPressure,
         storage = "${size(usedStorage)} / ${size(totalStorage)} used",
-        network = network
+        storageSpace = storageSpace,
+        network = network,
+        networkCost = networkCost
     )
 }
 
@@ -453,27 +876,138 @@ private fun readGalaxyDeviceSnapshot(context: android.content.Context): GalaxyDe
 private fun DeviceMonitorPanel() {
     val context = LocalContext.current
     var snapshot by remember(context) { mutableStateOf(readGalaxyDeviceSnapshot(context)) }
+    var lastUpdated by remember { mutableStateOf("Just now") }
+    var voiceReady by remember { mutableStateOf(false) }
+    val speechEngine = remember(context) {
+        TextToSpeech(context) { status ->
+            voiceReady = status == TextToSpeech.SUCCESS
+        }
+    }
+    DisposableEffect(speechEngine) {
+        onDispose {
+            speechEngine.stop()
+            speechEngine.shutdown()
+        }
+    }
+
+    fun refreshSnapshot() {
+        snapshot = readGalaxyDeviceSnapshot(context)
+        lastUpdated = java.text.SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(java.util.Date())
+    }
+
+    // Poll only while this monitor is composed/visible; no background polling service is started.
+    LaunchedEffect(context) {
+        while (true) {
+            delay(30_000L)
+            refreshSnapshot()
+        }
+    }
+
+    val batteryPercent = snapshot.battery.removeSuffix("%").toIntOrNull()
+    val ramPercent = Regex("\\((\\d+)%\\)").find(snapshot.memoryPressure)?.groupValues?.getOrNull(1)?.toIntOrNull()
+    val batteryTemp = snapshot.temperature.removeSuffix(" °C").toDoubleOrNull()
+    val warnings = buildList {
+        if (snapshot.thermalState in setOf("Severe", "Critical", "Emergency", "Shutdown risk")) {
+            add("Phone thermal state: ${snapshot.thermalState}. Heavy use বন্ধ করে ফোন ঠান্ডা হতে দাও।")
+        }
+        if (batteryTemp != null && batteryTemp >= 45.0) add("Battery temperature high: ${snapshot.temperature}. Charging/use কমিয়ে ঠান্ডা হতে দাও।")
+        if (batteryPercent != null && batteryPercent <= 15) add("Battery low: ${snapshot.battery}. Charger লাগানোর কথা বিবেচনা করো।")
+        if (ramPercent != null && ramPercent >= 90) add("Memory pressure high: ${ramPercent}% RAM used.")
+        if (snapshot.memoryPressure.contains("low-memory", ignoreCase = true)) add("Android system low-memory warning reported.")
+        if (snapshot.storageSpace.startsWith("Low free space")) add("Storage space low: ${snapshot.storageSpace}.")
+    }
+
+    val batteryInsights = buildList {
+        when {
+            batteryPercent == null -> add("চার্জের শতাংশ Android থেকে পাওয়া যায়নি; Refresh করে আবার দেখো।")
+            batteryPercent <= 15 -> add("চার্জ খুব কম। সম্ভব হলে এখনই চার্জে দাও এবং Battery Saver চালু করো।")
+            batteryPercent <= 30 -> add("চার্জ কমের দিকে। বাইরে যাওয়ার আগে চার্জ দেওয়া বা Battery Saver ব্যবহার করা ভালো।")
+            batteryPercent >= 80 && snapshot.charging.contains("Charging", ignoreCase = true) ->
+                add("চার্জ ৮০% বা বেশি এবং এখনও চার্জ হচ্ছে। প্রয়োজন না হলে চার্জার খুলে নিতে পারো।")
+            else -> add("চার্জের মাত্রা ${snapshot.battery}; এই তথ্য একাই battery health বা অবশিষ্ট ব্যবহারের সময় নির্ধারণ করে না।")
+        }
+        when {
+            batteryTemp == null -> add("Battery temperature পাওয়া যায়নি।")
+            batteryTemp >= 45.0 -> add("ব্যাটারি খুব গরম (${snapshot.temperature})। চার্জিং/ভারী কাজ থামিয়ে ফোন ঠান্ডা হতে দাও।")
+            batteryTemp >= 40.0 -> add("ব্যাটারি তুলনামূলক উষ্ণ (${snapshot.temperature})। ভারী গেমিং বা চার্জের সময় তাপমাত্রা নজরে রাখো।")
+            else -> add("Battery temperature: ${snapshot.temperature}।")
+        }
+        when (snapshot.batteryHealth) {
+            "Good" -> add("Android battery health: Good — এটি সিস্টেমের reported status, capacity percentage নয়।")
+            "Overheating", "Cold", "Dead", "Over voltage", "System-reported issue" ->
+                add("Android battery health warning: ${snapshot.batteryHealth}। চার্জার/কেবল পরীক্ষা করো; সমস্যা থাকলে সার্ভিস সেন্টারে দেখাও।")
+            else -> add("Battery health status Android থেকে নিশ্চিতভাবে পাওয়া যায়নি।")
+        }
+    }
+
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Panel).padding(14.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(snapshot.device, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Text(snapshot.android, color = Muted, fontSize = 9.sp)
+                Text("LIVE SNAPSHOT • Updated ${lastUpdated}", color = Cyan, fontSize = 8.sp)
             }
             Text("REFRESH", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clip(RoundedCornerShape(9.dp)).background(Violet)
-                    .clickable { snapshot = readGalaxyDeviceSnapshot(context) }
+                    .clickable { refreshSnapshot() }
                     .padding(horizontal = 12.dp, vertical = 9.dp))
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
+        val report = buildString {
+            append("ফোনের অবস্থা। ডিভাইস: ${snapshot.device}। ব্যাটারি ${snapshot.battery}। চার্জের অবস্থা ${snapshot.charging}। ব্যাটারির তাপমাত্রা ${snapshot.temperature}। থার্মাল স্ট্যাটাস ${snapshot.thermalState}। র‍্যাম ${snapshot.memory}। মেমোরি অবস্থা ${snapshot.memoryPressure}। ফ্রি স্টোরেজ ${snapshot.storageSpace}। নেটওয়ার্ক ${snapshot.network}। ")
+            if (warnings.isEmpty()) append("কোনো গুরুত্বপূর্ণ সতর্কতা পাওয়া যায়নি।")
+            else append("সতর্কতা: " + warnings.joinToString("। "))
+        }
+        Text(if (voiceReady) "🔊  SPEAK PHONE REPORT" else "VOICE REPORT • TTS UNAVAILABLE",
+            color = if (voiceReady) Color.White else Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                .background(if (voiceReady) Color(0xFF26345A) else Panel2)
+                .clickable(enabled = voiceReady) {
+                    val bangla = Locale("bn", "BD")
+                    val selectedLocale = if (speechEngine.isLanguageAvailable(bangla) >= TextToSpeech.LANG_AVAILABLE) bangla else Locale("bn")
+                    speechEngine.language = selectedLocale
+                    speechEngine.setSpeechRate(0.92f)
+                    speechEngine.speak(report, TextToSpeech.QUEUE_FLUSH, null, "galaxy-phone-report")
+                }.padding(horizontal = 12.dp, vertical = 12.dp))
+        Spacer(Modifier.height(10.dp))
+        if (warnings.isNotEmpty()) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                .background(Color(0xFF39251E)).padding(10.dp)) {
+                Text("PHONE BRAIN ALERTS", color = Color(0xFFFFC078), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                warnings.forEach { warning ->
+                    Text("• $warning", color = Color(0xFFFFE0BD), fontSize = 10.sp, lineHeight = 15.sp,
+                        modifier = Modifier.padding(top = 4.dp))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        } else {
+            Text("No critical device warnings detected in the latest snapshot.",
+                color = Color(0xFF8DE5B0), fontSize = 9.sp)
+            Spacer(Modifier.height(8.dp))
+        }
         DeviceMetricRow("Battery level", snapshot.battery, "▰")
         DeviceMetricRow("Charge state", snapshot.charging, "⚡")
         DeviceMetricRow("Battery temperature", snapshot.temperature, "♨")
         DeviceMetricRow("Battery health", snapshot.batteryHealth, "♥")
         DeviceMetricRow("Power profile", snapshot.powerMode, "◉")
+        DeviceMetricRow("Thermal status", snapshot.thermalState, "♨")
         DeviceMetricRow("Memory (RAM)", snapshot.memory, "▦")
+        DeviceMetricRow("Memory pressure", snapshot.memoryPressure, "▥")
         DeviceMetricRow("Internal storage", snapshot.storage, "▤")
+        DeviceMetricRow("Free storage", snapshot.storageSpace, "▤")
         DeviceMetricRow("Network", snapshot.network, "⌁")
-        Text("Battery Intelligence: Android-এর battery status, power source, reported temperature/health এবং Battery Saver mode দেখায়। এটি battery capacity বা battery health percentage অনুমান করে না। তথ্য ফোনেই থাকে; এই panel cloud-এ পাঠায় না। Refresh চাপলে নতুন snapshot নেওয়া হবে।",
+        DeviceMetricRow("Network usage type", snapshot.networkCost, "⇅")
+        Spacer(Modifier.height(9.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel2).padding(11.dp)) {
+            Text("BATTERY INTELLIGENCE", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+            batteryInsights.forEach { insight ->
+                Text("• $insight", color = Color.White, fontSize = 9.sp, lineHeight = 14.sp,
+                    modifier = Modifier.padding(top = 6.dp))
+            }
+            Text("নোট: Android-এর battery health broadcast থেকে battery cycle count, design capacity বা প্রকৃত battery degradation জানা যায় না।",
+                color = Muted, fontSize = 8.sp, lineHeight = 12.sp, modifier = Modifier.padding(top = 7.dp))
+        }
+        Text("Phone Brain refreshes every 30 seconds while this screen is visible. Tap Speak Phone Report to hear the latest snapshot using the device TTS voice. Bengali voice availability depends on the installed speech engine. Alerts are on-screen only; no background monitoring or notification is enabled. Snapshot stays on this phone.",
             color = Muted, fontSize = 9.sp, lineHeight = 14.sp, modifier = Modifier.padding(top = 8.dp))
     }
 }
@@ -526,11 +1060,10 @@ private fun ModelControlScreen() {
             }
         }
         Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color(0xFF14283A)).padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("●", color = Cyan, fontSize = 10.sp)
-            Spacer(Modifier.width(9.dp))
-            Text("Demo interface only — no model provider is connected yet.", color = Color(0xFFB8D8E8), fontSize = 10.sp)
-        }
+        Spacer(Modifier.height(18.dp))
+        Text("LIVE API PROVIDERS", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold)
+        Text("Gemini Primary → OpenAI Backup • automatic failover", color = Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 5.dp, bottom = 10.dp))
+        GalaxyMultiApiSettingsPanel()
     }
 }
 
@@ -712,7 +1245,7 @@ private fun ChatScreen() {
             if (showContextDetails) {
                 Spacer(Modifier.height(8.dp))
                 Text(contextInfo.preview, color = Color(0xFFD8DDF0), fontSize = 10.sp, lineHeight = 15.sp)
-                Text("Context is prepared locally for a future connected AI provider. No AI reply is generated in this build.", color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 7.dp))
+                Text("এই context live provider configured থাকলে request-এর সঙ্গে পাঠানো হয়। Provider না থাকলে chat শুধু local-এ সংরক্ষিত হয়।", color = Muted, fontSize = 9.sp, lineHeight = 13.sp, modifier = Modifier.padding(top = 7.dp))
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -845,6 +1378,7 @@ private fun VoiceStudioScreen() {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
     var selectedVoice by remember { mutableStateOf(preferences.getString("voice_gender", "Male") ?: "Male") }
+    var conversationWindowSeconds by remember { mutableIntStateOf(preferences.getInt(GalaxyVoiceWakeService.PREF_CONVERSATION_WINDOW_SECONDS, 20).coerceIn(8, 45)) }
     var recognitionLanguage by remember { mutableStateOf("bn-BD") }
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
@@ -1303,6 +1837,23 @@ private fun VoiceStudioScreen() {
         Spacer(Modifier.height(14.dp))
         VoiceCommandHistoryPanel()
         Spacer(Modifier.height(16.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Panel).padding(14.dp)) {
+            Text("CONTINUOUS COMMAND WINDOW", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+            Text("Hey Galaxy বলার পর পরের command দেওয়ার জন্য কতক্ষণ অপেক্ষা করবে", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 5.dp, bottom = 9.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                listOf(8, 12, 20, 30, 45).forEach { seconds ->
+                    Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (conversationWindowSeconds == seconds) Color(0xFF29264F) else Panel2)
+                        .clickable {
+                            conversationWindowSeconds = seconds
+                            preferences.edit().putInt(GalaxyVoiceWakeService.PREF_CONVERSATION_WINDOW_SECONDS, seconds).apply()
+                        }.padding(vertical = 11.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("${seconds}s", color = if (conversationWindowSeconds == seconds) Cyan else Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    }
+                }
+            }
+            Text("বর্তমান সময়: $conversationWindowSeconds সেকেন্ড • “কথা বলা বন্ধ” বললে আগেই বন্ধ হবে।", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 8.dp))
+        }
+        Spacer(Modifier.height(14.dp))
         Text("VOICE TYPE", color = Cyan, fontSize = 10.sp, letterSpacing = 1.8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             listOf("Male", "Female").forEach { voice ->
