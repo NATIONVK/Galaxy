@@ -37,6 +37,7 @@ class GalaxyBackgroundMonitorWorker(
             val scale = it.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
             if (raw >= 0 && scale > 0) raw * 100 / scale else -1
         } ?: -1
+        val tempTenths = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
         if (level >= 0) {
             val tempC = tempTenths.takeIf { it >= 0 }?.div(10.0)
             val sample = "${System.currentTimeMillis()},$level,${tempC ?: -1.0}"
@@ -48,8 +49,6 @@ class GalaxyBackgroundMonitorWorker(
 
         val batteryLimit = prefs.getInt(KEY_BATTERY_LIMIT, 20).coerceIn(5, 50)
         if (level in 0..batteryLimit) alerts += "battery" to "Battery low: $level%"
-
-        val tempTenths = batteryIntent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
         if (tempTenths >= 450) alerts += "temperature" to "Battery temperature is high: ${tempTenths / 10.0} °C"
 
         val powerManager = applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager
