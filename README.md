@@ -182,3 +182,11 @@ Build configuration and device compatibility may change during development. An A
 - “Yes” only runs the next step when a plan step is already pending; it never independently launches an app.
 - “No” cancels the pending plan. Each remaining plan step still requires a separate confirmation.
 - Destructive memory deletion and other sensitive actions are not confirmed by this generic yes/no handler.
+
+
+### Galaxy Conversation Memory 2.0
+- Voice Brain exchanges are retained as a rolling local history of up to 12 turns, with a 24-hour expiry window and a 500-character limit per text field.
+- The history is stored in the app's private SharedPreferences and is not uploaded or synced.
+- Legacy single-turn memory is read as a compatibility fallback after upgrading.
+- Voice prompts such as “আগের কথোপকথন কী ছিল?” or “what were we discussing?” can recall a short summary of up to the last four exchanges.
+- This is bounded local recall, not semantic long-term memory or an AI-generated summary. The existing short follow-up engine remains deterministic.
