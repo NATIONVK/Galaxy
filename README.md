@@ -175,3 +175,10 @@ Build configuration and device compatibility may change during development. An A
 - Voice Studio now offers 8, 12, 20, or 30-second follow-up windows after a wake phrase or accepted command.
 - The selected duration is stored in local app preferences and read by the foreground voice service.
 - The user can end the window early with “stop conversation” / “কথা বলা বন্ধ”.
+
+
+### Voice confirmation for pending plans
+- A pending allow-listed multi-step app-launch plan can now accept a clear spoken yes/confirm or no/cancel response during the active voice window.
+- “Yes” only runs the next step when a plan step is already pending; it never independently launches an app.
+- “No” cancels the pending plan. Each remaining plan step still requires a separate confirmation.
+- Destructive memory deletion and other sensitive actions are not confirmed by this generic yes/no handler.
