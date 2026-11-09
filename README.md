@@ -142,7 +142,15 @@ Build configuration and device compatibility may change during development. An A
 - Optional WorkManager periodic worker checks battery level, battery temperature, Android thermal status, RAM pressure, and free internal storage.
 - Minimum periodic interval is 15 minutes; Android Doze, battery saver, OEM restrictions, and force-stop can delay or stop execution. This is not real-time monitoring.
 - The battery warning threshold is user-adjustable (5–50%). Other conservative thresholds are fixed in this version: battery temperature at 45°C, RAM pressure at 90% or Android low-memory warning, and free storage below 1 GB.
-- Notifications require the Android notification permission on Android 13 and later. The worker exits without posting if permission is unavailable.
+- Notifications require the Android notification permission on Android 13 and later. Without permission, background sampling may still continue, but alerts are not posted.
 - Per-category notification cooldown is six hours to reduce repeated alerts.
 - Monitoring is opt-in and can be disabled from the Home screen. No location, messages, contacts, or app content is read.
 - Device/OEM reporting varies; battery temperature and thermal status may be unavailable or differ from actual surface temperature.
+
+
+### Battery History (Phone Brain v2)
+- Stores up to 48 recent battery percentage and reported temperature samples locally in the existing private app preferences when Smart Background Alerts is enabled.
+- Adds a Battery History panel with latest, lowest and highest recorded charge levels and a simple trend line.
+- Sampling uses WorkManager's best-effort periodic schedule; it is not continuous and may have gaps. Short charging sessions can be missed.
+- History remains on-device and is not uploaded. The feature does not calculate battery wear, charge cycles, design capacity, or exact battery health.
+- The panel's Refresh action reloads locally stored samples. New samples appear after the next successful scheduled check.
