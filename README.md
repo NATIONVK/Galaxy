@@ -162,3 +162,10 @@ Build configuration and device compatibility may change during development. An A
 - Say “stop conversation”, “end conversation”, or “কথা বলা বন্ধ” to close the follow-up window immediately.
 - This is a short sequential command window, not continuous always-on transcription. Speech recognition availability, microphone permission, Android foreground-service rules, network conditions and OEM battery restrictions still apply.
 - The feature does not bypass Android microphone privacy indicators or foreground-service notification requirements.
+
+
+### Voice follow-up improvements
+- Adds Bengali/English repeat-last-answer phrases such as “আবার বল”, “repeat”, and “say that again”, using the latest locally saved Brain exchange.
+- Expands contextual follow-up phrase recognition for requests to explain more simply, give an example, or summarize.
+- These follow-up responses are based on the saved local Brain turn; they do not independently generate new facts or guarantee an AI-provider response.
+- Fixes the Battery History worker's temperature-sample variable ordering so the Android Kotlin build can compile.
