@@ -348,6 +348,7 @@ class GalaxyVoiceWakeService : Service() {
             return
         }
 
+        val normalizedCommand = command.lowercase(Locale.ROOT).trim().trimEnd('.', '!', '?', '।')
         val voiceSessionPrefs = getSharedPreferences("galaxy_voice_session", MODE_PRIVATE)
         val repeatPhrases = listOf("repeat", "repeat that", "say that again", "আবার বলো", "আবার বল", "পুনরায় বলো", "পুনরায় বলো", "আরেকবার বলো")
         if (repeatPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
@@ -387,7 +388,6 @@ class GalaxyVoiceWakeService : Service() {
         val pendingSteps = runtimePrefs.getString(PREF_PLAN_STEPS, null)?.split("|").orEmpty()
         val pendingIndex = runtimePrefs.getInt(PREF_PLAN_INDEX, 0)
         val hasPendingPlanStep = pendingIndex in pendingSteps.indices
-        val normalizedCommand = command.lowercase(Locale.ROOT).trim().trimEnd('.', '!', '?', '।')
         val affirmative = listOf(
             "yes", "yeah", "yep", "confirm", "ঠিক আছে", "হ্যাঁ", "হ্যা",
             "অনুমতি দিলাম", "চালাও", "চালু করো", "করো", "ওটাই করো"
