@@ -190,3 +190,9 @@ Build configuration and device compatibility may change during development. An A
 - Legacy single-turn memory is read as a compatibility fallback after upgrading.
 - Voice prompts such as “আগের কথোপকথন কী ছিল?” or “what were we discussing?” can recall a short summary of up to the last four exchanges.
 - This is bounded local recall, not semantic long-term memory or an AI-generated summary. The existing short follow-up engine remains deterministic.
+
+
+### Voice access to Memory Vault
+- Galaxy Brain can now retrieve matching user-saved Memory Vault entries when the user explicitly asks what is remembered, asks about a saved project/preference, or requests a memory search.
+- Retrieval uses the existing relevance-ranked local memory search and reads up to four matching entries; it does not send memory content to Gemini, OpenAI or a server.
+- If no matching item exists, Galaxy says so rather than inventing an answer. This is deterministic retrieval, not automatic memory creation or semantic inference.
