@@ -169,3 +169,9 @@ Build configuration and device compatibility may change during development. An A
 - Expands contextual follow-up phrase recognition for requests to explain more simply, give an example, or summarize.
 - These follow-up responses are based on the saved local Brain turn; they do not independently generate new facts or guarantee an AI-provider response.
 - Fixes the Battery History worker's temperature-sample variable ordering so the Android Kotlin build can compile.
+
+
+### Configurable continuous voice window
+- Voice Studio now offers 8, 12, 20, or 30-second follow-up windows after a wake phrase or accepted command.
+- The selected duration is stored in local app preferences and read by the foreground voice service.
+- The user can end the window early with “stop conversation” / “কথা বলা বন্ধ”.
