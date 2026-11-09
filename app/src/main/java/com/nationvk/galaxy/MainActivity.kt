@@ -1378,7 +1378,7 @@ private fun VoiceStudioScreen() {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("galaxy_preferences", android.content.Context.MODE_PRIVATE) }
     var selectedVoice by remember { mutableStateOf(preferences.getString("voice_gender", "Male") ?: "Male") }
-    var conversationWindowSeconds by remember { mutableIntStateOf(preferences.getInt(GalaxyVoiceWakeService.PREF_CONVERSATION_WINDOW_SECONDS, 12).coerceIn(8, 30)) }
+    var conversationWindowSeconds by remember { mutableIntStateOf(preferences.getInt(GalaxyVoiceWakeService.PREF_CONVERSATION_WINDOW_SECONDS, 20).coerceIn(8, 45)) }
     var recognitionLanguage by remember { mutableStateOf("bn-BD") }
     var transcript by remember { mutableStateOf("") }
     var status by remember { mutableStateOf("Ready — tap Start and say “Hey Galaxy”") }
@@ -1841,7 +1841,7 @@ private fun VoiceStudioScreen() {
             Text("CONTINUOUS COMMAND WINDOW", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
             Text("Hey Galaxy বলার পর পরের command দেওয়ার জন্য কতক্ষণ অপেক্ষা করবে", color = Muted, fontSize = 9.sp, modifier = Modifier.padding(top = 5.dp, bottom = 9.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf(8, 12, 20, 30).forEach { seconds ->
+                listOf(8, 12, 20, 30, 45).forEach { seconds ->
                     Column(Modifier.weight(1f).clip(RoundedCornerShape(10.dp)).background(if (conversationWindowSeconds == seconds) Color(0xFF29264F) else Panel2)
                         .clickable {
                             conversationWindowSeconds = seconds
