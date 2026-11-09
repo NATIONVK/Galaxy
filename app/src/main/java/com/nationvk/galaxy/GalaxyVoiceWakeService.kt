@@ -369,6 +369,16 @@ class GalaxyVoiceWakeService : Service() {
             GalaxyVoiceHistory.add(this, command, "Recalled previous voice command")
             return
         }
+        val clearSessionPhrases = listOf("clear voice session", "clear last command", "forget last command", "ভয়েস সেশন মুছে দাও", "ভয়েস সেশন মুছে দাও", "শেষ command মুছে দাও", "শেষ কমান্ড ভুলে যাও")
+        if (clearSessionPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
+            voiceSessionPrefs.edit()
+                .remove("last_user_command")
+                .remove("last_spoken_response")
+                .apply()
+            speak("ঠিক আছে। এই সেশনের শেষ command ও উত্তর মুছে দিয়েছি।", "voice-session-cleared")
+            GalaxyVoiceHistory.add(this, command, "Cleared last command and response from voice session")
+            return
+        }
         voiceSessionPrefs.edit().putString("last_user_command", command.take(500)).apply()
 
         // Voice confirmation is accepted only when an allow-listed multi-step plan is pending.
