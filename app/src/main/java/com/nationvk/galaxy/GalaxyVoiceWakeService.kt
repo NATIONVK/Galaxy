@@ -136,6 +136,9 @@ class GalaxyVoiceWakeService : Service() {
     }
 
     private fun speak(message: String, utteranceId: String) {
+        getSharedPreferences("galaxy_voice_session", MODE_PRIVATE).edit()
+            .putString("last_spoken_response", message.take(3500))
+            .apply()
         configureSpeechVoice()
         tts?.speak(message, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
@@ -344,6 +347,29 @@ class GalaxyVoiceWakeService : Service() {
             speak("ঠিক আছে। আবার কথা বলতে Hey Galaxy বলো।", "conversation-ended")
             return
         }
+
+        val voiceSessionPrefs = getSharedPreferences("galaxy_voice_session", MODE_PRIVATE)
+        val repeatPhrases = listOf("repeat", "repeat that", "say that again", "আবার বলো", "আবার বল", "পুনরায় বলো", "পুনরায় বলো", "আরেকবার বলো")
+        if (repeatPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
+            val previous = voiceSessionPrefs.getString("last_spoken_response", null)
+            if (previous.isNullOrBlank()) {
+                speak("আমি এখনো কোনো উত্তর দিইনি। কী জানতে চাও?", "voice-repeat-empty")
+            } else {
+                updateNotification("Repeating the previous Galaxy response")
+                speak(previous, "voice-repeat-last")
+            }
+            GalaxyVoiceHistory.add(this, command, "Repeated previous spoken response")
+            return
+        }
+        val recallCommandPhrases = listOf("what did i say", "what was my last command", "শেষে কী বলেছি", "আমি কী বলেছিলাম", "আমার শেষ কথা কী")
+        if (recallCommandPhrases.any { normalizedCommand == it || normalizedCommand.contains(it) }) {
+            val previousCommand = voiceSessionPrefs.getString("last_user_command", null)
+            val reply = if (previousCommand.isNullOrBlank()) "এই সেশনে আগের কোনো command পাওয়া যায়নি।" else "তোমার আগের command ছিল: $previousCommand"
+            speak(reply, "voice-recall-last-command")
+            GalaxyVoiceHistory.add(this, command, "Recalled previous voice command")
+            return
+        }
+        voiceSessionPrefs.edit().putString("last_user_command", command.take(500)).apply()
 
         // Voice confirmation is accepted only when an allow-listed multi-step plan is pending.
         // A plain "yes/no" never triggers an action without that explicit pending context.
