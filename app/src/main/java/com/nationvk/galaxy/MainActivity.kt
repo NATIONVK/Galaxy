@@ -222,6 +222,10 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
         Spacer(Modifier.height(11.dp))
         ModuleCard("⌖", "MOHAKHALI LOCAL HUB", "Area news • traffic • weather • alerts • jobs", Modifier.fillMaxWidth()) { onOpen(GalaxyTab.LOCAL) }
         Spacer(Modifier.height(20.dp))
+        SectionHeading("YOUR DAILY PROGRESS", "Offline personal mission tracker")
+        Spacer(Modifier.height(10.dp))
+        GalaxyDailyMissionPanel()
+        Spacer(Modifier.height(20.dp))
         SectionHeading("SYSTEM STATUS", "Foundation phase")
         Spacer(Modifier.height(10.dp))
         StatusPanel()
