@@ -30,6 +30,7 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 | 🕳️ Black Hole | Dedicated visual/settings experience | Independent controls inside Settings |
 | 🤖 AI Core | Conversational intelligence | Provider integration and smart model routing |
 | 🔬 Research Lab | Learning, data analysis and research | Statistics, coding and research tools |
+| 🧰 Cyber Workstation | Termux handoff, code drafts, GitHub, DNS diagnostics and APK workflow | Android-first development command center |
 | 🛡️ Security | Privacy and device permissions | Transparent, permission-based controls |
 
 ## ✅ Current implementation snapshot
@@ -38,6 +39,8 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 - Local Memory Vault with memory management and JSON import/export.
 - Voice assistant service foundation with foreground notification and speech recognition.
 - Voice preferences and dedicated Black Hole settings area.
+- Separate Cyber Workstation module with Termux launch/copy handoff, local code scratchpad, GitHub shortcuts, DNS lookup, APK workflow links and Android file picker.
+- Existing Voice Assistant remains a separate module; Black Hole renderer and existing settings remain intact.
 - Ongoing work on consistent background voice responses and natural Bangladeshi/Indian Bengali female TTS voice support.
 
 > **Development note:** Features are actively evolving. Background listening depends on Android microphone permission, foreground-service rules, device battery settings and an available speech/TTS engine. A Bangladeshi female voice is available only when the device's installed speech engine provides one; otherwise a supported Bengali voice is used as fallback. Force-stopping the app prevents background listening.
@@ -48,6 +51,8 @@ Our goal is to build a bilingual assistant that feels natural to use, keeps the 
 - **Jetpack Compose** — UI
 - **Gradle Kotlin DSL** — build system
 - **Android Speech APIs** — speech recognition and text-to-speech
+- **Termux handoff + Android intents** — mobile developer workflow
+- **GitHub Actions** — CI debug APK build and artifact upload
 - **Firebase** — planned integration; configure securely when enabled
 
 ## 📦 Build the Android app
@@ -80,6 +85,9 @@ Build configuration and device compatibility may change during development. An A
 - [ ] Consistent male/female voice selection across app and service
 - [ ] Natural Bangladeshi Bengali female voice with supported fallback
 - [ ] AI provider integration and intelligent model selection
+- [x] Cyber Workstation navigation and Android-first tool hub
+- [x] Local code scratchpad and safe Termux handoff
+- [x] GitHub, DNS diagnostics and APK workflow shortcuts
 - [ ] Expanded creative, research and analysis workspace
 - [ ] Security, performance and device testing
 - [ ] Production APK release

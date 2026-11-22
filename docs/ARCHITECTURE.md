@@ -17,6 +17,8 @@
     GalaxyCore (single orchestrator)
        |       |       |       |
       Chat   Memory   Voice   Vision / Tools
+             |       |
+       Cyber Workstation (separate workspace)
               |
               v
     Model Gateway + Model Registry
@@ -35,6 +37,8 @@
 
 ## Android client
 - UI: Jetpack Compose + Material 3
+- Cyber Workstation: a separate feature module for Termux handoff, local code drafts, GitHub navigation, DNS diagnostics and APK workflow shortcuts.
+- Voice Assistant remains a separate feature module; workstation navigation must not absorb or replace voice services.
 - Navigation: feature-based navigation
 - State: ViewModel + Kotlin Flow
 - Local persistence: Room for conversations/cache; DataStore for preferences
@@ -78,6 +82,7 @@
 - Explain sensitive permissions before requesting them.
 - Require confirmation for consequential device actions.
 - Restrict cybersecurity workspace to defensive education and isolated labs.
+- Workstation shell actions are explicit handoffs to Termux; never silently execute arbitrary shell commands from Galaxy.
 - Provide account/data deletion and memory controls.
 - Handle network failure, timeouts, rate limits, cancellation and provider outages.
 

@@ -15,12 +15,22 @@
 - [x] Pinch/drag gesture code added
 - [ ] Verify gesture build and fix compile/runtime errors
 - [ ] Complete loading, empty, error and offline states on every screen
+- [x] Add Cyber Workstation as a separate navigation destination
 - [ ] Finish Chat, Voice, Memory, Cyber Lab, Research, Vision and Model Selector UI flows
 - [ ] Finish privacy, permissions, language, theme and model settings
 - [ ] Accessibility, small-screen layout and performance pass
 - [ ] UI regression test and successful debug APK artifact
 
 **Gate to Phase 2:** primary screens navigate correctly, UI states are present, CI succeeds and a debug APK artifact is available. Core implementation starts only after this gate.
+
+## Phase 1.5 — Cyber Development Workstation
+- [x] Add dedicated Workstation destination without replacing existing Galaxy modules
+- [x] Add Termux launch and review-before-run command copy handoff
+- [x] Add local code draft editor with save, copy and share
+- [x] Add GitHub repository, Actions, pull request and release shortcuts
+- [x] Add user-entered DNS lookup diagnostics
+- [x] Add APK workflow and Android document-picker shortcuts
+- [ ] Verify successful CI build and device-level navigation / file-picker behavior
 
 ## Phase 2 — Single AI Core foundation
 - [ ] Define GalaxyCore orchestration contract and feature interfaces
