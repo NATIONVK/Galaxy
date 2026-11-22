@@ -152,7 +152,7 @@ private fun GalaxyTopBar() {
             Text("PERSONAL AI • CYBER WORKSTATION", color = Cyan, fontSize = 9.sp, letterSpacing = 1.2.sp)
         }
         Box(Modifier.clip(CircleShape).background(Color(0xFF14283A)).padding(horizontal = 11.dp, vertical = 7.dp)) {
-            Text("●  UI FINALIZATION", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text("●  WORKSTATION EDITION", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
