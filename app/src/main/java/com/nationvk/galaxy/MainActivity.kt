@@ -74,7 +74,7 @@ private val Muted = Color(0xFF929AB8)
 private enum class GalaxyTab(val label: String, val glyph: String) {
     HOME("Home", "⌂"), CHAT("AI Chat", "✧"), LAB("Lab", "⌘"), MEMORY("Memory", "◈"), NOTES("Notepad", "▤"), PROFILE("Profile", "◎"),
     VOICE("Voice", "♫"), RESEARCH("Research", "⌁"), CAMERA("Camera", "◉"), MODELS("AI Models", "⎇"),
-    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉")
+    NOTIFICATIONS("Alerts", "♢"), SETTINGS("Settings", "⚙"), BLACKHOLE("Black Hole", "◉"), WORKSTATION("Workstation", "⌘")
 }
 
 @Composable
@@ -84,6 +84,7 @@ fun GalaxyApp(initialTab: String? = null) {
         "VOICE" -> GalaxyTab.VOICE
         "SETTINGS" -> GalaxyTab.SETTINGS
         "PROFILE" -> GalaxyTab.PROFILE
+        "WORKSTATION" -> GalaxyTab.WORKSTATION
         else -> GalaxyTab.HOME
     }
     val navigationStack = remember {
@@ -118,6 +119,7 @@ fun GalaxyApp(initialTab: String? = null) {
                             GalaxyTab.HOME -> HomeScreen(onOpen = { navigate(it) })
                             GalaxyTab.CHAT -> ChatScreen()
                             GalaxyTab.LAB -> CyberLabScreen()
+                            GalaxyTab.WORKSTATION -> CyberWorkstationScreen()
                             GalaxyTab.MEMORY -> MemoryVaultScreen()
                             GalaxyTab.NOTES -> GalaxyNotepadScreen()
                             GalaxyTab.PROFILE -> ProfileScreen(onSettings = { navigate(GalaxyTab.SETTINGS) })
@@ -147,7 +149,7 @@ private fun GalaxyTopBar() {
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
             Text("GALAXY", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            Text("PERSONAL AI UNIVERSE", color = Cyan, fontSize = 10.sp, letterSpacing = 2.sp)
+            Text("PERSONAL AI • CYBER WORKSTATION", color = Cyan, fontSize = 9.sp, letterSpacing = 1.2.sp)
         }
         Box(Modifier.clip(CircleShape).background(Color(0xFF14283A)).padding(horizontal = 11.dp, vertical = 7.dp)) {
             Text("●  UI FINALIZATION", color = Cyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -214,8 +216,13 @@ private fun HomeScreen(onOpen: (GalaxyTab) -> Unit) {
             ModuleCard("⚙", "SETTINGS", "App preferences", Modifier.weight(1f)) { onOpen(GalaxyTab.SETTINGS) }
             ModuleCard("◎", "PROFILE", "Your Galaxy space", Modifier.weight(1f)) { onOpen(GalaxyTab.PROFILE) }
         }
+        Spacer(Modifier.height(11.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(11.dp)) {
+            ModuleCard("⌘", "CYBER WORKSTATION", "Code, Termux, GitHub & APK tools", Modifier.weight(1f)) { onOpen(GalaxyTab.WORKSTATION) }
+            ModuleCard("⌁", "RESEARCH HUB", "Data & research workspace", Modifier.weight(1f)) { onOpen(GalaxyTab.RESEARCH) }
+        }
         Spacer(Modifier.height(20.dp))
-        SectionHeading("SYSTEM STATUS", "Foundation phase")
+        SectionHeading("SYSTEM STATUS", "Device health & Galaxy services")
         Spacer(Modifier.height(10.dp))
         StatusPanel()
         Spacer(Modifier.height(18.dp))
